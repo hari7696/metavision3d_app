@@ -5,7 +5,7 @@ from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import mean_squared_error as mse
 import matplotlib.pyplot as plt
 import cv2
-# import algorithms.MetaVision3D.MetaImpute3D as MetaImpute3D
+from .MetaImpute3D import *
 
 def norm_boxplot(matrix):
     matrix_reshape = matrix.reshape(matrix.shape[0],-1)
@@ -23,7 +23,8 @@ def norm_boxplot(matrix):
     ax.tick_params(axis='both', which='both', labelsize=10)
     labels = ax.get_xticklabels() + ax.get_yticklabels()
     labels = [label.set_fontweight('bold') for label in labels]
-    plt.show()
+    # plt.show()
+    return fig
 
 def align_ECC(matrix):
     ecc_list = []
