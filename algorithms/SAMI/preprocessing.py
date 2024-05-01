@@ -33,13 +33,13 @@ def csv2h5ad(data_path,pattern,split=False):
             adata.var = varindex
             adata.raw = adata
             
-            adata.write(os.path.join(data_path,f'{split_file[0]}_{split_file[1]}.h5ad'))
+            adata.write(os.path.join(os.path.join(data_path,'h5ad'),f'{split_file[0]}_{split_file[1]}.h5ad'))
 
             if split==True:
                 unique_id=data_temp['region'].unique().tolist()
                 for i in range(len(unique_id)):
                     adata_sub=adata[adata.obs['region']==unique_id[i]].copy()
-                    adata_sub.write(os.path.join(data_path,f'{unique_id[i]}_{split_file[1]}.h5ad'))
+                    adata_sub.write(os.path.join(os.path.join(data_path,'h5ad'),f'{unique_id[i]}_{split_file[1]}.h5ad'))
 
 
                     
@@ -51,6 +51,7 @@ def pooldata(data_path,pattern,split=False):
         
         if re.match(pattern,file):
             split_file = name.split('_')
+            print(split_file)
             data_temp = pd.read_csv(os.path.join(data_path, file),delimiter=',')
             feat_cols = data_temp.columns[3:]
             data_temp = data_temp[data_temp[feat_cols].sum(axis=1)!=0]
@@ -84,9 +85,9 @@ def pooldata(data_path,pattern,split=False):
         unique_id=data_temp['region'].unique().tolist()
         for i in range(len(unique_id)):
             adata_sub=adata[adata.obs['region']==unique_id[i]].copy()
-            adata_sub.write(os.path.join(data_path,f'{unique_id[i]}_pool.h5ad'))
+            adata_sub.write(os.path.join(os.path.join(data_path,"h5ad"),f'{unique_id[i]}_pool.h5ad'))
         
-    adata.write(os.path.join(data_path,f'{split_file[0]}_pool.h5ad'))
+    adata.write(os.path.join(os.path.join(data_path,"h5ad"),f'{split_file[0]}_pool.h5ad'))
     
 
 

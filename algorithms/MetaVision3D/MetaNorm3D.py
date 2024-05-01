@@ -24,7 +24,6 @@ class MetaNorm3D:
         self.first_feature_index = np.where(df.columns==first_feature)[0][0]
 
     def totalsum_norm(self):
-        #code taken around 3.5 secs to run, switching to numpy may speed it up a little
         row_sum = self.df.iloc[:, self.first_feature_index:].sum(axis=1)
         self.df.iloc[:, self.first_feature_index:] = self.df.iloc[:, self.first_feature_index:].divide(row_sum, axis=0).fillna(0)
         return self.df
