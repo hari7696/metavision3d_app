@@ -174,16 +174,16 @@ def create_slice_sami_skeleton(df_all,slice, col='result', roi=False,reverse = F
     return reshaped_matrix
 
 def find_nearest(array, value):
-    '''
+    
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
     return idx
-    '''
-    idx = np.searchsorted(array, value, side="left")
-    if idx > 0 and (idx == len(array) or np.abs(value - array[idx-1]) < np.abs(value - array[idx])):
-        return idx-1
-    else:
-        return idx
+    
+    # idx = np.searchsorted(sorted_array, value, side="left")
+    # if idx > 0 and (idx == len(sorted_array) or np.abs(value - sorted_array[idx-1]) < np.abs(value - sorted_array[idx])):
+    #     return idx-1
+    # else:
+    #     return idx
 
 # def create_compound_matrix(data,col='result',reverse=False):
 #     print(len(data))

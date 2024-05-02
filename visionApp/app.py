@@ -18,7 +18,7 @@ from vtkmodules.util.numpy_support import numpy_to_vtk
 from vtkmodules.tk.vtkTkRenderWindowInteractor import vtkTkRenderWindowInteractor
 import io
 
-from setup import *
+from colormap import new_cmap1,new_cmap2
 import MetaVision3D.utils as algo_meta3d_utils
 import MetaVision3D.MetaNorm3D as algo_meta3d_norm
 import MetaVision3D.MetaAlign3D as algo_meta3d_align
@@ -29,20 +29,20 @@ import MetaVision3D.visualize as algo_meta3d_visualize
 import MetaVision3D.evaluate as algo_meta3d_evaluate
 import nibabel as nib
 import math
-
-from SAMI.utils import *
-from SAMI.preprocessing import *
-from SAMI.correlation import *
-from SAMI.clustering import *
-from SAMI.markers import *
+from pylab import Figure
+import SAMI.utils as algo_sami_utils
+import SAMI.preprocessing as algo_sami_preprocessing
+import SAMI.correlation as algo_sami_correlation
+import SAMI.clustering as algo_sami_clustering
+import SAMI.markers as algo_sami_markers
 # from SAMI.pathway import *
-from SAMI.norm import *
+import SAMI.norm as algo_sami_norm
 # from SAMI.clustermapping import *
 import glob
 import warnings
+import numpy as np
+import scanpy as sc
 warnings.filterwarnings("ignore")
-
-from matplotlib.figure import Figure
 
 
 
@@ -70,7 +70,7 @@ class MetaVision3dApp(ctk.CTk):
         self.top_parent_frame.grid(row=0,column=0,columnspan=2,sticky="ew")
         self.top_frame = ctk.CTkFrame(self.top_parent_frame)
         self.top_frame.grid(row=1,column=0,columnspan=2,sticky="ew")
-        self.file_type_var = ctk.StringVar(value="Normal File")
+        self.file_type_var = ctk.StringVar(value="3D file")
         self.file_type_cbox= ctk.CTkOptionMenu(self.top_frame,values=["Normal File","3D file","SAMI"],variable=self.file_type_var,command=lambda choice: self.change_file_ui())
         self.file_type_cbox.grid(row=0,column=0,padx=(5,0),pady=10)
         self.open_file_btn = ctk.CTkButton(self.top_frame, text="Open CSV File", command=self.open_file)
@@ -82,11 +82,17 @@ class MetaVision3dApp(ctk.CTk):
         # self.run_button.grid(row=0,column=1,padx =(5,0), pady=(10,10),sticky="w")
         # self.select_folder_btn = ctk.CTkButton(self.top_frame,text="Select Folder",command=self.open_sami_select_folder)
         # self.select_folder_btn.grid(row=0,column=1)
-        self.sami_note_label = ctk.CTkLabel(self.top_parent_frame,text="Note: In case of single file it can be a single omics or all. In case of multi files each file must be of different omics",text_color="#cdf52f")
-        self.sami_note_label.grid(row=0,column=0,sticky="e")
-        self.sami_file_option_menu = ctk.CTkOptionMenu(self.top_frame,values = ["Single file","Multi file"],command=lambda choice: self.change_sami_file_ui(choice))
-        self.sami_file_option_menu.grid(row=0,column=1,padx=(3,0),pady=10)
-        self.open_folder_btn = ctk.CTkButton(self.top_frame, text="Open Folder", command=self.open_folder)
+        if self.file_type_cbox.get() == "SAMI":
+            self.sami_note_label = ctk.CTkLabel(self.top_parent_frame,text="Note: In case of single file it can be a single omics or all. In case of multi files each file must be of different omics",text_color="#cdf52f")
+            self.sami_note_label.grid(row=0,column=0,sticky="e")
+            self.sami_file_option_menu = ctk.CTkOptionMenu(self.top_frame,values = ["Single file","Multi file"],command=lambda choice: self.change_sami_file_ui(choice))
+            self.sami_file_option_menu.grid(row=0,column=1,padx=(3,0),pady=10)
+            self.open_folder_btn = ctk.CTkButton(self.top_frame, text="Open Folder", command=self.open_folder)
+        elif self.file_type_cbox.get() == "3D file":
+            self.sami_note_label.grid_forget()
+            self.sami_file_option_menu.grid_forget()
+            self.open_folder_btn.grid_forget()
+            self.open_file_btn.grid(row=0,column=2,padx =(5,0), pady=(10,10),sticky="w")
         # self.open_file_btn.grid_forget()
         # self.open_folder_btn = ctk.CTkButton(self.top_frame, text="Open Folder", command=self.open_folder)
         # self.open_folder_btn.grid(row=0,column=2,padx =(5,0), pady=(10,10),sticky="w")
@@ -123,8 +129,9 @@ class MetaVision3dApp(ctk.CTk):
         sami_multi_files = glob.glob(folder_path)
         self.sami_multi_file_names = [os.path.basename(path) for path in sami_multi_files]
         self.sami_multi_file_names = [string for string in self.sami_multi_file_names if not "norm" in string]
-        self.sami_multi_file_cbox = ctk.CTkComboBox(self.cmap_frame,values= self.sami_multi_file_names,command= lambda choice: self.load_sami_selected_file())
-        self.sami_multi_file_cbox.grid(row=0,column=1,sticky="w",padx =3,pady=3)
+        if self.sami_file_option_menu.get()== "Multi file":
+            self.sami_multi_file_cbox = ctk.CTkComboBox(self.cmap_frame,values= self.sami_multi_file_names,command= lambda choice: self.load_sami_selected_file())
+            self.sami_multi_file_cbox.grid(row=0,column=1,sticky="w",padx =3,pady=3)
         self.display_file_loading()
         threading.Thread(target=self.load_file, args=(os.path.join(self.sami_folder,self.sami_multi_file_names[0]),), daemon=True).start()
 
@@ -244,7 +251,8 @@ class MetaVision3dApp(ctk.CTk):
                 self.create_sami_normalization_tab()
                 
                 self.split_to_h5ad_rad.select()
-                self.sami_multi_file_cbox.configure(state="disabled")
+                if self.sami_file_option_menu.get() == "Mulit file":
+                    self.sami_multi_file_cbox.configure(state="disabled")
             else:
                 self.allign_rad.select()
                 self.start_normalization()
@@ -444,7 +452,7 @@ class MetaVision3dApp(ctk.CTk):
     def display_3d(self):
         if self.nii_mode_var.get()==1:
             volume = Volume(self.nii_data.get_fdata())
-            volume.alpha([[0,0.01,0.1,0.2,0.3,0.8,0.85,0.9,0.95,1]])
+            volume.alpha([0,0.01,0.1,0.2,0.3,0.8,0.85,0.9,0.95,1])
             volume.cmap("magma")
             self.plotter = Plotter()
             if not self.plotter.renderers:
@@ -523,9 +531,11 @@ class MetaVision3dApp(ctk.CTk):
     
     def change_normfile_indices(self):
         print("a")
-        dff = pd.read_csv(os.path.join(self.sami_folder,self.norm_files_cbox.get()),nrows=0)
-        columns = dff.columns.tolist()
-        self.first_compound_idx_cbox.configure(values=columns)
+        if self.sami_file_option_menu == "Multi file":
+            dff = pd.read_csv(os.path.join(self.sami_folder,self.norm_files_cbox.get()),nrows=0)
+            columns = dff.columns.tolist()
+            formatted_values = [f"{i}-{col}" for i, col in enumerate(columns)]
+            self.first_compound_idx_cbox.configure(values=formatted_values)
 
         
 
@@ -547,25 +557,29 @@ class MetaVision3dApp(ctk.CTk):
             self.df_norm.to_csv(os.path.join(self.sami_folder, new_path),index=False)
 
     def start_sami_normalization(self):
-        if self.norm_files_cbox.get()== "All":
-            for file in self.sami_multi_file_names:
-                self.df = pd.read_csv(os.path.join(self.sami_folder,file), index_col=False)
-                self.df = self.df.rename(columns={'region': 'tissue_id'})
-                first_compound_index = int(self.first_compound_idx_cbox.get().split('-')[0])
-                self.df_norm = Normalization(self.df, first_compound_idx=first_compound_index, rowNorm=self.row_norm_cbox.get(), transNorm=self.trans_norm_cbox.get(), c=1, log_base=2)
-                # self.compound_matrix = create_compound_matrix(self.df_norm,col=self.molecule_var.get(),reverse=True)
-                if file.endswith("raw.csv"):
-                    new_path = file.replace("raw.csv", "norm.csv")
-                else:
-                    new_path = file.replace(".csv", "_norm.csv")
-                self.df_norm = self.df_norm.rename(columns={'tissue_id': 'region'})
-                self.df_norm.to_csv(os.path.join(self.sami_folder,new_path),index=False)
-            messagebox.showinfo("Success", "Normalizatin done for all files and are saved")
+        if self.sami_file_option_menu.get()=="Multi file": 
+            if self.norm_files_cbox.get()== "All":
+                for file in self.sami_multi_file_names:
+                    self.df = pd.read_csv(os.path.join(self.sami_folder,file), index_col=False)
+                    self.df = self.df.rename(columns={'region': 'tissue_id'})
+                    first_compound_index = int(self.first_compound_idx_cbox.get().split('-')[0])
+                    self.df_norm = algo_sami_norm.Normalization(self.df, first_compound_idx=first_compound_index, rowNorm=self.row_norm_cbox.get(), transNorm=self.trans_norm_cbox.get(), c=1, log_base=2)
+                    # self.compound_matrix = create_compound_matrix(self.df_norm,col=self.molecule_var.get(),reverse=True)
+                    if file.endswith("raw.csv"):
+                        new_path = file.replace("raw.csv", "norm.csv")
+                    else:
+                        new_path = file.replace(".csv", "_norm.csv")
+                    self.df_norm = self.df_norm.rename(columns={'tissue_id': 'region'})
+                    self.df_norm.to_csv(os.path.join(self.sami_folder,new_path),index=False)
+                messagebox.showinfo("Success", "Normalizatin done for all files and are saved")
         else:
-            self.df = pd.read_csv(os.path.join(self.sami_folder,self.norm_files_cbox.get()), index_col=False)
+            if self.sami_file_option_menu.get() == "Single file":
+                self.df = pd.read_csv(self.filepath, index_col=False)
+            else:
+                self.df = pd.read_csv(os.path.join(self.sami_folder,self.norm_files_cbox.get()), index_col=False)
             self.df = self.df.rename(columns={'region': 'tissue_id'})
             first_compound_index = int(self.first_compound_idx_cbox.get().split('-')[0])
-            self.df_norm = Normalization(self.df, first_compound_idx=first_compound_index, rowNorm=self.row_norm_cbox.get(), transNorm=self.trans_norm_cbox.get(), c=1, log_base=2)
+            self.df_norm = algo_sami_norm.Normalization(self.df, first_compound_idx=first_compound_index, rowNorm=self.row_norm_cbox.get(), transNorm=self.trans_norm_cbox.get(), c=1, log_base=2)
             self.compound_matrix = algo_meta3d_align.create_compound_matrix_sami(self.df_norm,col=self.molecule_dropdown.get(),reverse=True)   
             self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
             self.display_norm_plot(self.compound_matrix)
@@ -574,13 +588,13 @@ class MetaVision3dApp(ctk.CTk):
     def start_split_to_h5ad(self):
         if self.sami_file_option_menu.get()== "Single file":
             os.makedirs(os.path.join(os.path.dirname(self.filepath),'h5ad'),exist_ok=True)
-            csv2h5ad(data_path=os.path.dirname(self.filepath),pattern=r'^\w+norm\.csv',split=True)
+            algo_sami_preprocessing.csv2h5ad(data_path=os.path.dirname(self.filepath),pattern=r'^\w+norm\.csv',split=True)
             
         else:
         
             os.makedirs(os.path.join(self.sami_folder,'h5ad'),exist_ok=True)
-            csv2h5ad(data_path=self.sami_folder,pattern=r'^\w+norm\.csv',split=True)
-            pooldata(data_path=self.sami_folder,pattern=r'^\w+norm\.csv',split=True) 
+            algo_sami_preprocessing.csv2h5ad(data_path=self.sami_folder,pattern=r'^\w+norm\.csv',split=True)
+            algo_sami_preprocessing.pooldata(data_path=self.sami_folder,pattern=r'^\w+norm\.csv',split=True) 
         messagebox.showinfo("Success", "H5AD files got created")
 
 
@@ -815,9 +829,9 @@ class MetaVision3dApp(ctk.CTk):
         ax.set_facecolor('black')
         fig.patch.set_facecolor('black')
         if self.cmap_cbox.get()=="magma":
-            im = ax.imshow(image_array, cmap=algo_meta3d_utils.new_cmap1,vmin=0, vmax=self.vmax)
+            im = ax.imshow(image_array, cmap=new_cmap1,vmin=0, vmax=self.vmax)
         elif self.cmap_cbox.get()=="viridis":
-            im = ax.imshow(image_array, cmap= algo_meta3d_utils.new_cmap2,vmin=0, vmax=self.vmax)
+            im = ax.imshow(image_array, cmap= new_cmap2,vmin=0, vmax=self.vmax)
         else:
             im = ax.imshow(image_array,cmap="gray")
         buf = io.BytesIO()
@@ -848,12 +862,12 @@ class MetaVision3dApp(ctk.CTk):
         if  self.cmap_switch_var.get() == "gray" :    
             im = ax.imshow(matrix, cmap="gray")
         elif self.cmap_switch_var.get() == "magma" :
-            im = ax.imshow(self.compound_matrix[id], cmap=algo_meta3d_utils.new_cmap1)
+            im = ax.imshow(self.compound_matrix[id], cmap=new_cmap1)
             cbar = fig.colorbar(im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5)
             cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
             cbar.ax.set_yticklabels(['low', 'high'])
         elif self.cmap_switch_var.get()== "viridis":
-            im = ax.imshow(self.compound_matrix[id], cmap=algo_meta3d_utils.new_cmap2)
+            im = ax.imshow(self.compound_matrix[id], cmap=new_cmap2)
             cbar = fig.colorbar(im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5)
             cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
             cbar.ax.set_yticklabels(['low', 'high'])
@@ -905,12 +919,12 @@ class MetaVision3dApp(ctk.CTk):
         fig = Figure(figsize=(7, 7), dpi=100)
         ax = fig.add_subplot(111)
         if self.cmap_cbox.get()=="magma":
-            im=ax.imshow(np.flipud(d2), origin=originSelect, cmap=algo_meta3d_utils.new_cmap1)
+            im=ax.imshow(np.flipud(d2), origin=originSelect, cmap=new_cmap1)
             cbar = fig.colorbar(im,ax=ax,ticks=[0,np.percentile(d[d != 0], 99)],shrink=0.5)
             cbar.mappable.set_clim(vmin=0,vmax=np.percentile(d[d != 0], 99))
             cbar.ax.set_yticklabels(['low', 'high'])
         elif self.cmap_cbox.get()=="viridis":
-            im=ax.imshow(d2, origin=originSelect, cmap=algo_meta3d_utils.new_cmap2)
+            im=ax.imshow(d2, origin=originSelect, cmap=new_cmap2)
             cbar = fig.colorbar(im,ax=ax,ticks=[0,np.percentile(d[d != 0], 99)],shrink=0.5)
             cbar.mappable.set_clim(vmin=0,vmax=np.percentile(d[d != 0], 99))
             cbar.ax.set_yticklabels(['low', 'high'])
@@ -947,9 +961,9 @@ class MetaVision3dApp(ctk.CTk):
         # frame = int(float(self.animation_slider.get()))
         self.ani_ax.clear()
         if self.cmap_cbox.get()=="magma":
-            self.ani_ax.imshow(self.compound_matrix[frame],cmap=algo_meta3d_utils.new_cmap1,vmin=0,vmax=self.vmax)
+            self.ani_ax.imshow(self.compound_matrix[frame],cmap=new_cmap1,vmin=0,vmax=self.vmax)
         elif self.cmap_cbox.get()=="viridis":
-            self.ani_ax.imshow(self.compound_matrix[frame],cmap=algo_meta3d_utils.new_cmap2,vmin=0,vmax=self.vmax)
+            self.ani_ax.imshow(self.compound_matrix[frame],cmap=new_cmap2,vmin=0,vmax=self.vmax)
         elif self.cmap_cbox.get()=="gray":
             self.ani_ax.imshow(self.compound_matrix[frame],cmap="gray")
         self.current_frame = frame
@@ -1143,24 +1157,21 @@ class MetaVision3dApp(ctk.CTk):
         adata1=sc.read(data_path+'brain2_metabolomics.h5ad')
         adata2=sc.read(data_path+'brain2_lipidomics.h5ad')
         print("here")
-        corr = calculate_corr(adata1,adata2)
+        corr = algo_sami_correlation.calculate_corr(adata1,adata2)
         print("here1")
-        fig= corr_plot(adata1,adata2,'m.z.256.995','m.z.862.606',xomic='Metabolite',yomic='Lipid')
+        fig= algo_sami_correlation.corr_plot(adata1,adata2,'m.z.256.995','m.z.862.606',xomic='Metabolite',yomic='Lipid')
         canvas = FigureCanvasTkAgg(fig, master=self.corr_plot_tab)
         canvas.draw()
         canvas.get_tk_widget().grid(row=0,column=0)
         adata = sc.read(data_path+'brain2_pool.h5ad') #load pool dataset (triple-omics) of brain2
-        data = adata_filter(adata,abundance=0,prevalence=0.95).to_df() #filter out m.z with prevalence smaller than 0.95
+        data = algo_sami_correlation.adata_filter(adata,abundance=0,prevalence=0.95).to_df() #filter out m.z with prevalence smaller than 0.95
 
         corr_matrix = data.corr() ## calculate correlation intra and inter omics
         corr_df = pd.DataFrame(data=corr_matrix, index=data.columns, columns=data.columns)
-        fig1 = corr_network(adata,corr_df)
+        fig1 = algo_sami_correlation.corr_network(adata,corr_df)
         canvas1 = FigureCanvasTkAgg(fig1, master=self.corr_network_tab)
         canvas1.draw()
         canvas1.get_tk_widget().grid(row=0,column=0)
-
-        # clusters =  Clusters('brain2','pool',i)
-        # clusters.clustering()
 
         # cluster('brain1_pool.h5ad',res=1.4)
         # fig2=plot_cluster('brain1_pool_1.4.h5ad')
@@ -1168,7 +1179,7 @@ class MetaVision3dApp(ctk.CTk):
         # canvas2.draw()
         # canvas2.get_tk_widget().grid(row=0,column=0)
 
-
+        
         
 if __name__ == "__main__":
     app = MetaVision3dApp()
