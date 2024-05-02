@@ -4,8 +4,8 @@ import numpy as np
 
 def create_nii(matrix,path,scale=0):
     # reshape matrix from (z,y,x) to (x,y,z)
-    output_matrix = transpose(matrix,(2,1,0))
-    Ir = squeeze(output_matrix)
+    output_matrix = np.transpose(matrix,(2,1,0))
+    Ir = np.squeeze(output_matrix)
     img = nib.Nifti1Image(Ir, affine=np.eye(4))
     # adjust thickness
     header = img.header.copy()

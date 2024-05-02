@@ -19,15 +19,16 @@ from vtkmodules.tk.vtkTkRenderWindowInteractor import vtkTkRenderWindowInteracto
 import io
 
 from setup import *
-from MetaVision3D.utils import *
-from MetaVision3D.MetaNorm3D import *
-from MetaVision3D.MetaAlign3D import *
-from MetaVision3D.MetaImpute3D import *
-from MetaVision3D.MetaInterp3D import *
-from MetaVision3D.MetaAtlas3D import *
-from MetaVision3D.visualize import *
-from MetaVision3D.evaluate import *
-
+import MetaVision3D.utils as algo_meta3d_utils
+import MetaVision3D.MetaNorm3D as algo_meta3d_norm
+import MetaVision3D.MetaAlign3D as algo_meta3d_align
+import MetaVision3D.MetaImpute3D as algo_meta3d_impute
+import MetaVision3D.MetaInterp3D  as algo_meta3d_interp
+import MetaVision3D.MetaAtlas3D as algo_meta3d_atlas
+import MetaVision3D.visualize as algo_meta3d_visualize 
+import MetaVision3D.evaluate as algo_meta3d_evaluate
+import nibabel as nib
+import math
 
 from SAMI.utils import *
 from SAMI.preprocessing import *
@@ -157,7 +158,7 @@ class MetaVision3dApp(ctk.CTk):
             self.molecule_dropdown.grid(row=0, column=3, padx=5, pady=(10, 10), sticky="w")
             # self.molecule_var.set(self.molecule_names[0])
             self.molecule_dropdown.set(self.molecule_names[0])
-            self.compound_matrix = create_compound_matrix_sami(self.df,col=self.molecule_dropdown.get(),reverse=True)
+            self.compound_matrix = algo_meta3d_align.create_compound_matrix_sami(self.df,col=self.molecule_dropdown.get(),reverse=True)
             self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
             self.display_norm_plot(self.compound_matrix)
             self.after(500,self.display_animation())
@@ -285,11 +286,11 @@ class MetaVision3dApp(ctk.CTk):
         # self.process_info_label.configure(text="reating Compound matrix....")
         if self.file_type_cbox.get()=="SAMI" and self.molecule_dropdown.get()=="None":
             print(self.roi_switch.get())
-            self.compound_matrix = create_compound_matrix_sami_skeleton(self.df,col=self.molecule_names[0],roi= self.roi_switch.get(),reverse=True)
+            self.compound_matrix = algo_meta3d_align.create_compound_matrix_sami_skeleton(self.df,col=self.molecule_names[0],roi= self.roi_switch.get(),reverse=True)
         elif self.file_type_cbox.get()=="SAMI":
-            self.compound_matrix = create_compound_matrix_sami(self.df,col=self.molecule_dropdown.get(),roi=False,reverse=True)
+            self.compound_matrix = algo_meta3d_align.create_compound_matrix_sami(self.df,col=self.molecule_dropdown.get(),roi=False,reverse=True)
         else:
-            self.compound_matrix = create_compound_matrix(self.df,col=self.molecule_dropdown.get(),reverse=True)
+            self.compound_matrix = algo_meta3d_align.create_compound_matrix(self.df,col=self.molecule_dropdown.get(),reverse=True)
         # threading.Thread(target=self.change_process_label_text, args=("Displaying the images......",), daemon=True).start()
         # self.process_info_label.configure(text="Displaying the images......")
         time.sleep(1)
@@ -306,16 +307,16 @@ class MetaVision3dApp(ctk.CTk):
     def start_normalization(self):
         self.compound = self.molecule_dropdown.get()
         print(self.molecule_names[0])
-        meta_norm = MetaNorm3D(self.df, self.compound,first_feature=self.molecule_names[0])
+        meta_norm = algo_meta3d_norm.MetaNorm3D(self.df, self.compound,first_feature=self.molecule_names[0])
         # self.after(0,lambda: self.change_slides_label_text("Performing Total Sum Normalization...."))
         self.norm_df = meta_norm.totalsum_norm()
         # self.after(0,lambda: self.change_slides_label_text("Performing Section Normalization...."))
         self.data = meta_norm.section_norm()
         # self.after(0,lambda: self.change_slides_label_text("Creating compound matrix...."))
         if self.file_type_cbox.get()=="SAMI":
-            self.compound_matrix = create_compound_matrix_sami(self.data,reverse=True)
+            self.compound_matrix = algo_meta3d_align.create_compound_matrix_sami(self.data,reverse=True)
         else:
-            self.compound_matrix = create_compound_matrix(self.data,reverse=True)
+            self.compound_matrix = algo_meta3d_align.create_compound_matrix(self.data,reverse=True)
 
         self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
         self.display_norm_plot(self.compound_matrix)
@@ -323,7 +324,7 @@ class MetaVision3dApp(ctk.CTk):
         # self.display_montage(self.compound_matrix)
 
     def start_allignment(self):
-        meta_align = MetaAlign3D(self.data)
+        meta_align = algo_meta3d_align.MetaAlign3D(self.data)
         # self.compound_matrix = meta_align.create_compound_matrix(reverse=True)
         # self.after(0,lambda: self.change_slides_label_text("Creating compound matrix..."))
         self.compound_matrix = meta_align.create_compound_matrix(reverse=True)
@@ -340,7 +341,7 @@ class MetaVision3dApp(ctk.CTk):
             int(self.interp_scale_entry.get())
         except ValueError:
             messagebox.showerror("Error", "Only Integer values are allowed")
-        meta_interp = MetaInterp3D(self.compound_matrix,int(self.interp_scale_entry.get()))
+        meta_interp = algo_meta3d_interp.MetaInterp3D(self.compound_matrix,int(self.interp_scale_entry.get()))
         self.compound_matrix = meta_interp.interp()
         self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
         self.display_norm_plot(self.compound_matrix)
@@ -354,7 +355,7 @@ class MetaVision3dApp(ctk.CTk):
         # self.create_3d_tab()
         
         
-        atlas_data = MetaAtlas3D(self.compound_matrix)
+        atlas_data = algo_meta3d_atlas.MetaAtlas3D(self.compound_matrix)
         self.nii_data= atlas_data.create_nii()
         # nib.save(self.nii_data, 'testimg.nii.gz')
         # mesh = Volume(self.nii_data.get_fdata())
@@ -483,7 +484,7 @@ class MetaVision3dApp(ctk.CTk):
     def change_molecule_visualization(self):
         
         if self.file_type_cbox.get()=="SAMI" and self.process_step_var.get()==2:
-            self.compound_matrix = create_compound_matrix_sami(self.df,col=self.molecule_dropdown.get(),reverse=True)
+            self.compound_matrix = algo_meta3d_align.create_compound_matrix_sami(self.df,col=self.molecule_dropdown.get(),reverse=True)
             self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
 
 
@@ -565,7 +566,7 @@ class MetaVision3dApp(ctk.CTk):
             self.df = self.df.rename(columns={'region': 'tissue_id'})
             first_compound_index = int(self.first_compound_idx_cbox.get().split('-')[0])
             self.df_norm = Normalization(self.df, first_compound_idx=first_compound_index, rowNorm=self.row_norm_cbox.get(), transNorm=self.trans_norm_cbox.get(), c=1, log_base=2)
-            self.compound_matrix = create_compound_matrix_sami(self.df_norm,col=self.molecule_dropdown.get(),reverse=True)   
+            self.compound_matrix = algo_meta3d_align.create_compound_matrix_sami(self.df_norm,col=self.molecule_dropdown.get(),reverse=True)   
             self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
             self.display_norm_plot(self.compound_matrix)
             self.after(500,self.display_animation())
@@ -729,10 +730,10 @@ class MetaVision3dApp(ctk.CTk):
 
     def start_process(self):
         self.compound = self.molecule_dropdown.get()
-        meta_norm = MetaNorm3D(self.df, self.compound)
+        meta_norm = algo_meta3d_norm.MetaNorm3D(self.df, self.compound)
         self.norm_df = meta_norm.totalsum_norm()
         data = meta_norm.section_norm()
-        meta_align = MetaAlign3D(data)
+        meta_align = algo_meta3d_align.MetaAlign3D(data)
         self.compound_matrix = meta_align.create_compound_matrix(reverse=True)
         print("compound matrix done")
         self.display_individual_images(self.compound_matrix)
@@ -814,9 +815,9 @@ class MetaVision3dApp(ctk.CTk):
         ax.set_facecolor('black')
         fig.patch.set_facecolor('black')
         if self.cmap_cbox.get()=="magma":
-            im = ax.imshow(image_array, cmap=new_cmap1,vmin=0, vmax=self.vmax)
+            im = ax.imshow(image_array, cmap=algo_meta3d_utils.new_cmap1,vmin=0, vmax=self.vmax)
         elif self.cmap_cbox.get()=="viridis":
-            im = ax.imshow(image_array, cmap= new_cmap2,vmin=0, vmax=self.vmax)
+            im = ax.imshow(image_array, cmap= algo_meta3d_utils.new_cmap2,vmin=0, vmax=self.vmax)
         else:
             im = ax.imshow(image_array,cmap="gray")
         buf = io.BytesIO()
@@ -847,12 +848,12 @@ class MetaVision3dApp(ctk.CTk):
         if  self.cmap_switch_var.get() == "gray" :    
             im = ax.imshow(matrix, cmap="gray")
         elif self.cmap_switch_var.get() == "magma" :
-            im = ax.imshow(self.compound_matrix[id], cmap=new_cmap1)
+            im = ax.imshow(self.compound_matrix[id], cmap=algo_meta3d_utils.new_cmap1)
             cbar = fig.colorbar(im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5)
             cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
             cbar.ax.set_yticklabels(['low', 'high'])
         elif self.cmap_switch_var.get()== "viridis":
-            im = ax.imshow(self.compound_matrix[id], cmap=new_cmap2)
+            im = ax.imshow(self.compound_matrix[id], cmap=algo_meta3d_utils.new_cmap2)
             cbar = fig.colorbar(im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5)
             cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
             cbar.ax.set_yticklabels(['low', 'high'])
@@ -866,7 +867,7 @@ class MetaVision3dApp(ctk.CTk):
         self.norm_plot_frame = ctk.CTkScrollableFrame(self.norm_plot,height =400,width =400)
         self.norm_plot_frame.columnconfigure(0,weight=1)
         self.norm_plot_frame.grid(row=0,column=0,sticky="nsew")
-        fig = norm_boxplot(compound_matrix)
+        fig = algo_meta3d_evaluate.norm_boxplot(compound_matrix)
         canvas = FigureCanvasTkAgg(fig, master=self.norm_plot_frame)  # A tk.DrawingArea
         canvas.draw()
         canvas.get_tk_widget().grid(row=0,column=0)
@@ -904,12 +905,12 @@ class MetaVision3dApp(ctk.CTk):
         fig = Figure(figsize=(7, 7), dpi=100)
         ax = fig.add_subplot(111)
         if self.cmap_cbox.get()=="magma":
-            im=ax.imshow(np.flipud(d2), origin=originSelect, cmap=new_cmap1)
+            im=ax.imshow(np.flipud(d2), origin=originSelect, cmap=algo_meta3d_utils.new_cmap1)
             cbar = fig.colorbar(im,ax=ax,ticks=[0,np.percentile(d[d != 0], 99)],shrink=0.5)
             cbar.mappable.set_clim(vmin=0,vmax=np.percentile(d[d != 0], 99))
             cbar.ax.set_yticklabels(['low', 'high'])
         elif self.cmap_cbox.get()=="viridis":
-            im=ax.imshow(d2, origin=originSelect, cmap=new_cmap2)
+            im=ax.imshow(d2, origin=originSelect, cmap=algo_meta3d_utils.new_cmap2)
             cbar = fig.colorbar(im,ax=ax,ticks=[0,np.percentile(d[d != 0], 99)],shrink=0.5)
             cbar.mappable.set_clim(vmin=0,vmax=np.percentile(d[d != 0], 99))
             cbar.ax.set_yticklabels(['low', 'high'])
@@ -946,9 +947,9 @@ class MetaVision3dApp(ctk.CTk):
         # frame = int(float(self.animation_slider.get()))
         self.ani_ax.clear()
         if self.cmap_cbox.get()=="magma":
-            self.ani_ax.imshow(self.compound_matrix[frame],cmap=new_cmap1,vmin=0,vmax=self.vmax)
+            self.ani_ax.imshow(self.compound_matrix[frame],cmap=algo_meta3d_utils.new_cmap1,vmin=0,vmax=self.vmax)
         elif self.cmap_cbox.get()=="viridis":
-            self.ani_ax.imshow(self.compound_matrix[frame],cmap=new_cmap2,vmin=0,vmax=self.vmax)
+            self.ani_ax.imshow(self.compound_matrix[frame],cmap=algo_meta3d_utils.new_cmap2,vmin=0,vmax=self.vmax)
         elif self.cmap_cbox.get()=="gray":
             self.ani_ax.imshow(self.compound_matrix[frame],cmap="gray")
         self.current_frame = frame
@@ -1158,17 +1159,14 @@ class MetaVision3dApp(ctk.CTk):
         canvas1.draw()
         canvas1.get_tk_widget().grid(row=0,column=0)
 
-        clusters =  Clusters('brain2','pool',i)
-        clusters.clustering()
+        # clusters =  Clusters('brain2','pool',i)
+        # clusters.clustering()
 
-        cluster('brain1_pool.h5ad',res=1.4)
-        fig2=plot_cluster('brain1_pool_1.4.h5ad')
-        canvas2 = FigureCanvasTkAgg(fig2, master=self.cluster_tab)
-        canvas2.draw()
-        canvas2.get_tk_widget().grid(row=0,column=0)
-
-        
-
+        # cluster('brain1_pool.h5ad',res=1.4)
+        # fig2=plot_cluster('brain1_pool_1.4.h5ad')
+        # canvas2 = FigureCanvasTkAgg(fig2, master=self.cluster_tab)
+        # canvas2.draw()
+        # canvas2.get_tk_widget().grid(row=0,column=0)
 
 
         
