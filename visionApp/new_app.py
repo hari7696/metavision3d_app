@@ -7,7 +7,7 @@ from Metavision_tk import MetaVision3DApp
 from Sami_tk import SAMIApp
 import logging
 # Set up logging configuration
-logging.basicConfig(filename='app.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
+logging.basicConfig(filename='../app.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
 
 
 
@@ -37,6 +37,9 @@ class VisionApp(ctk.CTk):
 
                                             )
         self.algo_selection_dropdown.grid(row=0,column=0,padx=(5,0),pady=10)
+
+
+        
 
     def destroy_children(self):
         """
