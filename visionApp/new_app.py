@@ -62,14 +62,14 @@ class VisionApp(ctk.CTk):
             self.destroy_children()
             logging.info("num children {}".format(str(len(self.parent_frame.winfo_children()))))
             self.parent_frame = MetaVision3DApp(self.parent_frame, self.nav_frame)
-            self.parent_frame.grid(row=0, column=0, sticky="nsew")
+            # self.parent_frame.grid(row=0, column=0, sticky="nsew")
 
         elif choice == "SAMI":
             # Destroy all widgets in the parent frame except nav_frame and dropdown bar in it
             self.destroy_children()
             logging.info("num children {}".format(str(len(self.parent_frame.winfo_children()))))
             self.parent_frame = SAMIApp(self.parent_frame, self.nav_frame)
-            self.parent_frame.grid(row=0, column=0, sticky="nsew")
+            # self.parent_frame.grid(row=0, column=0, sticky="nsew")
 
 
 if __name__ == "__main__":
