@@ -13,9 +13,9 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import time
 from vedo import Volume,show,Plotter
-import vtkmodules.all as vtk
-from vtkmodules.util.numpy_support import numpy_to_vtk
-from vtkmodules.tk.vtkTkRenderWindowInteractor import vtkTkRenderWindowInteractor
+# import vtkmodules.all as vtk
+# from vtkmodules.util.numpy_support import numpy_to_vtk
+# from vtkmodules.tk.vtkTkRenderWindowInteractor import vtkTkRenderWindowInteractor
 import io
 
 from colormap import new_cmap1,new_cmap2
