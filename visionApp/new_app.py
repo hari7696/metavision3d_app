@@ -8,7 +8,7 @@ from sami_tk.SamiApp import SAMIApp
 import logging
 # Set up logging configuration
 logging.basicConfig(filename='file.log', 
-                    level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(filename)s - %(message)s', filemode='w')
+                    level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', filemode='w')
 
 class VisionApp(ctk.CTk):
 
@@ -19,13 +19,17 @@ class VisionApp(ctk.CTk):
         self.title("MetaVision3D")
         self.geometry("1350x710")
         self.columnconfigure(0,weight=1)
+        self.rowconfigure(0,weight=1)
         
         # the Parent, we need to pass to all the algorithm UI classes
         self.parent_frame = ctk.CTkFrame(self)
-        self.parent_frame.grid(row=0,column=0,columnspan=2,sticky="ew")
+        self.parent_frame.grid(row=0,column=0,columnspan=2,sticky="nsew")
+        self.parent_frame.columnconfigure(0,weight=1)
+        self.parent_frame.rowconfigure(0,weight=2)
+        self.parent_frame.rowconfigure(1,weight=100)
 
         self.nav_frame = ctk.CTkFrame(self.parent_frame)
-        self.nav_frame.grid(row=1,column=0,columnspan=2,sticky="ew")
+        self.nav_frame.grid(row=0,column=0,columnspan=2,sticky="new")
 
         algo_default_value = ctk.StringVar(value="Select the ALgorithm")
         self.algo_selection_dropdown = ctk.CTkOptionMenu(master= self.nav_frame,
@@ -69,8 +73,8 @@ class VisionApp(ctk.CTk):
             # Destroy all widgets in the parent frame except nav_frame and dropdown bar in it
             self.destroy_children()
             logging.info("num children {}".format(str(len(self.parent_frame.winfo_children()))))
-            self.parent_frame = SAMIApp(self.parent_frame, self.nav_frame)
-            # self.parent_frame.grid(row=0, column=0, sticky="nsew")
+            self.sami_ap = SAMIApp(self.parent_frame, self.nav_frame)
+            self.sami_ap.grid(row=1, column=0, sticky="nsew", pady=(5,0), padx=(0,0))
 
 
 if __name__ == "__main__":
