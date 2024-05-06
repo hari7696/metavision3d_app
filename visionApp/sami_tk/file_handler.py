@@ -85,10 +85,11 @@ class FileOpenbutton(ctk.CTkFrame):
         """
         self.input_data_raw = {}
         for file in file_path:
-            logger.info(f"file read: {file}")
+
             base_filename = os.path.basename(file)
-            logger.info(f"file read: {base_filename}")
             temp_df = pd.read_csv(os.path.join(self.working_folder, base_filename))
+            logger.info(f"file read: {base_filename}")
+
             self.input_data_raw[base_filename] = self.preprocess(temp_df, base_filename)
         self.is_files_read = True
         self.loading_label.destroy()
