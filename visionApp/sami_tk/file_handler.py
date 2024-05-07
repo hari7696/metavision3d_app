@@ -18,6 +18,7 @@ class FileOpenbutton(ctk.CTkFrame):
         self.working_folder = None
         self.tissue_ids = {}
         self.molecule_name = {}
+        self.file_type = None
     
     def file_opening_button(self, choice):
         """
@@ -116,3 +117,5 @@ class FileOpenbutton(ctk.CTkFrame):
         logger.debug("displaying the loading label")
         self.loading_label = ctk.CTkLabel(self, text="Loading...")
         self.loading_label.grid(row=0, column=1, padx =(0,0), pady=(2,2),sticky="w")
+
+    
