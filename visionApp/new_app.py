@@ -18,15 +18,18 @@ class VisionApp(ctk.CTk):
         super().__init__()
         self.title("MetaVision3D")
         self.geometry("1350x710")
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
         self.columnconfigure(0,weight=1)
         self.rowconfigure(0,weight=1)
+        # self.rowconfigure(1,weight=9)
         
         # the Parent, we need to pass to all the algorithm UI classes
         self.parent_frame = ctk.CTkFrame(self)
         self.parent_frame.grid(row=0,column=0,columnspan=2,sticky="nsew")
         self.parent_frame.columnconfigure(0,weight=1)
-        self.parent_frame.rowconfigure(0,weight=2)
-        self.parent_frame.rowconfigure(1,weight=100)
+        self.parent_frame.rowconfigure(0,weight=1)
+        self.parent_frame.rowconfigure(1,weight=10)
 
         self.nav_frame = ctk.CTkFrame(self.parent_frame)
         self.nav_frame.grid(row=0,column=0,columnspan=2,sticky="new")
