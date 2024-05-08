@@ -19,6 +19,7 @@ class FileOpenbutton(ctk.CTkFrame):
         self.tissue_ids = {}
         self.molecule_name = {}
         self.file_type = None
+        self.base_files = []
     
     def file_opening_button(self, choice):
         """
@@ -58,6 +59,8 @@ class FileOpenbutton(ctk.CTkFrame):
             logger.info(f"selected file: {self.filepath}")
             self.working_folder = os.path.dirname(self.filepath)
             logger.info(f"working folder: {self.working_folder}")
+            self.base_files = [os.path.basename(file) for file in [self.filepath]]
+            self.base_files = [file.strip(".csv") for file in self.base_files]
             self.display_file_loading()
             threading.Thread(target=self.async_read_files, args=([self.filepath],),
                               daemon=True).start()
@@ -73,6 +76,9 @@ class FileOpenbutton(ctk.CTkFrame):
         logger.info(f"selected files:  {self.files_path}")
         self.working_folder = os.path.dirname(self.files_path[0])
         logger.info(f"working folder: {self.working_folder}")
+        self.base_files = [os.path.basename(file) for file in self.files_path]
+        self.base_files = [file.strip(".csv") for file in self.base_files]
+
         self.display_file_loading()
         threading.Thread(target=self.async_read_files, args=(self.files_path,),
                               daemon=True).start()
@@ -88,9 +94,10 @@ class FileOpenbutton(ctk.CTkFrame):
         for file in file_path:
 
             base_filename = os.path.basename(file)
+            
             temp_df = pd.read_csv(os.path.join(self.working_folder, base_filename))
             logger.info(f"file read: {base_filename}")
-
+            base_filename = base_filename.strip(".csv")
             self.input_data_raw[base_filename] = self.preprocess(temp_df, base_filename)
         self.is_files_read = True
         self.loading_label.destroy()
@@ -106,8 +113,8 @@ class FileOpenbutton(ctk.CTkFrame):
         The field 'region' is adhoc, need to discuss with the team to get the correct field name
 
         """
-        df = df.rename(columns={'tissue_id': 'region'})
-        self.tissue_ids[base_filename] = list(df["region"].unique())
+        # df = df.rename(columns={'tissue_id': 'region'})
+        self.tissue_ids[base_filename] = list(df["tissue_id"].unique())
         self.molecule_name[base_filename] = list(df.columns[3:])
         return df
 
