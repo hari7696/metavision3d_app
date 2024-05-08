@@ -214,7 +214,7 @@ def find_nearest(array, value):
 #     return matrix
 
 def create_compound_matrix_sami(data,col='result',roi=False,reverse=False):
-    print(len(data))
+    print(data.columns)
     data = data.dropna(subset=['tissue_id', col])
     print(len(data))
     print("df initial:",np.count_nonzero(data[col]))

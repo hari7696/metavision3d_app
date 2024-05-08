@@ -43,6 +43,10 @@ import warnings
 import numpy as np
 import scanpy as sc
 warnings.filterwarnings("ignore")
+import logging
+logging.basicConfig(filename='old_app.log', 
+                    level=logging.INFO, format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', filemode='w')
+
 
 
 
@@ -292,10 +296,15 @@ class MetaVision3dApp(ctk.CTk):
         # threading.Thread(target=self.change_process_label_text, args=("Creating Compound matrix....",), daemon=True).start()
         self.cmap_cbox.configure(state="normal")
         # self.process_info_label.configure(text="reating Compound matrix....")
+        logging.info("Creating Compound matrix....")
+        logging.info("data shape: {}".format(self.df.shape))
+        logging.info("data columns: {}".format(self.df.columns))
         if self.file_type_cbox.get()=="SAMI" and self.molecule_dropdown.get()=="None":
+            logging.info("create_compound_matrix_sami_skeleton")
             print(self.roi_switch.get())
             self.compound_matrix = algo_meta3d_align.create_compound_matrix_sami_skeleton(self.df,col=self.molecule_names[0],roi= self.roi_switch.get(),reverse=True)
         elif self.file_type_cbox.get()=="SAMI":
+            logging.info("create_compound_matrix_sami")
             self.compound_matrix = algo_meta3d_align.create_compound_matrix_sami(self.df,col=self.molecule_dropdown.get(),roi=False,reverse=True)
         else:
             self.compound_matrix = algo_meta3d_align.create_compound_matrix(self.df,col=self.molecule_dropdown.get(),reverse=True)
