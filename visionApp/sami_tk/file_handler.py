@@ -7,11 +7,14 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
+
 class FileOpenbutton(ctk.CTkFrame):
 
     def __init__(self, master):
-        super().__init__(master, )
-        self.columnconfigure(0,weight=1)
+        super().__init__(
+            master,
+        )
+        self.columnconfigure(0, weight=1)
         self.files_path = None
         self.input_data_raw = {}
         self.is_files_read = False
@@ -20,7 +23,7 @@ class FileOpenbutton(ctk.CTkFrame):
         self.molecule_name = {}
         self.file_type = None
         self.base_files = []
-    
+
     def file_opening_button(self, choice):
         """
         Button to open the file dialog to select the file
@@ -29,22 +32,26 @@ class FileOpenbutton(ctk.CTkFrame):
         if its multi file type, It should display open directory dialog
         """
         logger.debug(f"Choice is {choice}")
-        logger.debug("'file_opening_button' : children count {}".format(len(list(self.winfo_children()))))
-         
+        logger.debug(
+            "'file_opening_button' : children count {}".format(
+                len(list(self.winfo_children()))
+            )
+        )
+
         if choice == "Multi file":
-            self.f_open_btn = ctk.CTkButton(self, 
-                                text="Open Folder", 
-                                command=self.open_multiple_files)
+            self.f_open_btn = ctk.CTkButton(
+                self, text="Open Folder", command=self.open_multiple_files
+            )
             logger.debug("multi file type selected")
 
         elif choice == "Single file":
-            
-            self.f_open_btn = ctk.CTkButton(self, 
-                                text="Open File", 
-                                command=self.open_file)
+
+            self.f_open_btn = ctk.CTkButton(
+                self, text="Open File", command=self.open_file
+            )
             logger.debug("Single file type selected")
 
-        self.f_open_btn.grid(row=0,column=0,padx =(0,0), pady=(2,2),sticky="w")
+        self.f_open_btn.grid(row=0, column=0, padx=(0, 0), pady=(2, 2), sticky="w")
 
     def open_file(self):
         """
@@ -62,12 +69,12 @@ class FileOpenbutton(ctk.CTkFrame):
             self.base_files = [os.path.basename(file) for file in [self.filepath]]
             self.base_files = [file.strip(".csv") for file in self.base_files]
             self.display_file_loading()
-            threading.Thread(target=self.async_read_files, args=([self.filepath],),
-                              daemon=True).start()
+            threading.Thread(
+                target=self.async_read_files, args=([self.filepath],), daemon=True
+            ).start()
 
     def open_multiple_files(self):
-
-        """ 
+        """
         Open folder dialog to select multuple files.
         Once the files are selected, they will be read via threading
         """
@@ -80,9 +87,9 @@ class FileOpenbutton(ctk.CTkFrame):
         self.base_files = [file.strip(".csv") for file in self.base_files]
 
         self.display_file_loading()
-        threading.Thread(target=self.async_read_files, args=(self.files_path,),
-                              daemon=True).start()
-
+        threading.Thread(
+            target=self.async_read_files, args=(self.files_path,), daemon=True
+        ).start()
 
         # threading.Thread(target=self.load_file, args=(os.path.join(self.sami_folder,self.sami_multi_file_names[0]),), daemon=True).start()
 
@@ -94,7 +101,7 @@ class FileOpenbutton(ctk.CTkFrame):
         for file in file_path:
 
             base_filename = os.path.basename(file)
-            
+
             temp_df = pd.read_csv(os.path.join(self.working_folder, base_filename))
             logger.info(f"file read: {base_filename}")
             base_filename = base_filename.strip(".csv")
@@ -113,16 +120,14 @@ class FileOpenbutton(ctk.CTkFrame):
         The field 'region' is adhoc, need to discuss with the team to get the correct field name
 
         """
-        # df = df.rename(columns={'tissue_id': 'region'})
+        if "region" in df.columns:
+            df = df.rename(columns={"region": "tissue_id"})
         self.tissue_ids[base_filename] = list(df["tissue_id"].unique())
         self.molecule_name[base_filename] = list(df.columns[3:])
         return df
 
-
-    def display_file_loading(self): 
+    def display_file_loading(self):
         # Displying the loading label
         logger.debug("displaying the loading label")
         self.loading_label = ctk.CTkLabel(self, text="Loading...")
-        self.loading_label.grid(row=0, column=1, padx =(0,0), pady=(2,2),sticky="w")
-
-    
+        self.loading_label.grid(row=0, column=1, padx=(0, 0), pady=(2, 2), sticky="w")

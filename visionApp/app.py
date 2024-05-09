@@ -44,6 +44,7 @@ import numpy as np
 import scanpy as sc
 warnings.filterwarnings("ignore")
 import logging
+import pickle
 logging.basicConfig(filename='old_app.log', 
                     level=logging.INFO, format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', filemode='w')
 
@@ -299,6 +300,7 @@ class MetaVision3dApp(ctk.CTk):
         logging.info("Creating Compound matrix....")
         logging.info("data shape: {}".format(self.df.shape))
         logging.info("data columns: {}".format(self.df.columns))
+        self.df.to_csv("temp.csv")
         if self.file_type_cbox.get()=="SAMI" and self.molecule_dropdown.get()=="None":
             logging.info("create_compound_matrix_sami_skeleton")
             print(self.roi_switch.get())
@@ -789,6 +791,9 @@ class MetaVision3dApp(ctk.CTk):
         if grid_rows * grid_cols < slices:
             grid_rows += 1
 
+        with open('image_array.pkl', 'wb') as f:
+            pickle.dump(data, f)
+
         # Create a frame for each image and store it for later processing
         self.vmax = np.percentile(data[data != 0], 99)
         self.frames = []
@@ -801,7 +806,13 @@ class MetaVision3dApp(ctk.CTk):
         # Schedule the image processing after the window is rendered
         self.after(100, self.process_images)
 
+
+
     def process_images(self):
+
+        # Pickle the image_array
+
+
         for frame, image_array, id in self.frames:
             self.display_image_in_frame(image_array, frame,id)
         # self.show_cmap_switch()
