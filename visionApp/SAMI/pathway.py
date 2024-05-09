@@ -25,14 +25,13 @@ class Pathway:
         r_source = ro.r['source']
         r_source('../SAMI/MetabAnalystR.R')  
         
-        ann_dict = self.anndict()
         markers = pd.read_csv(os.path.join('../results/markers/',f'{self.region}_marker.csv'))
         clusters = markers['cluster'].unique().tolist()
         
         if self.modality=='metabolomics_glycomics':
-            markers = markers.loc[markers['feature'].isin(ann_dict['metabolomics']+ann_dict['glycomics'])]
+            markers = markers.loc[markers['omics'].isin(['metabolomics','glycomics'])]
         else:
-            markers = markers.loc[markers['feature'].isin(ann_dict['lipidomics'])]
+            markers = markers.loc[markers['omics']=='lipidomics']
         
         logical_arg = ro.BoolVector([True,False])
         clustersR = ro.vectors.IntVector(clusters)

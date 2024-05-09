@@ -1,0 +1,563 @@
+import tkinter as tk
+import customtkinter as ctk
+import pandas as pd
+import os
+import logging
+
+# from tkinter import filedialog, messagebox
+# import threading
+# from sami_tk_utilities import open_file, open_multiple_files
+# import glob
+# from .file_handler import FileOpenbutton
+from .compound_matrix import create_compound_matrix
+
+# from .process_steps import process_state
+import math
+from pylab import Figure
+import numpy as np
+from waiting import wait
+from PIL import Image, ImageTk
+
+# from customtkinter import CTkImage
+from .colormap import *
+import io
+from functools import partial
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+# from .visualization_step import VisualizationStep
+import matplotlib.animation as animation
+import time
+import threading
+import sys
+sys.path.append('../SAMI')
+# sys.path.append(r'C:\Users\ghari\Documents\OPS\UI\metavision3d_app\visionApp\SAMI')
+# rest of the code...
+from SAMI.norm import create_norm_dataset_gui
+
+logger = logging.getLogger(__name__)
+
+class NormalizationStep(ctk.CTkFrame):
+
+    def __init__(self, master, file_handler):
+        super().__init__(
+            master,
+        )
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.right_frame = None
+        self.norm_slides = None
+        self.normalized_coumpount_matrix = None
+
+        self.file_handler = file_handler
+        self.create_visualization_dock_type1()
+        self.prepare_visualization_dock_type1()
+        self.create_normalization_tab()
+
+        # threading.Thread(target=self.displaying_loading_on_main_thread, args= (),daemon=True).start()
+
+    def create_visualization_dock_type1(self):
+        """Under the visualization tab, we have two frames, left and right frame
+        Left frame is for displaying the files and color maps and right frame is for displaying the results
+        """
+
+        for widget in self.winfo_children():
+            widget.destroy()
+
+        self.root_visualization_frame = ctk.CTkFrame(self, bg_color="transparent")
+        self.root_visualization_frame.columnconfigure(0, weight=1)
+        self.root_visualization_frame.columnconfigure(1, weight=2)
+        self.root_visualization_frame.rowconfigure(0, weight=1)
+
+        # splitting the visaulization frame into two parts, left and right side
+        self.left_frame = ctk.CTkFrame(self.root_visualization_frame)
+        self.right_frame = ctk.CTkFrame(self.root_visualization_frame)
+
+        self.left_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=1)
+        self.right_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=1)
+        self.root_visualization_frame.grid(row=0, column=0, sticky="nsew")
+
+    def create_left_visualization_dock_type1(self):
+        """This function deals with the left side of the visualization frame
+        It consists of file selection and color map display frame and the scrollable frame
+        """
+
+        # file selection and color map display frame
+        self.left_frame.columnconfigure(0, weight=1)
+        self.left_frame.rowconfigure(0, weight=1)
+        self.selection_frame = ctk.CTkFrame(self.left_frame)
+        self.selection_frame.grid(
+            row=0, column=0, sticky="nsew", padx=5, pady=1, columnspan=2
+        )
+        # self.file_selection_frame.columnconfigure(0,weight=1)
+        self.selection_frame.rowconfigure(0, weight=1)
+
+        # File dropdown
+        self.var_file_name = ctk.CTkLabel(self.selection_frame, text="Select File: ")
+        self.var_file_name.grid(row=0, column=0, padx=(5, 0), pady=10, sticky="e")
+
+        # waiting till the input files are ready
+        wait(
+            lambda: self.file_handler.is_files_read,
+            timeout_seconds=600,
+            waiting_for="File reading",
+        )
+        default_value = ctk.StringVar(value="Select Dataset")
+        self.file_dropdown = ctk.CTkOptionMenu(
+            master=self.selection_frame,
+            values=self.file_handler.base_files,
+            command=self.update_frame_with_file,
+            variable=default_value,
+        )
+        self.file_dropdown.grid(row=0, column=2, padx=(5, 0), pady=10, sticky="e")
+
+        # Color map dropdown
+        self.var_color_map = ctk.CTkLabel(
+            self.selection_frame, text="Select colorMap: "
+        )
+        self.var_color_map.grid(row=0, column=4, padx=(5, 0), pady=10, sticky="e")
+        default_value2 = ctk.StringVar(value="gray")
+        self.color_map_dropdown = ctk.CTkOptionMenu(
+            master=self.selection_frame,
+            values=["gray", "magma", "viridis"],
+            command=self.update_frame_with_file,
+            variable=default_value2,
+        )
+        self.color_map_dropdown.grid(row=0, column=6, padx=(5, 0), pady=10, sticky="e")
+
+        # scrollable frame on the left side of the visualization frame
+        self.slides_display_frame = ctk.CTkScrollableFrame(self.left_frame, height=500)
+        self.slides_display_frame.grid(row=1, column=0, padx=5, pady=1, sticky="sew")
+
+        # loading label
+        # self.display_processing()
+        # self.loading_label = ctk.CTkLabel(self.left_frame,text="NOT Loading....", font = ("Arial", 24))
+        # self.loading_label.grid(row=2,column=0,padx=5,pady=1,sticky ="sew")
+
+    def create_right_visualization_dock_type1(self):
+        """This function deals with the right side of the visualization frame
+        It consists of tabview for the visualization results
+        """
+        self.right_frame.columnconfigure(0, weight=1)
+        self.right_frame.rowconfigure(0, weight=1)
+        self.vis_tabs = ctk.CTkTabview(self.right_frame)
+        self.vis_tabs.grid(row=0, column=0, sticky="nsew", padx=5)
+        self.normalization = self.vis_tabs.add("Normalisation")
+        self.norm_slides = self.vis_tabs.add("Normalised Slides")
+        self.comparison = self.vis_tabs.add("Comparison")
+        self.norm_plot = self.vis_tabs.add("Norm Plot") 
+
+        self.norm_slides.columnconfigure(0, weight=1)
+        self.norm_slides.rowconfigure(0, weight=1)
+
+        self.comparison.columnconfigure(0, weight=1)
+        self.comparison.rowconfigure(0, weight=1)
+
+        self.norm_plot.columnconfigure(0, weight=1)
+        self.norm_plot.rowconfigure(0, weight=1)
+
+        self.normalization.columnconfigure(0, weight=1)
+        self.normalization.rowconfigure(0, weight=1)
+
+    def prepare_visualization_dock_type1(self):
+        """This visualization is used for the tabs 1. Visualization and 2. Normalization
+        This view have left and right visualization frames"""
+
+        self.create_visualization_dock_type1()
+        self.create_left_visualization_dock_type1()
+        self.create_right_visualization_dock_type1()
+
+
+    def create_normalization_tab(self):
+        """This function deals with the Normalization tab
+        It consists of a frame for the slides and a frame for the animation
+        """
+
+        for widget in self.normalization.winfo_children():
+            widget.destroy()
+
+        self.normalization.columnconfigure(0, weight=1)
+        self.normalization.columnconfigure(0, weight=1)
+        self.normalization.rowconfigure(0, weight=1)
+
+        self.norm_frame = ctk.CTkFrame(self.normalization)
+        self.norm_frame.grid(row=0, column=0, sticky="nsew", columnspan=2)
+        # self.norm_frame.columnconfigure(0, weight=1)
+        # self.norm_frame.rowconfigure(0, weight=1)
+
+        # two drop downs, and a run button
+        #creating a dropwodn from rownorm
+        label1 = ctk.CTkLabel(self.norm_frame, text="rowNorm" )
+        label1.grid(row=0,column=0,padx=(5,0),pady=8,sticky="w")
+
+        norm_default_value = ctk.StringVar(value="SumNorm :")
+        self.algo_selection_dropdown = ctk.CTkOptionMenu(master= self.norm_frame,
+                                            values=["SumNorm"],
+                                            variable=norm_default_value,button_color="#b5b8b0"
+                                            )
+        self.algo_selection_dropdown.grid(row=0,column=2,padx=(0,0),pady=8,sticky="w")
+        
+
+        # creating a dropdown for transnorm
+        label2 = ctk.CTkLabel(self.norm_frame, text="transNorm :")
+        label2.grid(row=1,column=0,padx=(5,0),pady=8,sticky="w")
+
+        norm_default_value2 = ctk.StringVar(value="LogTrans2")
+        self.algo_selection_dropdown2 = ctk.CTkOptionMenu(master= self.norm_frame,
+                                            values=["LogTrans2"],
+                                            variable=norm_default_value2, button_color="#b5b8b0"
+                                            )
+        self.algo_selection_dropdown2.grid(row=1,column=2,padx=(0,0),pady=8,sticky="w")
+
+        # creating a run button
+        self.run_button = ctk.CTkButton(master=self.norm_frame, text="Run", command=self.run_normalization, width=70)
+        self.run_button.grid(row=2,column=0,padx=(60,0),pady=8,sticky="w")
+
+        # 
+
+    def run_normalization(self):
+
+        # waiting till the input files are read
+        wait(
+            lambda: self.file_handler.is_files_read,
+            timeout_seconds=600,
+            waiting_for="File reading",
+        )
+
+        # running normalization
+        self.normalized_data = create_norm_dataset_gui(self.file_handler.input_data_raw,
+                                                               self.file_handler.working_folder,
+                                                                rowNorm = self.algo_selection_dropdown.get(),
+                                                                transNorm = self.algo_selection_dropdown2.get()
+                                                               )
+
+        self.compound_matrix = create_compound_matrix(
+            self.file_handler.input_data_raw[self.file_dropdown.get()],
+            self.file_handler.molecule_name[self.file_dropdown.get()][0],
+            roi=False,
+            reverse=True,
+        )
+        
+        self.norm_compound_matrix = create_compound_matrix( self.normalized_data[self.file_dropdown.get()],
+                                                            self.file_handler.molecule_name[self.file_dropdown.get()][0],
+                                                            roi=False,
+                                                            reverse=True,
+                                                            )
+        
+        logger.info("Normalization is done.")
+        # writing a ctk label to show the normalization is done
+
+        self.display_norm_plot(self.norm_compound_matrix)
+        self.norm_done_label = ctk.CTkLabel(self.norm_frame, text="Normalization is running", font = ("Arial", 12))
+        self.norm_done_label.configure(text="Normalization is done, switch to the Normalised slides tab to view the results.")
+        self.norm_done_label.grid(row=3,column=0,padx=(5,0),pady=8,sticky="w")
+        
+
+
+    def update_frame_with_file(self, choice):
+
+        wait(
+            lambda: self.file_handler.is_files_read,
+            timeout_seconds=600,
+            waiting_for="File reading",
+        )
+        self.compound_matrix = create_compound_matrix(
+            self.file_handler.input_data_raw[self.file_dropdown.get()],
+            self.file_handler.molecule_name[self.file_dropdown.get()][0],
+            roi=False,
+            reverse=True,)
+
+        self.create_frames_in_slides_display_frame(self.compound_matrix)
+        
+
+    def update_frame_with_selected_color_map(self, choice):
+
+        # wait(
+        #     lambda: self.file_handler.is_files_read,
+        #     timeout_seconds=600,
+        #     waiting_for="File reading",
+        # )
+        # logging.info(
+        #     f"file_inspection: {self.file_handler.input_data_raw[choice].columns}"
+        # )
+        # logging.info(f"chosen molecule: {self.file_handler.molecule_name[choice][0]}")
+        self.create_frames_in_slides_display_frame(self.compound_matrix)
+
+    def create_frames_in_slides_display_frame(self, data):
+        for widget in self.slides_display_frame.winfo_children():
+            widget.destroy()
+        # self.display_montage(data)
+
+        slices, rows, cols = data.shape
+        N = round(math.sqrt(slices))
+
+        grid_rows = slices / 3
+        grid_cols = 3
+
+        if grid_rows * grid_cols < slices:
+            grid_rows += 1
+
+        # Create a frame for each image and store it for later processing
+        self.vmax = np.percentile(data[data != 0], 99)
+        self.frames = []
+        for i in range(slices):
+            frame = ctk.CTkFrame(
+                self.slides_display_frame,
+                width=100,
+                height=80,
+                border_width=2,
+                border_color="#474644",
+            )
+            frame.grid(row=i // grid_cols, column=i % grid_cols, padx=2, pady=2, sticky="nsew") 
+            # print(data[i])
+            self.frames.append((frame, data[i], i))
+
+        # Schedule the image processing after the window is rendered
+        self.after(100, self.process_images)
+        # self.after(500, self.display_animation())
+
+    def process_images(self):
+        for frame, image_array, id in self.frames:
+            self.display_image_in_frame(image_array, frame, id)
+        # self.show_cmap_switch()
+
+    def display_image_in_frame(self, image_array, frame, id):
+
+        fig = Figure(figsize=(1, 0.57), dpi=100)
+        ax = fig.add_subplot(111)
+        ax.set_facecolor("black")
+        fig.patch.set_facecolor("black")
+        if self.color_map_dropdown.get() == "magma":
+            im = ax.imshow(image_array, cmap=new_cmap1, vmin=0, vmax=self.vmax)
+        elif self.color_map_dropdown.get() == "viridis":
+            im = ax.imshow(image_array, cmap=new_cmap2, vmin=0, vmax=self.vmax)
+        else:
+            im = ax.imshow(image_array, cmap="grey")
+        buf = io.BytesIO()
+        fig.savefig(
+            buf,
+            format="png",
+            bbox_inches="tight",
+            pad_inches=0,
+            facecolor=fig.get_facecolor(),
+            edgecolor="none",
+        )
+        buf.seek(0)
+        resized_image = Image.open(buf)
+        photo = ImageTk.PhotoImage(resized_image)
+
+        # Create a label to display the image
+        label = ctk.CTkLabel(frame, image=photo, text="")
+        label.image = photo  # Keep a reference
+        label.grid(row=0, column=0, padx=2, pady=2)
+        label.bind("<Button-1>", partial(self.on_label_click_main, id=id))
+
+    def on_label_click_main(self, event, id):
+        self.on_label_click(event, id)
+        self.on_label_click_pre_post_norm_comparison(event, id)
+
+    def on_label_click(self, event, id):
+        print(id)
+        fig = Figure(figsize=(6, 6), dpi=100)
+        ax = fig.add_subplot(111)
+
+        # Add a Matplotlib canvas to the Tkinter frame
+        for widget in self.norm_slides.winfo_children():
+            widget.destroy()
+        self.slide_tab_frame = ctk.CTkFrame(self.norm_slides)
+        self.slide_tab_frame.grid(row=0, column=0, sticky="nsew")
+        self.slide_tab_frame.columnconfigure(0, weight=1)
+        self.slide_tab_frame.rowconfigure(0, weight=1)
+        canvas = FigureCanvasTkAgg(fig, master=self.slide_tab_frame)
+        canvas.get_tk_widget().grid(row=0, column=0)
+        matrix = self.norm_compound_matrix[id]
+        if self.color_map_dropdown.get() == "gray":
+            im = ax.imshow(matrix, cmap="gray")
+        elif self.color_map_dropdown.get() == "magma":
+            im = ax.imshow(self.norm_compound_matrix[id], cmap=new_cmap1)
+            cbar = fig.colorbar(
+                im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+            )
+            cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
+            cbar.ax.set_yticklabels(["low", "high"])
+        elif self.color_map_dropdown.get() == "viridis":
+            im = ax.imshow(self.norm_compound_matrix[id], cmap=new_cmap2)
+            cbar = fig.colorbar(
+                im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+            )
+            cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
+            cbar.ax.set_yticklabels(["low", "high"])
+        else:
+            im = ax.imshow(matrix, cmap="gray")
+
+        # Turn off axis labels and ticks
+        ax.axis("off")
+
+    def on_label_click_pre_post_norm_comparison(self,  event, id):
+        print("comparison", id)
+
+        fig = Figure(figsize=(6, 3), dpi = 100 )
+        ax = fig.add_subplot(111)
+
+        fig2 = Figure(figsize=(6, 3), dpi = 100)
+        ax2 = fig2.add_subplot(111)
+
+        # Add a Matplotlib canvas to the Tkinter frame
+        for widget in self.comparison.winfo_children():
+            widget.destroy()
+        
+        # creatded a parent frame for the comparison tab
+        self.comp_parent_frame = ctk.CTkFrame(self.comparison)
+        self.comp_parent_frame.grid(row=0, column=0, sticky="nsew")
+        self.comp_parent_frame.columnconfigure(0, weight=1)
+        # self.comp_parent_frame.rowconfigure(0, weight=1)
+
+        #creating a label for pre normalization
+        self.pre_norm_label = ctk.CTkLabel(self.comp_parent_frame, text="Pre Normalization", font = ("Arial", 12))
+        self.pre_norm_label.grid(row=0,column=0,padx=(5,0),pady=8,sticky="w")
+        #creating a frame for pre normalization
+        self.pre_norm_frame = ctk.CTkFrame(self.comp_parent_frame)
+        self.pre_norm_frame.grid(row=1, column=0, sticky="w")
+        self.pre_norm_frame.columnconfigure(0, weight=1)
+        self.pre_norm_frame.rowconfigure(0, weight=1)
+
+        #creating a label for post normalization
+        self.post_norm_label = ctk.CTkLabel(self.comp_parent_frame, text="Post Normalization", font = ("Arial", 12))
+        self.post_norm_label.grid(row=2,column=0,padx=(5,0),pady=8,sticky="w")
+        #creating a frame for post normalization
+        self.post_norm_frame = ctk.CTkFrame(self.comp_parent_frame)
+        self.post_norm_frame.grid(row=3, column=0, sticky="w")
+        self.post_norm_frame.columnconfigure(0, weight=1)
+        self.post_norm_frame.rowconfigure(0, weight=1)
+
+        canvas = FigureCanvasTkAgg(fig, master=self.pre_norm_frame)
+        canvas.get_tk_widget().grid(row=0, column=0)
+        matrix = self.compound_matrix[id]
+        if self.color_map_dropdown.get() == "gray":
+            im = ax.imshow(matrix, cmap="gray")
+        elif self.color_map_dropdown.get() == "magma":
+            im = ax.imshow(self.compound_matrix[id], cmap=new_cmap1)
+            # cbar = fig.colorbar(
+            #     im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+            # )
+            # cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
+            # cbar.ax.set_yticklabels(["low", "high"])
+        elif self.color_map_dropdown.get() == "viridis":
+            im = ax.imshow(self.compound_matrix[id], cmap=new_cmap2)
+            # cbar = fig.colorbar(
+            #     im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+            # )
+            # cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
+            # cbar.ax.set_yticklabels(["low", "high"])
+        else:
+            im = ax.imshow(matrix, cmap="gray")
+
+        # Turn off axis labels and ticks
+        ax2.axis("off")
+
+        canvas = FigureCanvasTkAgg(fig, master=self.post_norm_frame)
+        canvas.get_tk_widget().grid(row=0, column=0)
+        matrix = self.norm_compound_matrix[id]
+        if self.color_map_dropdown.get() == "gray":
+            im = ax.imshow(matrix, cmap="gray")
+        elif self.color_map_dropdown.get() == "magma":
+            im = ax.imshow(self.norm_compound_matrix[id], cmap=new_cmap1)
+            cbar = fig.colorbar(
+                im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+            )
+            cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
+            cbar.ax.set_yticklabels(["low", "high"])
+        elif self.color_map_dropdown.get() == "viridis":
+            im = ax.imshow(self.norm_compound_matrix[id], cmap=new_cmap2)
+            cbar = fig.colorbar(
+                im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+            )
+            cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
+            cbar.ax.set_yticklabels(["low", "high"])
+        else:
+            im = ax.imshow(matrix, cmap="gray")
+
+        # Turn off axis labels and ticks
+        ax.axis("off")
+    @staticmethod
+    def norm_boxplot(matrix):
+        matrix_reshape = matrix.reshape(matrix.shape[0],-1)
+
+        non_zero_list = []
+        for row in matrix_reshape:
+            non_zero_row = row[np.nonzero(row)]
+            non_zero_list.append(non_zero_row)
+
+        fig, ax = plt.subplots(figsize=(6,15))
+        ax.boxplot(non_zero_list,vert=False,showfliers=False)
+        ax.invert_yaxis()
+        ax.set_xlabel('Intensity',fontweight='bold',fontsize=15)
+        ax.set_ylabel('Slice',fontweight='bold',fontsize=15)
+        ax.tick_params(axis='both', which='both', labelsize=10)
+        labels = ax.get_xticklabels() + ax.get_yticklabels()
+        labels = [label.set_fontweight('bold') for label in labels]
+        # plt.show()
+        return fig
+                
+    def display_norm_plot(self, matrix):
+
+        self.norm_plot_frame = ctk.CTkScrollableFrame(self.norm_plot,height =400,width =400)
+        self.norm_plot_frame.columnconfigure(0,weight=1)
+        self.norm_plot_frame.rowconfigure(0,weight=1)
+        self.norm_plot_frame.grid(row=0,column=0,sticky="nsew")
+        fig = self.norm_boxplot(matrix)
+        canvas = FigureCanvasTkAgg(fig, master=self.norm_plot_frame)  # A tk.DrawingArea
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=0,column=0)
+
+
+
+
+    # def display_animation(self):
+
+    #     for children in self.animation.winfo_children():
+    #         children.destroy()
+
+    #     self.ani_fig, self.ani_ax = plt.subplots(figsize=(9, 6))
+    #     self.current_frame = 0
+    #     self.ani = animation.FuncAnimation(
+    #         self.ani_fig,
+    #         self.update_animation_plot,
+    #         frames=len(self.norm_compound_matrix),
+    #         interval=100,
+    #     )
+
+    #     # Embed the plot in the Tkinter window
+    #     self.animation_canvas = FigureCanvasTkAgg(self.ani_fig, master=self.animation)
+    #     self.animation_canvas_widget = self.animation_canvas.get_tk_widget()
+    #     self.animation_canvas_widget.grid(row=0, column=0)
+    #     self.animation_slider = ctk.CTkSlider(
+    #         self.animation,
+    #         from_=0,
+    #         to=len(self.compound_matrix) - 1,
+    #         command=self.animation_slider_changed,
+    #     )
+    #     self.animation_slider.grid(row=1, column=0)
+    #     self.animation_slider.columnconfigure(0, weight=1)
+    #     self.animation_slider.columnconfigure(0, weight=1)
+
+    # def animation_slider_changed(self, event):
+    #     frame = int(float(self.animation_slider.get()))
+    #     if frame != self.current_frame:
+    #         self.update_animation_plot(frame)
+    #         self.ani.event_source.stop()
+    #         self.animation_canvas.draw()
+
+    # def update_animation_plot(self, frame):
+    #     # frame = int(float(self.animation_slider.get()))
+    #     self.ani_ax.clear()
+    #     if self.color_map_dropdown.get() == "magma":
+    #         self.ani_ax.imshow(
+    #             self.compound_matrix[frame], cmap=new_cmap1, vmin=0, vmax=self.vmax
+    #         )
+    #     elif self.color_map_dropdown.get() == "viridis":
+    #         self.ani_ax.imshow(
+    #             self.compound_matrix[frame], cmap=new_cmap2, vmin=0, vmax=self.vmax
+    #         )
+    #     else:
+    #         self.ani_ax.imshow(self.compound_matrix[frame], cmap="gray")
+    #     self.current_frame = frame

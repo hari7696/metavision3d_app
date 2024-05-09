@@ -277,7 +277,7 @@ class VisualizationStep(ctk.CTkFrame):
 
     def on_label_click(self, event, id):
         print(id)
-        fig = Figure(figsize=(9, 6), dpi=120)
+        fig = Figure(figsize=(6, 6), dpi=100)
         ax = fig.add_subplot(111)
 
         # Add a Matplotlib canvas to the Tkinter frame

@@ -24,7 +24,7 @@ class Markers:
         cluster_list=adata.obs[cluster_param].cat.categories.tolist()
         cluster_list = sorted([int(s) for s in cluster_list])
         for i in range(len(cluster_list)):
-            pvalue_temp=pd.DataFrame(columns=['feature','pvalue','avg_log2FC','abs_avg_log2FC','pct1','pct2','adj_pvalue','cluster','rank'])
+            pvalue_temp=pd.DataFrame(columns=['feature','omics','pvalue','avg_log2FC','abs_avg_log2FC','pct1','pct2','adj_pvalue','cluster','rank'])
             for feature in adata.var.index:
                 if adata2 is not None and feature in adata2.var.index:
                     a=adata[adata.obs[cluster_param]==str(cluster_list[i])][:,feature].X.copy()
@@ -42,7 +42,8 @@ class Markers:
                         mean_b=np.mean(b)
                         avg_log2FC=np.log2(mean_a/mean_b)
                         abs_avg_log2FC=abs(avg_log2FC)
-                        pvalue_feature=pd.DataFrame({'feature':feature,'pvalue':[pvalue],'avg_log2FC':avg_log2FC,'abs_avg_log2FC':abs_avg_log2FC,'pct1':pct1,'pct2':pct2,'cluster':cluster_list[i]})
+                        omics = adata.var.loc[feature,'omics']
+                        pvalue_feature=pd.DataFrame({'feature':feature,'omics':omics,'pvalue':[pvalue],'avg_log2FC':avg_log2FC,'abs_avg_log2FC':abs_avg_log2FC,'pct1':pct1,'pct2':pct2,'cluster':cluster_list[i]})
                         pvalue_temp=pd.concat([pvalue_temp,pvalue_feature],ignore_index=True)
                     else:
                         continue
