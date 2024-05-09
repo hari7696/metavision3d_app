@@ -566,6 +566,7 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge){
   }
   } else {
     for (i in 1:length(clusters)){
+      cat('cluster:',clusters[i],';\n')        
       tryCatch(
         {input_list <- markers[markers$cluster==clusters[i],]$feature
         if (length(input_list)==0){

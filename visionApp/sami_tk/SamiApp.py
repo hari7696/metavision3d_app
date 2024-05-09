@@ -23,8 +23,9 @@ import io
 from functools import partial
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from .visualization_step import VisualizationStep
-
-
+from .normalization_step import NormalizationStep
+import sys
+sys.path.append('../SAMI')
 logger = logging.getLogger(__name__)
 
 
@@ -175,10 +176,10 @@ class SAMIApp(ctk.CTkFrame):
 
         elif choice == "Normalization":
 
-            self.prepare_visualization_dock_type1()
-            self.normalization = self.vis_tabs.add("Normalization")
-            self.norm_plot = self.vis_tabs.add("Norm Slides")
-            self.pre_post_norm = self.vis_tabs.add("Pre-Post norm comparison")
+            self.norm_step = NormalizationStep(self.visualization_tab, self.file_handler)
+            self.norm_step.columnconfigure(0, weight=1)
+            self.norm_step.rowconfigure(0, weight=1)
+            self.norm_step.grid(row=0, column=0, sticky="nsew")
             # self.norm_plot.columnconfigure(0,weight=1)
             # self.norma_regions.columnconfigure(0,weight=1)
 

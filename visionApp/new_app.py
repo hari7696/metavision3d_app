@@ -6,6 +6,8 @@ import os
 from Metavision_tk import MetaVision3DApp
 from sami_tk.SamiApp import SAMIApp
 import logging
+import sys
+sys.path.append('SAMI')
 # Set up logging configuration
 logging.basicConfig(filename='file.log', 
                     level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', filemode='w')
@@ -39,7 +41,6 @@ class VisionApp(ctk.CTk):
                                             values=["3D file","SAMI"],
                                             command=self.change_to_algo_ui,
                                             variable=algo_default_value,
-
                                             )
         self.algo_selection_dropdown.grid(row=0,column=0,padx=(5,0),pady=10)
 
