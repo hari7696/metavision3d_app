@@ -23,7 +23,7 @@ from .colormap import *
 import io
 from functools import partial
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
+from tkinter import messagebox
 # from .visualization_step import VisualizationStep
 import matplotlib.animation as animation
 import time
@@ -49,6 +49,8 @@ class NormalizationStep(ctk.CTkFrame):
         self.normalized_coumpount_matrix = None
 
         self.file_handler = file_handler
+        self.pre_norm_label = None
+        self.post_norm_label = None
         self.create_visualization_dock_type1()
         self.prepare_visualization_dock_type1()
         self.create_normalization_tab()
@@ -142,15 +144,16 @@ class NormalizationStep(ctk.CTkFrame):
         self.vis_tabs = ctk.CTkTabview(self.right_frame)
         self.vis_tabs.grid(row=0, column=0, sticky="nsew", padx=5)
         self.normalization = self.vis_tabs.add("Normalisation")
+        self.norm_plot = self.vis_tabs.add("Norm Plot") 
         self.norm_slides = self.vis_tabs.add("Normalised Slides")
         self.comparison = self.vis_tabs.add("Comparison")
-        self.norm_plot = self.vis_tabs.add("Norm Plot") 
+
 
         self.norm_slides.columnconfigure(0, weight=1)
         self.norm_slides.rowconfigure(0, weight=1)
 
-        self.comparison.columnconfigure(0, weight=1)
-        self.comparison.rowconfigure(0, weight=1)
+        # self.comparison.columnconfigure(0, weight=1)
+        # self.comparison.rowconfigure(0, weight=1)
 
         self.norm_plot.columnconfigure(0, weight=1)
         self.norm_plot.rowconfigure(0, weight=1)
@@ -180,21 +183,23 @@ class NormalizationStep(ctk.CTkFrame):
         self.normalization.rowconfigure(0, weight=1)
 
         self.norm_frame = ctk.CTkFrame(self.normalization)
-        self.norm_frame.grid(row=0, column=0, sticky="nsew", columnspan=2)
+        self.norm_frame.grid(row=0, column=0, sticky="nsew")
+        self.norm_frame.columnconfigure((0,1,2), weight=1)
+        # self.norm_frame.rowconfigure(0, weight=1)
         # self.norm_frame.columnconfigure(0, weight=1)
         # self.norm_frame.rowconfigure(0, weight=1)
 
         # two drop downs, and a run button
         #creating a dropwodn from rownorm
-        label1 = ctk.CTkLabel(self.norm_frame, text="rowNorm" )
+        label1 = ctk.CTkLabel(self.norm_frame, text="RowNorm :" )
         label1.grid(row=0,column=0,padx=(5,0),pady=8,sticky="w")
 
         norm_default_value = ctk.StringVar(value="SumNorm :")
-        self.algo_selection_dropdown = ctk.CTkOptionMenu(master= self.norm_frame,
-                                            values=["SumNorm"],
+        self.algo_selection_dropdown = ctk.CTkComboBox(master= self.norm_frame,
+                                            values=['SumNorm', 'MedianNorm'],
                                             variable=norm_default_value,button_color="#b5b8b0"
                                             )
-        self.algo_selection_dropdown.grid(row=0,column=2,padx=(0,0),pady=8,sticky="w")
+        self.algo_selection_dropdown.grid(row=0,column=1,padx=(0,0),pady=8,sticky="w")
         
 
         # creating a dropdown for transnorm
@@ -202,15 +207,31 @@ class NormalizationStep(ctk.CTkFrame):
         label2.grid(row=1,column=0,padx=(5,0),pady=8,sticky="w")
 
         norm_default_value2 = ctk.StringVar(value="LogTrans2")
-        self.algo_selection_dropdown2 = ctk.CTkOptionMenu(master= self.norm_frame,
-                                            values=["LogTrans2"],
+        self.algo_selection_dropdown2 = ctk.CTkComboBox(master= self.norm_frame,
+                                            values=['LogTrans1', 'LogTrans2'],  
                                             variable=norm_default_value2, button_color="#b5b8b0"
                                             )
-        self.algo_selection_dropdown2.grid(row=1,column=2,padx=(0,0),pady=8,sticky="w")
+        self.algo_selection_dropdown2.grid(row=1,column=1,padx=(0,0),pady=8,sticky="w")
 
         # creating a run button
-        self.run_button = ctk.CTkButton(master=self.norm_frame, text="Run", command=self.run_normalization, width=70)
+        self.run_button = ctk.CTkButton(master=self.norm_frame, text="Run Normalization", command=self.run_normalization, width=70)
         self.run_button.grid(row=2,column=0,padx=(60,0),pady=8,sticky="w")
+
+
+        
+        # self.row_norm_label = ctk.CTkLabel(self.normalization,text="Select row norm:")
+        # self.row_norm_label.grid(row=2,column=0,sticky="nw")
+        # self.algo_selection_dropdown = ctk.CTkComboBox(self.normalization,values=['None','SumNorm', 'MedianNorm'])
+        # self.algo_selection_dropdown.grid(row=2,column=1,sticky="nw")
+
+        # self.trans_norm_label = ctk.CTkLabel(self.normalization,text="Select trans norm:")
+        # self.trans_norm_label.grid(row=3,column=0,sticky="nw")
+        # self.algo_selection_dropdown2 = ctk.CTkComboBox(self.normalization,values=['None','LogTrans1', 'LogTrans2'])
+        # self.algo_selection_dropdown2.grid(row=3,column=1,sticky="nw")
+
+        # self.sami_normalize_btn = ctk.CTkButton(self.normalization,text="Run Normalization",command = self.run_normalization, width=70)
+        # self.sami_normalize_btn.grid(row=5,column=0,padx=5,pady=5,sticky="nw")
+
 
         # 
 
@@ -222,6 +243,9 @@ class NormalizationStep(ctk.CTkFrame):
             timeout_seconds=600,
             waiting_for="File reading",
         )
+
+        if self.file_dropdown.get() == "Select Dataset":
+            messagebox.showerror("Error", "Please select a dataset on the left panel")
 
         # running normalization
         self.normalized_data = create_norm_dataset_gui(self.file_handler.input_data_raw,
@@ -248,9 +272,11 @@ class NormalizationStep(ctk.CTkFrame):
 
         self.display_norm_plot(self.norm_compound_matrix)
         self.norm_done_label = ctk.CTkLabel(self.norm_frame, text="Normalization is running", font = ("Arial", 12))
-        self.norm_done_label.configure(text="Normalization is done, switch to the Normalised slides tab to view the results.")
-        self.norm_done_label.grid(row=3,column=0,padx=(5,0),pady=8,sticky="w")
-        
+        self.norm_done_label.configure(text="Normalization is done.")
+        self.norm_done_label.grid(row=3,column=0,padx=(5, 0),pady=8,sticky="w")
+        self.norm_done_label2 = ctk.CTkLabel(self.norm_frame, text="Normalization is running", font = ("Arial", 12))
+        self.norm_done_label2.configure(text="Switch to the Normalised slides tab to view the results.")
+        self.norm_done_label2.grid(row=4,column=0,padx=(5,0),pady=8,sticky="w")
 
 
     def update_frame_with_file(self, choice):
@@ -392,6 +418,7 @@ class NormalizationStep(ctk.CTkFrame):
         # Turn off axis labels and ticks
         ax.axis("off")
 
+
     def on_label_click_pre_post_norm_comparison(self,  event, id):
         print("comparison", id)
 
@@ -403,15 +430,18 @@ class NormalizationStep(ctk.CTkFrame):
 
         # Add a Matplotlib canvas to the Tkinter frame
         for widget in self.comparison.winfo_children():
+            #if widget != self.pre_norm_label or widget != self.post_norm_label:
             widget.destroy()
         
         # creatded a parent frame for the comparison tab
         self.comp_parent_frame = ctk.CTkFrame(self.comparison)
         self.comp_parent_frame.grid(row=0, column=0, sticky="nsew")
         self.comp_parent_frame.columnconfigure(0, weight=1)
+        self.comp_parent_frame.rowconfigure((0,1,2,3), weight=1)
         # self.comp_parent_frame.rowconfigure(0, weight=1)
 
         #creating a label for pre normalization
+        #if self.pre_norm_label is None:
         self.pre_norm_label = ctk.CTkLabel(self.comp_parent_frame, text="Pre Normalization", font = ("Arial", 12))
         self.pre_norm_label.grid(row=0,column=0,padx=(5,0),pady=8,sticky="w")
         #creating a frame for pre normalization
@@ -421,6 +451,7 @@ class NormalizationStep(ctk.CTkFrame):
         self.pre_norm_frame.rowconfigure(0, weight=1)
 
         #creating a label for post normalization
+        #if self.post_norm_label is None:
         self.post_norm_label = ctk.CTkLabel(self.comp_parent_frame, text="Post Normalization", font = ("Arial", 12))
         self.post_norm_label.grid(row=2,column=0,padx=(5,0),pady=8,sticky="w")
         #creating a frame for post normalization
@@ -435,39 +466,14 @@ class NormalizationStep(ctk.CTkFrame):
         if self.color_map_dropdown.get() == "gray":
             im = ax.imshow(matrix, cmap="gray")
         elif self.color_map_dropdown.get() == "magma":
-            im = ax.imshow(self.compound_matrix[id], cmap=new_cmap1)
-            # cbar = fig.colorbar(
-            #     im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
-            # )
-            # cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
-            # cbar.ax.set_yticklabels(["low", "high"])
-        elif self.color_map_dropdown.get() == "viridis":
-            im = ax.imshow(self.compound_matrix[id], cmap=new_cmap2)
-            # cbar = fig.colorbar(
-            #     im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
-            # )
-            # cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
-            # cbar.ax.set_yticklabels(["low", "high"])
-        else:
-            im = ax.imshow(matrix, cmap="gray")
-
-        # Turn off axis labels and ticks
-        ax2.axis("off")
-
-        canvas = FigureCanvasTkAgg(fig, master=self.post_norm_frame)
-        canvas.get_tk_widget().grid(row=0, column=0)
-        matrix = self.norm_compound_matrix[id]
-        if self.color_map_dropdown.get() == "gray":
-            im = ax.imshow(matrix, cmap="gray")
-        elif self.color_map_dropdown.get() == "magma":
-            im = ax.imshow(self.norm_compound_matrix[id], cmap=new_cmap1)
+            im = ax.imshow(matrix, cmap=new_cmap1)
             cbar = fig.colorbar(
                 im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
             )
             cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
             cbar.ax.set_yticklabels(["low", "high"])
         elif self.color_map_dropdown.get() == "viridis":
-            im = ax.imshow(self.norm_compound_matrix[id], cmap=new_cmap2)
+            im = ax.imshow(matrix, cmap=new_cmap2)
             cbar = fig.colorbar(
                 im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
             )
@@ -478,6 +484,30 @@ class NormalizationStep(ctk.CTkFrame):
 
         # Turn off axis labels and ticks
         ax.axis("off")
+        canvas2 = FigureCanvasTkAgg(fig2, master=self.post_norm_frame)
+        canvas2.get_tk_widget().grid(row=0, column=0)
+        matrix = self.norm_compound_matrix[id]
+        if self.color_map_dropdown.get() == "gray":
+            im2 = ax2.imshow(matrix, cmap="gray")
+        elif self.color_map_dropdown.get() == "magma":
+            im2 = ax2.imshow(self.norm_compound_matrix[id], cmap=new_cmap1)
+            cbar = fig.colorbar(
+                im2, ax=ax2, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+            )
+            cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
+            cbar.ax.set_yticklabels(["low", "high"])
+        elif self.color_map_dropdown.get() == "viridis":
+            im2 = ax2.imshow(self.norm_compound_matrix[id], cmap=new_cmap2)
+            cbar = fig.colorbar(
+                im2, ax=ax2, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+            )
+            cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
+            cbar.ax.set_yticklabels(["low", "high"])
+        else:
+            im2 = ax2.imshow(matrix, cmap="gray")
+
+        # Turn off axis labels and ticks
+        ax2.axis("off")
     @staticmethod
     def norm_boxplot(matrix):
         matrix_reshape = matrix.reshape(matrix.shape[0],-1)

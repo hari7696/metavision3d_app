@@ -317,7 +317,7 @@ class VisualizationStep(ctk.CTkFrame):
         for children in self.animation.winfo_children():
             children.destroy()
 
-        self.ani_fig, self.ani_ax = plt.subplots(figsize=(9, 6))
+        self.ani_fig, self.ani_ax = plt.subplots(figsize=(6, 6), dpi=100)
         self.current_frame = 0
         self.ani = animation.FuncAnimation(
             self.ani_fig,
