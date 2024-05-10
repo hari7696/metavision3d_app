@@ -10,7 +10,7 @@ import sys
 sys.path.append('SAMI')
 # Set up logging configuration
 logging.basicConfig(filename='file.log', 
-                    level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', filemode='w')
+                    level=logging.INFO, format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', filemode='w')
 
 class VisionApp(ctk.CTk):
 

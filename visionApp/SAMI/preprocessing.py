@@ -5,16 +5,19 @@ import scanpy as sc
 import anndata as ad
 from .utils import *
 import re
-
+import logging
+logger = logging.getLogger(__name__)
 
 #load .csv data and return .h5ad files
-def csv2h5ad(data_path,pattern,split=False):
+def csv2h5ad(data_path,pattern,data_saving_path, split=False):
     for file in os.listdir(data_path):
         name, ext = os.path.splitext(file)
         
         if re.match(pattern,file):
+            logger.info(f'csv2h5ad processing {file}')
             split_file = name.split('_')
-            data_temp = pd.read_csv(os.path.join(data_path, file),delimiter=',')
+            data_temp = pd.read_parquet(os.path.join(data_path, file))
+            data_temp =data_temp.rename(columns={'tissue_id':'region'})
             feat_cols = data_temp.columns[3:]
             data_temp = data_temp[data_temp[feat_cols].sum(axis=1)!=0]
             nodefeats = data_temp[feat_cols]
@@ -33,25 +36,28 @@ def csv2h5ad(data_path,pattern,split=False):
             adata.var = varindex
             adata.raw = adata
             
-            adata.write(os.path.join(data_path,f'{split_file[0]}_{split_file[1]}.h5ad'))
+            adata.write(os.path.join(data_saving_path,f'{split_file[0]}_{split_file[1]}.h5ad'))
 
             if split==True:
                 unique_id=data_temp['region'].unique().tolist()
                 for i in range(len(unique_id)):
                     adata_sub=adata[adata.obs['region']==unique_id[i]].copy()
-                    adata_sub.write(os.path.join(data_path,f'{unique_id[i]}_{split_file[1]}.h5ad'))
-
+                    adata_sub.write(os.path.join(data_saving_path,f'{unique_id[i]}_{split_file[1]}.h5ad'))
 
                     
 #merge omics data by coordinates and return .h5ad file
-def pooldata(data_path,pattern,split=False):
+def pooldata(data_path,pattern, data_saving_path, split=False):
     adata_dict={}
     for file in os.listdir(data_path):
         name, ext = os.path.splitext(file)
         
+        # if '_norm' in name:
+            
         if re.match(pattern,file):
+            logger.info(f'pooling OMICS processing {file}')
             split_file = name.split('_')
-            data_temp = pd.read_csv(os.path.join(data_path, file),delimiter=',')
+            data_temp = pd.read_parquet(os.path.join(data_path, file))
+            data_temp =data_temp.rename(columns={'tissue_id':'region'})
             feat_cols = data_temp.columns[3:]
             data_temp = data_temp[data_temp[feat_cols].sum(axis=1)!=0]
             nodefeats = data_temp[feat_cols]
@@ -68,8 +74,8 @@ def pooldata(data_path,pattern,split=False):
             adata_dict[split_file[1]]=adata_temp
 
     #remove duplicate columns between metabolomics and lipidomics from metabolomics
-    common_elements = list(set(adata_dict['metabolomics'].var.index.to_list()).intersection(adata_dict['lipidomics'].var.index.to_list()))
-    adata_dict['metabolomics']=adata_dict['metabolomics'][:,~adata_dict['metabolomics'].var.index.isin(common_elements)]
+    # common_elements = list(set(adata_dict['metabolomics'].var.index.to_list()).intersection(adata_dict['lipidomics'].var.index.to_list()))
+    # adata_dict['metabolomics']=adata_dict['metabolomics'][:,~adata_dict['metabolomics'].var.index.isin(common_elements)]
 
     #merge dataset
     adata=ad.concat(adata_dict,join='inner',axis=1,label='omics')
@@ -84,9 +90,9 @@ def pooldata(data_path,pattern,split=False):
         unique_id=data_temp['region'].unique().tolist()
         for i in range(len(unique_id)):
             adata_sub=adata[adata.obs['region']==unique_id[i]].copy()
-            adata_sub.write(os.path.join(data_path,f'{unique_id[i]}_pool.h5ad'))
+            adata_sub.write(os.path.join(data_saving_path,f'{unique_id[i]}_pool.h5ad'))
         
-    adata.write(os.path.join(data_path,f'{split_file[0]}_pool.h5ad'))
+    adata.write(os.path.join(data_saving_path,f'{split_file[0]}_pool.h5ad'))
     
 
 

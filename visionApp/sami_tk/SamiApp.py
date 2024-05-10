@@ -24,6 +24,7 @@ from functools import partial
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from .visualization_step import VisualizationStep
 from .normalization_step import NormalizationStep
+from .pooling_step import PoolingStep
 import sys
 sys.path.append('../SAMI')
 logger = logging.getLogger(__name__)
@@ -136,26 +137,6 @@ class SAMIApp(ctk.CTkFrame):
         # it goes to parent frame row 1
         self.parent_tab_switch.grid(row=0, column=0, sticky="new", padx=5)
 
-    def prepare_visualization_dock_type2(self):
-        """This visualization is used for the tabs 1. Pooling, 2. Clustering, 3. Clusters Integration, 4. Markers, 5. Pathways
-        A separate tabview is created for this type of visualization, as it doesnt need left and right frames
-        """
-
-        for child in self.visualization_tab.winfo_children():
-            child.destroy()
-
-        self.root_visualization_frame2 = ctk.CTkFrame(
-            self.visualization_tab, bg_color="transparent"
-        )
-        self.root_visualization_frame2.columnconfigure(0, weight=1)
-        # self.root_visualization_frame.columnconfigure(1,weight=2)
-        self.root_visualization_frame2.rowconfigure(0, weight=1)
-        self.root_visualization_frame2.grid(row=0, column=0, sticky="nsew")
-
-        self.vis_tabs2 = ctk.CTkTabview(self.root_visualization_frame2)
-        self.vis_tabs2.grid(row=0, column=0, sticky="nsew", padx=5)
-        self.vis_tabs2.columnconfigure(0, weight=1)
-        self.vis_tabs2.rowconfigure(0, weight=1)
 
     def execute_selected_step(self, choice):
         """
@@ -184,8 +165,11 @@ class SAMIApp(ctk.CTkFrame):
             # self.norma_regions.columnconfigure(0,weight=1)
 
         elif choice == "Pooling":
-            self.prepare_visualization_dock_type2()
-            self.pooling = self.vis_tabs2.add("Pooling")
+            self.pooling_step = PoolingStep(self, self.file_handler)
+            self.pooling_step.columnconfigure(0, weight=1)  
+            self.pooling_step.rowconfigure(0, weight=1)
+            self.pooling_step.grid(row=0, column=0, sticky="nsew")
+
             # self.pooling.columnconfigure(0,weight=1)
 
         elif choice == "Clustering":
