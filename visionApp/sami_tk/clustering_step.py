@@ -1,0 +1,280 @@
+import tkinter as tk
+import customtkinter as ctk
+import pandas as pd
+import os
+import logging
+from multiprocessing import Process, Queue
+
+from .compound_matrix import create_compound_matrix
+
+# from .process_steps import process_state
+import math
+from pylab import Figure
+import numpy as np
+from waiting import wait
+from PIL import Image, ImageTk
+
+# from customtkinter import CTkImage
+from .colormap import *
+import io
+from functools import partial
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+# import queue
+# from .visualization_step import VisualizationStep
+import matplotlib.animation as animation
+import time
+import threading
+from SAMI.preprocessing import pooldata, csv2h5ad
+import logging
+from .timer import TimerApp
+from SAMI.clustering import Clusters
+logger = logging.getLogger(__name__)
+
+class ClusteringStep(ctk.CTkFrame):
+
+    def __init__(self, master, file_handler):
+        super().__init__(
+            master,
+        )
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.isrendering = False
+        self.file_handler = file_handler
+        self.prepare_visualization_dock_type2()
+        self.prep_cluster_options_tab()
+        self.cluster_image_label = None
+        self.image_label = None
+        self.queue = Queue()
+        self.trigger_visz_functions_on_thread_run()
+
+
+
+    def prepare_visualization_dock_type2(self):
+        """This visualization is used for the tabs 1. Pooling, 2. Clustering, 3. Clusters Integration, 4. Markers, 5. Pathways
+        A separate tabview is created for this type of visualization, as it doesnt need left and right frames
+        """
+
+        for child in self.winfo_children():
+            child.destroy()
+
+        self.root_visualization_frame = ctk.CTkFrame(
+            self, bg_color="transparent")
+        self.root_visualization_frame.columnconfigure(0, weight=1)
+        # self.root_visualization_frame.columnconfigure(1,weight=2)
+        self.root_visualization_frame.rowconfigure(0, weight=1)
+        self.root_visualization_frame.grid(row=0, column=0, sticky="nsew")
+
+        self.vis_tabs = ctk.CTkTabview(self.root_visualization_frame)
+        self.vis_tabs.columnconfigure(0, weight=1)
+        self.vis_tabs.rowconfigure(0, weight=1)
+        self.vis_tabs.grid(row=0, column=0, sticky="new", padx=5)
+        
+        self.cluster_tab = self.vis_tabs.add("Clustering")
+        self.cluster_tab.columnconfigure(0, weight=1)
+        self.cluster_tab.rowconfigure((0), weight = 1)
+        self.cluster_tab.rowconfigure((1), weight = 20)
+        self.cluster_tab.rowconfigure((2), weight = 7)
+
+
+        # cluster options tab
+        self.cluster_options = ctk.CTkFrame(self.cluster_tab, bg_color="transparent")
+        self.cluster_options.grid(row=0, column=0, sticky="nsw")
+        # self.cluster_options.columnconfigure(0, weight=1)
+        # self.cluster_options.rowconfigure(0, weight=1)
+
+        # cluster visualization tab
+        self.cluster_visualization = ctk.CTkFrame(self.cluster_tab, bg_color="transparent")
+        self.cluster_visualization.grid(row=1, column=0, sticky="nsew")
+        self.cluster_visualization.columnconfigure(0, weight=1)
+
+        # specific cluster tab
+        self.specific_cluster = ctk.CTkFrame(self.cluster_tab, bg_color="transparent")
+        self.specific_cluster.grid(row=2, column=0, sticky="nsw")
+        self.specific_cluster.columnconfigure(0, weight=5)
+        self.specific_cluster.columnconfigure(1, weight=5)
+        self.specific_cluster.columnconfigure(2, weight=5)
+        self.specific_cluster.columnconfigure(3, weight=5)
+        self.specific_cluster.rowconfigure(0, weight=1)
+        self.specific_cluster.rowconfigure(1, weight=1)
+        # self.specific_cluster.columnconfigure(1, weight=1)
+        # self.specific_cluster.columnconfigure(2, weight=1)
+
+
+    def prep_cluster_options_tab(self):
+        
+        self.cluster_options.columnconfigure(0, weight=1)
+        self.cluster_options.columnconfigure(1, weight=5)
+        self.cluster_options.columnconfigure(2, weight=5)
+        self.cluster_options.columnconfigure(3, weight=5)
+        self.cluster_options.columnconfigure(4, weight=5)
+        self.cluster_options.columnconfigure(5, weight=5)
+        self.cluster_options.columnconfigure(5, weight=15)
+        self.cluster_options.rowconfigure(0, weight=1)
+
+
+        file_name_label = ctk.CTkLabel(self.cluster_options, text="Select File :" )
+        file_name_label.grid(row=0,column=0,padx=(5,0),pady=8,sticky="ew")
+        
+        _ = tk.StringVar(value='choose file')
+
+        path = os.path.join(self.file_handler.working_folder, 'pooled_data')
+        files = os.listdir(path)
+        # print(files)
+        files = [file for file in files if '_pool' in file]
+
+        self.file_selection = ctk.CTkComboBox(master= self.cluster_options,
+                                            values=files,
+                                            variable=_,
+                                            button_color="#b5b8b0",
+                                            width = 200
+                                            )
+        self.file_selection.grid(row=0,column=1,padx=(10,0),pady=8,sticky="ew")
+
+        # write a label for resolution
+        resolution_label = ctk.CTkLabel(self.cluster_options, text="Resolution :")
+        resolution_label.grid(row=0,column=2,padx=(10,0),pady=8,sticky="ew")
+        self.resolution = ctk.CTkEntry(self.cluster_options,placeholder_text="Resolution",width=100)
+        self.resolution.grid(row=0,column=3,padx=(10,0),pady=8,sticky="ew")
+
+        self.cluster_button = ctk.CTkButton(self.cluster_options,text="Run Clustering",command=self.perform_clustering)
+        self.cluster_button.grid(row=0,column=4,padx=(100,0),pady=8,sticky="ew")
+
+        # timer button
+        self.timer = TimerApp(self.cluster_options)
+        self.timer.grid(row=0,column=5,padx=(200,0),pady=8,sticky="w")
+
+        # time constraint
+        self.time_constraint_label = ctk.CTkLabel(self.cluster_options, text="Note : clustering usally takes roughly 10 minutes", text_color="yellow")
+        self.time_constraint_label.grid(row=0,column=6,padx=(10,0),pady=8,sticky="ew")
+
+    def prepare_cluster_module(self, ):
+        selected_file = self.file_selection.get()
+        region = '_'.join(selected_file.split('_')[:-1])
+        modality = selected_file.split('_')[-1].split('.')[0] 
+        # print(region, modality)   
+        res = float(self.resolution.get())
+        # print(res)
+        file_location = os.path.join(*[self.file_handler.working_folder, 'results', 'clustering'])
+        clustered_file = os.path.join(file_location,f'{region}_{modality}_{res}.h5ad')
+        cluster = Clusters(region, 
+                               modality,
+                               res,
+                               os.path.join(self.file_handler.working_folder, 'pooled_data'),
+                               os.path.join(self.file_handler.working_folder))
+        
+        return cluster, clustered_file
+    @staticmethod
+    def clustering(queue, cluster, clustered_file):
+        
+        # checking whether the clustering is already performed or not
+        if not os.path.exists(clustered_file):
+            logger.info("didnt any existing file, Performing clustering ")
+            cluster.clustering()
+        else:
+            logger.info("Clustering already done")
+
+        # sending a message to the queue that thread is completed
+        queue.put("clustering_done")
+
+    def perform_clustering(self):
+        self.timer.reset_timer()
+        self.timer.start_timer()
+        cluster, clustered_file = self.prepare_cluster_module()
+        self.time_constraint_label.configure(text="Note : clustering usally takes roughly 10 minutes")
+        clustering_process = Process(target=self.clustering, args=(self.queue, cluster,clustered_file ))
+        clustering_process.start()
+
+    def trigger_visz_functions_on_thread_run(self):
+
+        try:
+            signal = self.queue.get_nowait()
+            if signal == "clustering_done":
+                logger.info("thread trigger received")
+                self.cluster, _ = self.prepare_cluster_module()
+                self.prepare_cluster_visualization()
+                self.prepare_specific_cluster_vis()
+                self.timer.stop_timer()
+                self.time_constraint_label.configure(text="Clustering Done")
+        except :
+            pass
+        finally:
+            # Schedule the next queue check
+            self.after(10000, self.trigger_visz_functions_on_thread_run)
+            logger.info("checking the queue")
+
+    def prepare_cluster_visualization(self):
+
+        if self.image_label is not None:
+            self.image_label.destroy()
+
+        # waiting till the thread completes the execution
+        # waiting till the thread completes the execution
+        image_location, self.n_clusters = self.cluster.plot_umap_cluster(size=50,show=False)
+
+        self.image_label = ctk.CTkLabel(self.cluster_visualization, width=1400, height=450 )
+        self.image_label.grid(row=0, column=0, sticky="nsew", )
+        self.image_label.columnconfigure(0, weight=1)
+        self.image_label.rowconfigure(0, weight=1)
+
+        ctk_image = ctk.CTkImage(light_image=Image.open(image_location),
+                                     dark_image=None, size = (1400,450))
+
+        self.image_label.configure(image=ctk_image)
+        self.image_label.image = ctk_image 
+
+    def prepare_specific_cluster_vis(self):
+
+        # a row to select the cluster
+        for child in self.specific_cluster.winfo_children():
+            child.destroy()
+
+        label = ctk.CTkLabel(self.specific_cluster, text="Select Cluster :")
+        label.grid(row=0, column=1, padx=(5,0), pady=8, sticky="ew")
+
+        _ = tk.StringVar(value='choose cluster to display')
+        # a combo box to select the cluster
+        clusters = [str(i) for i in range(self.n_clusters)]
+        self.cluster_selection = ctk.CTkComboBox(master= self.specific_cluster,
+                            values=clusters,
+                            variable=_,
+                            button_color="#b5b8b0",
+                            command=self.display_specific_cluster
+                            )
+        self.cluster_selection.grid(row=0,column=2,padx=(10,0),pady=8,sticky="ew")
+
+    def display_specific_cluster(self, choice):
+
+        if self.cluster_image_label is not None:
+            self.cluster_image_label.destroy()
+        
+                # a label for the image
+        self.cluster_image_label = ctk.CTkLabel(self.specific_cluster, width=500, height=350, padx=100)
+        self.cluster_image_label.grid(row=1, column=3, sticky="ew", )
+        self.cluster_image_label.columnconfigure(0, weight=1)
+        self.cluster_image_label.rowconfigure(0, weight=1)
+
+        # attaching image to the label
+        image_location = self.cluster.plot_select_cluster(int(choice),size=50,show=False)
+        ctk_image = ctk.CTkImage(light_image=Image.open(image_location),
+                                     dark_image=None, size = (300,300))
+        self.cluster_image_label.configure(image=ctk_image)
+        self.cluster_image_label.image = ctk_image
+
+       
+
+
+        
+
+        
+
+
+
+
+
+        
+
+
+
+
+
+

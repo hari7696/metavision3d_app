@@ -25,6 +25,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from .visualization_step import VisualizationStep
 from .normalization_step import NormalizationStep
 from .pooling_step import PoolingStep
+from .clustering_step import ClusteringStep
 import sys
 sys.path.append('../SAMI')
 logger = logging.getLogger(__name__)
@@ -165,7 +166,7 @@ class SAMIApp(ctk.CTkFrame):
             # self.norma_regions.columnconfigure(0,weight=1)
 
         elif choice == "Pooling":
-            self.pooling_step = PoolingStep(self, self.file_handler)
+            self.pooling_step = PoolingStep(self.visualization_tab, self.file_handler)
             self.pooling_step.columnconfigure(0, weight=1)  
             self.pooling_step.rowconfigure(0, weight=1)
             self.pooling_step.grid(row=0, column=0, sticky="nsew")
@@ -173,10 +174,12 @@ class SAMIApp(ctk.CTkFrame):
             # self.pooling.columnconfigure(0,weight=1)
 
         elif choice == "Clustering":
-            self.prepare_visualization_dock_type2()
-            self.clustering = self.vis_tabs2.add("Clustering")
-            self.view_clusters = self.vis_tabs2.add("View Clusters")
-            self.view_selective_clusters = self.vis_tabs2.add("View Selective Clusters")
+
+            self.clustering_step = ClusteringStep(self.visualization_tab, self.file_handler)
+            self.clustering_step.columnconfigure(0, weight=1)  
+            self.clustering_step.rowconfigure(0, weight=1)
+            self.clustering_step.grid(row=0, column=0, sticky="nsew")
+
             # self.clustering.columnconfigure(0,weight=1)
         elif choice == "Clusters Integration":
             self.prepare_visualization_dock_type2()

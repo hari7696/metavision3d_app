@@ -120,9 +120,12 @@ class FileOpenbutton(ctk.CTkFrame):
         The field 'region' is adhoc, need to discuss with the team to get the correct field name
 
         """
-        if "region" in df.columns:
-            df = df.rename(columns={"region": "tissue_id"})
-        self.tissue_ids[base_filename] = list(df["tissue_id"].unique())
+        for col in ['Unnamed: 0', 'spotId','raster', 'z', 'Date', ]:
+            if col in df.columns:
+                df = df.drop(col, axis=1)
+        if 'tissue_id' in df.columns:
+            df = df.rename(columns={'tissue_id': 'region'})
+        self.tissue_ids[base_filename] = list(df["region"].unique())
         self.molecule_name[base_filename] = list(df.columns[3:])
         return df
 

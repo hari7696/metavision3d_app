@@ -274,9 +274,6 @@ class NormalizationStep(ctk.CTkFrame):
         self.norm_done_label = ctk.CTkLabel(self.norm_frame, text="Normalization is running", font = ("Arial", 12))
         self.norm_done_label.configure(text="Normalization is done.")
         self.norm_done_label.grid(row=3,column=0,padx=(5, 0),pady=8,sticky="w")
-        self.norm_done_label2 = ctk.CTkLabel(self.norm_frame, text="Normalization is running", font = ("Arial", 12))
-        self.norm_done_label2.configure(text="Switch to the Normalised slides tab to view the results.")
-        self.norm_done_label2.grid(row=4,column=0,padx=(5,0),pady=8,sticky="w")
 
 
     def update_frame_with_file(self, choice):
