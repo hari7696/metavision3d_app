@@ -276,7 +276,7 @@ class VisualizationStep(ctk.CTkFrame):
         label.bind("<Button-1>", partial(self.on_label_click, id=id))
 
     def on_label_click(self, event, id):
-        print(id)
+        #print(id)
         fig = Figure(figsize=(6, 6), dpi=100)
         ax = fig.add_subplot(111)
 

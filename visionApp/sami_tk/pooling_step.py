@@ -70,20 +70,20 @@ class PoolingStep(ctk.CTkFrame):
     def creating_pooling_tab(self):
 
         self.pooling_tab = self.vis_tabs.add("Pooling")
-        # self.pooling_tab.columnconfigure(0, weight=1)
-        # self.pooling_tab.rowconfigure(0, weight=1)
-        # self.pooling_frame = ctk.CTkFrame(self.pooling_tab)
-        # self.pooling_frame.grid(row=0, column=0, sticky="new")
-        # self.pooling_frame.columnconfigure(0, weight=1)
-        # # self.pooling_frame.columnconfigure((0,1,2), weight=(1,1,1))
+        self.pooling_tab.columnconfigure(0, weight=1)
+        self.pooling_tab.rowconfigure(0, weight=1)
+        self.pooling_frame = ctk.CTkFrame(self.pooling_tab)
+        self.pooling_frame.grid(row=0, column=0, sticky="new")
+        self.pooling_frame.columnconfigure(0, weight=1)
+        # self.pooling_frame.columnconfigure((0,1,2), weight=(1,1,1))
         # self.pooling_frame.rowconfigure(0, weight=1)
 
         # writing a ahead label about functionalty
-        self.head_label = ctk.CTkLabel(self.pooling_tab, text="Pooling of the matrix" , font=("Arial", 20))
+        self.head_label = ctk.CTkLabel(self.pooling_frame, text="Pooling of the matrix" , font=("Arial", 20))
         self.head_label.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
 
         # making a button to start the pooling  
-        self.pooling_button = ctk.CTkButton(self.pooling_tab, text="Start Pooling", command=self.start_pooling, width=70)
+        self.pooling_button = ctk.CTkButton(self.pooling_frame, text="Start Pooling", command=self.start_pooling, width=70)
         self.pooling_button.grid(row=1, column=0, sticky="nw", padx=5, pady=5)
 
     def start_pooling(self):

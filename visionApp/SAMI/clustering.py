@@ -1,31 +1,34 @@
 import os
 import scanpy as sc
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 import string
 import pandas as pd
 import numpy as np
 
 class Clusters:
-    def __init__(self, region, modality, resolution):
+    def __init__(self, region, modality, resolution, pooled_data_folder, working_folder):
         self.region = region
         self.modality = modality
         self.resolution = round(resolution,1)
+        self.pooled_data_folder = pooled_data_folder
+        self.working_folder = working_folder
+        self.file_path = os.path.join(*[self.working_folder, 'results', 'clustering'])
 
     def clustering(self):
-        adata=sc.read(os.path.join('../datasets/',f'{self.region}_{self.modality}.h5ad'))
+        adata=sc.read(os.path.join(self.pooled_data_folder,f'{self.region}_{self.modality}.h5ad'))
         sc.pp.pca(adata)
         sc.pp.neighbors(adata,n_pcs=20)
         sc.tl.umap(adata)
         sc.tl.leiden(adata,resolution=self.resolution)
 
-        file_path = '../results/clustering'
-        if not os.path.exists(file_path):
-            os.makedirs(file_path)
-        adata.write(os.path.join(file_path,f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
+        if not os.path.exists(self.file_path):
+            os.makedirs(self.file_path)
+        adata.write(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
     
     
     def plot_umap_cluster(self,size=50,show=False):
-        adata = sc.read(os.path.join('../results/clustering',f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
+        adata = sc.read(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
         color='leiden'
         clusters_colors = dict(zip([str(i) for i in range(102)], sc.pl.palettes.default_102))
         colorlist=adata.obs[color].cat.categories.tolist()
@@ -55,16 +58,17 @@ class Clusters:
             show=False
         )
         
-        plt.savefig(os.path.join('../results/clustering',f'{self.region}_{self.modality}_{self.resolution}_umap_{n_cluster}.png'),dpi=400)
+        plt.savefig(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_umap_{n_cluster}.png'),dpi=400)
         
         if show==False:
             plt.close()
         else:
             plt.show()
-    
+
+        return os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_umap_{n_cluster}.png'), len(colorlist)
     
     def plot_cluster(self,size=50,show=False):
-        adata = sc.read(os.path.join('../results/clustering',f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
+        adata = sc.read(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
         color='leiden'
         clusters_colors = dict(zip([str(i) for i in range(102)], sc.pl.palettes.default_102))
         colorlist=adata.obs[color].cat.categories.tolist()
@@ -82,14 +86,15 @@ class Clusters:
             show=False
         )
 
-        plt.savefig(os.path.join('../results/clustering',f'{self.region}_{self.modality}_{self.resolution}_{n_cluster}.png'),dpi=400)
+        plt.savefig(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_{n_cluster}.png'),dpi=400)
         if show==False:
             plt.close()
         else:
             plt.show()
+        return os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_{n_cluster}.png')
     
     def plot_select_cluster(self,cluster,size=50,show=False):
-        adata = sc.read(os.path.join('../results/clustering',f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
+        adata = sc.read(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
         clusters_colors = dict(zip([str(i) for i in range(102)], sc.pl.palettes.default_102))
         
         if isinstance(cluster, int):
@@ -109,11 +114,13 @@ class Clusters:
             palette=palette,
             show=False
         )
-        plt.savefig(os.path.join('../results/clustering/',f'{self.region}_{self.modality}_{self.resolution}_{cluster}.png'),dpi=400) 
+        plt.savefig(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_{cluster}.png'),dpi=400) 
         if show==False:
             plt.close()
         else:
             plt.show()
+
+        return os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_{cluster}.png')
     
 class Cluster_Integration:
     def __init__(self,adata,adata_ref):

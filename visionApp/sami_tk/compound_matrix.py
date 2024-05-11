@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 
 def create_compound_matrix(data, col="result", roi=False, reverse=False):
     # print(data.columns)
-    data = data.dropna(subset=["tissue_id", col])
+    data = data.dropna(subset=["region", col])
     # print(len(data))
     # print("df initial:",np.count_nonzero(data[col]))
 
-    unique_tissue_ids = data["tissue_id"].unique()
+    unique_tissue_ids = data["region"].unique()
     nslice = len(unique_tissue_ids)
     # print(nslice)
     # print(np.count_nonzero(data[col]))
@@ -25,7 +25,7 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
     # #print(nslice)
     # matrix = np.zeros((nslice, 200, 350))
     # for ii in range(matrix.shape[0]):
-    for ii, slice in enumerate(data["tissue_id"].unique()):
+    for ii, slice in enumerate(data["region"].unique()):
         data_temp = create_slice_sami(data, slice, col=col, roi=roi, reverse=reverse)
         # print(np.count_nonzero(data_temp))
         # x_vals = int((200 - data_temp.shape[0])/2)
@@ -74,12 +74,12 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
 
 def create_slice_sami(df_all, slice, col="result", roi=False, reverse=False):
 
-    # df_temp = df_all[df_all['tissue_id'] == slice]
+    # df_temp = df_all[df_all["region"] == slice]
     if roi == False:
-        df_temp = df_all[df_all["tissue_id"] == slice]
+        df_temp = df_all[df_all["region"] == slice]
     else:
         # print("roiiii")
-        df_temp = df_all[(df_all["tissue_id"] == slice) & df_all["roi"].notna()]
+        df_temp = df_all[(df_all["region"] == slice) & df_all["roi"].notna()]
     # print("df_temp:")
     # print("df_temp:")
 
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     )
     moolecules = df.columns[3:]
     ##print(df.columns)
-    df = df.rename(columns={"region": "tissue_id"})
+    df = df.rename(columns={"region": "region"})
     temp = create_compound_matrix(df, moolecules[0], roi=False, reverse=True)
     # Pickle the temp variable
     with open("temp2.pkl", "wb") as f:
