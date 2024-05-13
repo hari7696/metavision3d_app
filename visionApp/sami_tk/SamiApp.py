@@ -28,6 +28,7 @@ from .pooling_step import PoolingStep
 from .clustering_step import ClusteringStep
 from .cluster_intergration_step import ClusterIntergrationStep
 from .markers_step import MarkerStep
+from .pathways_step import PathwaysStep
 import sys
 sys.path.append('../SAMI')
 logger = logging.getLogger(__name__)
@@ -199,10 +200,12 @@ class SAMIApp(ctk.CTkFrame):
             self.clustering_step.grid(row=0, column=0, sticky="nsew")
 
         elif choice == "Pathways":
-            self.prepare_visualization_dock_type2()
-            self.pathway = self.vis_tabs2.add("Pathways")
-            self.plot_dot = self.vis_tabs2.add("Plot Dot")
-            self.pathway_network = self.vis_tabs2.add("Pathway Network")
+            
+            self.clustering_step = PathwaysStep(self.visualization_tab, self.file_handler)
+            self.clustering_step.columnconfigure(0, weight=1)  
+            self.clustering_step.rowconfigure(0, weight=1)
+            self.clustering_step.grid(row=0, column=0, sticky="nsew")
+
 
     def handle_choice_visualization(self, choice):
         pass
