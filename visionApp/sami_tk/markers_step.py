@@ -194,7 +194,7 @@ class MarkerStep(ctk.CTkFrame):
         self.timer.grid(row=0,column=13,padx=(5,5),pady=2,sticky="w")
 
         # time constraint
-        self.time_constraint_label = ctk.CTkLabel(self.options_panel, text = "" text_color="yellow")
+        self.time_constraint_label = ctk.CTkLabel(self.options_panel, text="", text_color="yellow")
         self.time_constraint_label.grid(row=0,column=14,padx=(2,0),pady=2,sticky="w")
 
     def generate_markers(self):
