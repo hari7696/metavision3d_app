@@ -5,6 +5,8 @@ plt.switch_backend('agg')
 import string
 import pandas as pd
 import numpy as np
+import logging
+logger = logging.getLogger(__name__)
 
 class Clusters:
     def __init__(self, region, modality, resolution, pooled_data_folder, working_folder):
@@ -123,35 +125,43 @@ class Clusters:
         return os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_{cluster}.png')
     
 class Cluster_Integration:
-    def __init__(self,adata,adata_ref):
+    def __init__(self,adata,adata_ref, working_folder):
         self.adata = adata
         self.adata_ref = adata_ref
+        self.working_folder = working_folder
         self.region1, self.modality1, self.resolution1 =self.splitname(adata)
         self.region2, self.modality2, self.resolution2 =self.splitname(adata_ref)
         
     def integrate(self):
-        adata1 = sc.read(f'../results/clustering/{self.adata}')
-        adata2 = sc.read(f'../results/clustering/{self.adata_ref}')
+        adata1 = sc.read(os.path.join(self.working_folder , self.adata))
+        adata2 = sc.read(os.path.join(self.working_folder , self.adata_ref))
         var_names = adata1.var_names.intersection(adata2.var_names)
         adata1.obs['sample'] = self.region1
         adata2.obs['sample'] = self.region2
         sc.tl.ingest(adata1,adata2,obs='leiden')
         
-        adata1.write(f'../results/clustering/{self.region1}_integrated.h5ad')
-        adata2.write(f'../results/clustering/{self.region2}_integrated.h5ad')
+        adata1.write(os.path.join(self.working_folder, f'{self.region1}_integrated.h5ad'))
+        adata2.write(os.path.join(self.working_folder, f'{self.region2}_integrated.h5ad'))
         
     def splitname(self,adata):
-        name,_ = os.path.splitext(adata)
-        region, modality, resolution = name.split('_')
+        # name,_ = os.path.splitext(adata)
+        # region, modality, resolution = name.split('_')
+        # return region, modality, resolution
+        # changed for GUI braoder handling
+        name = adata.strip('.h5ad')
+        #region, modality, resolution = name.split('_')
+        resolution = name.split('_')[-1]
+        modality = name.split('_')[-2]
+        region = '_'.join(name.split('_')[:-2])
+
         return region, modality, resolution
     
-    def plot_umap_cluster(self,region,size=50,show=False):
-        adata = sc.read(os.path.join('../results/clustering',f'{region}_integrated.h5ad'))
+    def plot_umap_cluster(self,region, size=50,show=False):
+        adata = sc.read(os.path.join(self.working_folder,f'{region}_integrated.h5ad'))
         color='leiden'
         clusters_colors = dict(zip([str(i) for i in range(102)], sc.pl.palettes.default_102))
         colorlist=adata.obs[color].cat.categories.tolist()
         n_cluster=str(len(colorlist))
-
         fig, axs = plt.subplots(1, 2, figsize=(30, 10))
 
         sc.pl.umap(
@@ -177,26 +187,29 @@ class Cluster_Integration:
             show=False
         )
 
-        plt.savefig(os.path.join('../results/clustering',f'{region}_umap_integrated.png'),dpi=400)
+        plt.savefig(os.path.join(self.working_folder,f'{region}_umap_integrated.png'),dpi=400)
 
         if show==False:
             plt.close()
         else:
             plt.show()
+
+        return os.path.join(self.working_folder,f'{region}_umap_integrated.png'), len(colorlist)
             
     def plot_overlap_umap(self,show=False):
-        adata1 = sc.read(os.path.join('../results/clustering',f'{self.region1}_integrated.h5ad'))
-        adata2 = sc.read(os.path.join('../results/clustering',f'{self.region2}_integrated.h5ad'))
+        adata1 = sc.read(os.path.join(self.working_folder,f'{self.region1}_integrated.h5ad'))
+        adata2 = sc.read(os.path.join(self.working_folder,f'{self.region2}_integrated.h5ad'))
         adata_concat = adata2.concatenate(adata1, batch_categories=[self.region2,self.region1])
         fig,ax = plt.subplots(figsize=(10,8))
         plt.subplots_adjust(left=0.1,right=0.7)
         sc.pl.umap(adata_concat,color='batch',title=f'{self.region1} vs {self.region2}',size=5,legend_fontsize=20,ax=ax,show=False)
         
-        plt.savefig(f'../results/clustering/{self.region1}_{self.region2}_umap_overlap.png',dpi=200)
+        plt.savefig( os.path.join(self.working_folder , f'{self.region1}_{self.region2}_umap_overlap.png'),dpi=200)
         if show==False:
             plt.close()
         else:
             plt.show()
+        return os.path.join(self.working_folder , f'{self.region1}_{self.region2}_umap_overlap.png')
             
             
     def plot_select_cluster(self,region,cluster,size=50,show=False):
