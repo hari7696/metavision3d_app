@@ -27,6 +27,7 @@ from .normalization_step import NormalizationStep
 from .pooling_step import PoolingStep
 from .clustering_step import ClusteringStep
 from .cluster_intergration_step import ClusterIntergrationStep
+from .markers_step import MarkerStep
 import sys
 sys.path.append('../SAMI')
 logger = logging.getLogger(__name__)
@@ -191,12 +192,11 @@ class SAMIApp(ctk.CTkFrame):
             self.clustering_step.rowconfigure(0, weight=1)
             self.clustering_step.grid(row=0, column=0, sticky="nsew")
 
-
         elif choice == "Markers":
-            self.prepare_visualization_dock_type2()
-            self.markers = self.vis_tabs2.add("Markers")
-            self.circular_tree = self.vis_tabs2.add("Circular Tree")
-            self.volcano_plot = self.vis_tabs2.add("Volcano Plot")
+            self.clustering_step = MarkerStep(self.visualization_tab, self.file_handler)
+            self.clustering_step.columnconfigure(0, weight=1)  
+            self.clustering_step.rowconfigure(0, weight=1)
+            self.clustering_step.grid(row=0, column=0, sticky="nsew")
 
         elif choice == "Pathways":
             self.prepare_visualization_dock_type2()
