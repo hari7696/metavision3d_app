@@ -26,6 +26,7 @@ from .visualization_step import VisualizationStep
 from .normalization_step import NormalizationStep
 from .pooling_step import PoolingStep
 from .clustering_step import ClusteringStep
+from .cluster_intergration_step import ClusterIntergrationStep
 import sys
 sys.path.append('../SAMI')
 logger = logging.getLogger(__name__)
@@ -106,11 +107,13 @@ class SAMIApp(ctk.CTkFrame):
 
         if self.dropdown_file_type_single_multi.get() == "Single file":
             values = [
-                "Visualization",
-                "Normalization",
-                "Pooling",
-                "Clustering",
-                "Markers",
+            "Visualization",
+            "Normalization",
+            "Pooling",
+            "Clustering",
+            "Clusters Integration",
+            "Markers",
+            "Pathways",
             ]
 
         self.process_step = ctk.CTkSegmentedButton(
@@ -182,10 +185,12 @@ class SAMIApp(ctk.CTkFrame):
 
             # self.clustering.columnconfigure(0,weight=1)
         elif choice == "Clusters Integration":
-            self.prepare_visualization_dock_type2()
-            self.intergration = self.vis_tabs2.add("Integration")
-            self.compare_clusters = self.vis_tabs2.add("Compare Integrations")
-            self.overlay_umap = self.vis_tabs2.add("Overlay uMap")
+
+            self.clustering_step = ClusterIntergrationStep(self.visualization_tab, self.file_handler)
+            self.clustering_step.columnconfigure(0, weight=1)  
+            self.clustering_step.rowconfigure(0, weight=1)
+            self.clustering_step.grid(row=0, column=0, sticky="nsew")
+
 
         elif choice == "Markers":
             self.prepare_visualization_dock_type2()
