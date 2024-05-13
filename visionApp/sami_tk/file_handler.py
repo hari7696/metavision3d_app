@@ -43,6 +43,7 @@ class FileOpenbutton(ctk.CTkFrame):
                 self, text="Open Folder", command=self.open_multiple_files
             )
             logger.debug("multi file type selected")
+            self.file_type = "multi"
 
         elif choice == "Single file":
 
@@ -50,6 +51,7 @@ class FileOpenbutton(ctk.CTkFrame):
                 self, text="Open File", command=self.open_file
             )
             logger.debug("Single file type selected")
+            self.file_type = "single"
 
         self.f_open_btn.grid(row=0, column=0, padx=(0, 0), pady=(2, 2), sticky="w")
 
