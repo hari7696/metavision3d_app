@@ -538,7 +538,8 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folde
     if (merge==TRUE){
 
       csv_file <- paste(results_folder, 'ora_metgly_merge.csv', sep = '/')
-      if (file.exists(csv_file)){
+      # if (file.exists(csv_file)){
+      if (FALSE){
         existing <- read.csv(csv_file)
         combined <- rbind(existing,ora)
         write.csv(combined, csv_file ,row.names=FALSE)
@@ -547,7 +548,8 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folde
       }
     }else{
       csv_file2 <- paste(results_folder, 'ora_metabolomics_glycomics.csv', sep = '/')
-      if (file.exists(csv_file2)){
+      # if (file.exists(csv_file2)){
+      if (FALSE){
         existing <- read.csv(csv_file2)
         combined <- rbind(existing,ora)
         write.csv(combined, csv_file2 ,row.names=FALSE)
@@ -558,7 +560,8 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folde
     nonmatch_list <- unique(nonmatch_list)
     nonmatch <- data.frame(nonmatch=unlist(nonmatch_list))
     csv_file3 <- paste(results_folder, 'nonmatch_metabolomics_glycomics.csv', sep = '/')
-    if (file.exists(csv_file3)){
+    # if (file.exists(csv_file3)){
+    if (FALSE){
       existing <- read.csv(csv_file3)
       combined <- rbind(existing,nonmatch)
       write.csv(combined,csv_file3,row.names=FALSE)
@@ -604,7 +607,8 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folde
     if (merge==TRUE){
       
       csv_file <- paste(results_folder, 'ora_lipid_merge.csv', sep = '/')
-      if (file.exists(csv_file)){
+      # if (file.exists(csv_file)){
+      if (FALSE){
         existing <- read.csv(csv_file)
         combined <- rbind(existing,ora)
         write.csv(combined,csv_file,row.names = FALSE)
@@ -613,7 +617,8 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folde
       }
     }else{
       csv_file2 <- paste(results_folder, 'ora_lipidomics.csv', sep = '/')
-      if (file.exists(csv_file)){
+      # if (file.exists(csv_file)){
+        if (FALSE){
         existing <- read.csv(csv_file2)
         combined <- rbind(existing,ora)
         write.csv(combined,csv_file2,row.names = FALSE)
@@ -624,7 +629,8 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folde
     nonmatch_list <- unique(nonmatch_list)
     nonmatch <- data.frame(nonmatch=unlist(nonmatch_list))
     csv_file3 <- paste(results_folder, 'nonmatch_lipidomics.csv', sep = '/')
-    if (file.exists(csv_file)){
+    # if (file.exists(csv_file)){
+    if (FALSE){
       existing <- read.csv(csv_file)
       combined <- rbind(existing,nonmatch)
       write.csv(combined,csv_file3,row.names = FALSE)
