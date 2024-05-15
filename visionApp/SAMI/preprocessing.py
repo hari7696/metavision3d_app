@@ -70,13 +70,14 @@ def pooldata(data_path,pattern, data_saving_path, split=False):
             adata_temp.var = varindex
             adata_temp.raw = adata_temp
 
-            print(split_file[1])
-
+            # print(split_file[1])
             adata_dict[split_file[1]]=adata_temp
 
     #remove duplicate columns between metabolomics and lipidomics from metabolomics
     # common_elements = list(set(adata_dict['metabolomics'].var.index.to_list()).intersection(adata_dict['lipidomics'].var.index.to_list()))
     # adata_dict['metabolomics']=adata_dict['metabolomics'][:,~adata_dict['metabolomics'].var.index.isin(common_elements)]
+
+
     adata=ad.concat(adata_dict,join='inner',axis=1,label='omics')
 
     #reset annotation

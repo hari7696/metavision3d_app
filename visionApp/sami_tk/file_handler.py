@@ -61,6 +61,7 @@ class FileOpenbutton(ctk.CTkFrame):
 
         The moment the file is selected, its starts reading the files via threading
         """
+        self.is_files_read = False
         self.filepath = filedialog.askopenfilename(
             filetypes=[("CSV Files", "*.csv"), ("All Files", "*.*")]
         )
@@ -80,7 +81,7 @@ class FileOpenbutton(ctk.CTkFrame):
         Open folder dialog to select multuple files.
         Once the files are selected, they will be read via threading
         """
-
+        self.is_files_read = False
         self.files_path = filedialog.askopenfilenames(title="Select  multiple files")
         logger.info(f"selected files:  {self.files_path}")
         self.working_folder = os.path.dirname(self.files_path[0])
