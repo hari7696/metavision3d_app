@@ -1,27 +1,6 @@
-import tkinter as tk
 import customtkinter as ctk
-import pandas as pd
-import os
 import logging
-from tkinter import filedialog, messagebox
-import threading
-
-# from sami_tk_utilities import open_file, open_multiple_files
-import glob
 from .file_handler import FileOpenbutton
-from .compound_matrix import create_compound_matrix
-
-# from .process_steps import process_state
-import math
-from pylab import Figure
-import numpy as np
-from waiting import wait
-from PIL import Image, ImageTk
-from customtkinter import CTkImage
-from .colormap import *
-import io
-from functools import partial
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from .visualization_step import VisualizationStep
 from .normalization_step import NormalizationStep
 from .pooling_step import PoolingStep
@@ -113,7 +92,6 @@ class SAMIApp(ctk.CTkFrame):
             "Normalization",
             "Pooling",
             "Clustering",
-            "Clusters Integration",
             "Markers",
             "Pathways",
             ]
@@ -205,7 +183,3 @@ class SAMIApp(ctk.CTkFrame):
             self.clustering_step.columnconfigure(0, weight=1)  
             self.clustering_step.rowconfigure(0, weight=1)
             self.clustering_step.grid(row=0, column=0, sticky="nsew")
-
-
-    def handle_choice_visualization(self, choice):
-        pass

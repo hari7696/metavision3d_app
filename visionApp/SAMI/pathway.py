@@ -3,6 +3,7 @@ import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 import networkx as nx
 os.environ["R_HOME"] = r"C:\Program Files\R\R-4.3.3" 
 os.environ["PATH"] += r"C:\Program Files\R\R-4.3.3\bin\x64" + ";" + os.environ["R_HOME"] 
@@ -47,9 +48,9 @@ class Pathway:
         PathwayEnrichment = ro.r['PathwayEnrichment']
         
         if self.modality=='metabolomics_glycomics':
-            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[1],merge=logical_arg[1])
+            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[1],merge=logical_arg[1], results_folder=self.pathways_folder)
         else:
-            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[0],merge=logical_arg[1])
+            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[0],merge=logical_arg[1], results_folder=self.pathways_folder)
         
     def anndict(self):
         anndict = {}
@@ -64,7 +65,7 @@ class Pathway:
     
 
     def plot_dot(self,cluster,scale,height,top=None,show=False):
-        ora_data = pd.read_csv(os.path.join(self.markers_folder ,f'ora_{self.modality}.csv'))
+        ora_data = pd.read_csv(os.path.join(self.pathways_folder ,f'ora_{self.modality}.csv'))
         ora_data['enrichment_ratio'] = ora_data['hits']/ora_data['expected']
         
         if top is None:
@@ -152,7 +153,7 @@ class Pathway:
     
     
     def pathway_network(self,cluster,top=None,show=False):
-        ora_data = pd.read_csv(os.path.join(self.markers_folder ,f'ora_{self.modality}.csv'))
+        ora_data = pd.read_csv(os.path.join(self.pathways_folder ,f'ora_{self.modality}.csv'))
         ora_data['enrichment_ratio'] = ora_data['hits']/ora_data['expected']
         
         if self.modality=='metabolomics_glycomics':
@@ -166,8 +167,10 @@ class Pathway:
             data = ora_data.loc[(ora_data['modality']==self.modality)&(ora_data['cluster']==cluster)&(ora_data['region']==self.region)].head(top)
 
         if data.shape[0]!=0:
+            
+            lib_folder = os.path.join(*[ os.getcwd(), 'visionApp', 'lib'])
 
-            lib = pd.read_csv(f'../lib/{libname}.csv',index_col=0)
+            lib = pd.read_csv( os.path.join(lib_folder, f'{libname}.csv'),index_col=0)
             lib['member']=lib['member'].str.split(';')
             lib = lib.explode('member').reset_index(drop=True)
 
