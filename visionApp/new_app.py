@@ -34,7 +34,17 @@ class VisionApp(ctk.CTk):
         self.parent_frame.rowconfigure(1,weight=10)
 
         self.nav_frame = ctk.CTkFrame(self.parent_frame)
-        self.nav_frame.grid(row=0,column=0,columnspan=2,sticky="new")
+        self.nav_frame.grid(row=0,column=0,sticky="new")
+        self.nav_frame.columnconfigure(0,weight=1)
+        self.nav_frame.columnconfigure(1,weight=1)
+        self.nav_frame.columnconfigure(2,weight=1)
+        self.nav_frame.columnconfigure(3,weight=1)
+        self.nav_frame.columnconfigure(4,weight=15)
+        self.nav_frame.rowconfigure(0,weight=1)
+
+        # self.nav_frame.columnconfigure(5,weight=1)
+        
+        # self.nav_frame.rowconfigure(0,weight=1)
 
         algo_default_value = ctk.StringVar(value="Select the ALgorithm")
         self.algo_selection_dropdown = ctk.CTkOptionMenu(master= self.nav_frame,
@@ -42,7 +52,7 @@ class VisionApp(ctk.CTk):
                                             command=self.change_to_algo_ui,
                                             variable=algo_default_value,
                                             )
-        self.algo_selection_dropdown.grid(row=0,column=0,padx=(5,0),pady=10)
+        self.algo_selection_dropdown.grid(row=0,column=0,padx=(5,5),pady=10, sticky="w")
 
 
         

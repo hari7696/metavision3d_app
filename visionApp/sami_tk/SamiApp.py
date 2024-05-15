@@ -20,16 +20,9 @@ class SAMIApp(ctk.CTkFrame):
         )
         self.columnconfigure(0, weight=1)
         self.nav_frame = nav_frame
-        self.nav_frame.columnconfigure(0, weight=1)
-        self.nav_frame.columnconfigure(2, weight=1)
-        self.nav_frame.columnconfigure(4, weight=1)
-        self.nav_frame.columnconfigure(6, weight=5)
         self.process_step = None
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-
-        # title = ctk.CTkLabel(nav_frame, text="SAMI", fg_color="gray30", corner_radius=6)
-        # title.grid(row=0,column=2,padx =(5,0), pady=(2,2),sticky="w")
         logger.debug("SAMI class initialized")
 
         # for the SAMI UI, we need to choose whether the processing needs to be done on single file or multiple files
@@ -42,7 +35,7 @@ class SAMIApp(ctk.CTkFrame):
             variable=file_type_variable,
         )
         self.dropdown_file_type_single_multi.grid(
-            row=0, column=2, padx=(5, 0), pady=(2, 2), sticky="w"
+            row=0, column=1, padx=(5, 0), pady=(2, 2), sticky="w"
         )
 
         self.create_process_bar()
@@ -59,7 +52,9 @@ class SAMIApp(ctk.CTkFrame):
     def file_open(self, choice):
         self.file_handler = FileOpenbutton(self.nav_frame)
         self.file_handler.file_opening_button(choice)
-        self.file_handler.grid(row=0, column=4, padx=(5, 0), pady=(2, 2), sticky="w")
+        self.file_handler.grid(row=0, column=2, padx=(5, 5), pady=(2, 2), sticky="w", columnspan=2)
+        self.file_handler.columnconfigure(0, weight=1)
+        self.file_handler.columnconfigure(1, weight=1)
         # updating the process bar based on the file type selected
         self.create_process_bar()
 
@@ -100,7 +95,7 @@ class SAMIApp(ctk.CTkFrame):
             master=self.nav_frame, values=values, command=self.execute_selected_step
         )
         self.process_step.grid(
-            row=0, column=6, padx=(25, 0), pady=(2, 2), sticky="w", columnspan=6
+            row=0, column=4, padx=(5, 5), pady=(2, 2), sticky="w"
         )
 
     def create_parent_tab_switch(self):
