@@ -9,7 +9,7 @@ class TimerApp(ctk.CTkFrame):
         super().__init__(master )
 
         # Label to display the timer
-        self.timer_label = ctk.CTkLabel(self, text="0", font=('Helvetica', 12),bg_color = "transparent", width=30)
+        self.timer_label = ctk.CTkLabel(self, text="00:00:00", font=('Helvetica', 12),bg_color = "transparent", width=100)
         self.timer_label.pack(pady=3)
 
         # Timer variable

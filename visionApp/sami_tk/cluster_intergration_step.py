@@ -206,7 +206,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         self.timer.reset_timer()
         self.timer.start_timer()
         self.cluster_int = self.prepare_cluster_module()
-        self.time_constraint_label.configure(text="Note : clustering usally takes roughly 10 minutes")
+        self.time_constraint_label.configure(text="Note : cluster Integration usally takes roughly 10 minutes")
         clustering_process = Process(target=self.cluster_Integration, args=(self.queue, self.cluster_int, 
                                                                    self.integrated_file1, self.integrated_file2))
         clustering_process.start()
