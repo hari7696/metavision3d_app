@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 def create_compound_matrix(data, col="result", roi=False, reverse=False):
+
+    id_to_name = {}
     # print(data.columns)
     data = data.dropna(subset=["region", col])
     # print(len(data))
@@ -37,6 +39,7 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
         # plt.imshow(matrix[ii], cmap='gray')
         # plt.axis('off')
         # plt.show()
+        id_to_name[ii] = slice
     zarray = np.zeros((nslice, 200, 350))
     for key in matrix:
         # print(zarray.shape[0] / matrix[key].shape[0])
@@ -69,7 +72,7 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
         ] = resized_image
         # plt.imshow(zarray[key], cmap='gray')
         # plt.show()
-    return zarray
+    return zarray, id_to_name
 
 
 def create_slice_sami(df_all, slice, col="result", roi=False, reverse=False):

@@ -59,16 +59,17 @@ class VisualizationStep(ctk.CTkFrame):
         # file selection and color map display frame
         self.left_frame.columnconfigure(0, weight=1)
         self.left_frame.rowconfigure(0, weight=1)
+        self.left_frame.rowconfigure(1, weight=10)
+
         self.selection_frame = ctk.CTkFrame(self.left_frame)
         self.selection_frame.grid(
-            row=0, column=0, sticky="nsew", padx=5, pady=1, columnspan=2
-        )
+            row=0, column=0, sticky="nsew", padx=5, pady=1)
         # self.file_selection_frame.columnconfigure(0,weight=1)
-        self.selection_frame.rowconfigure(0, weight=1)
+        # self.selection_frame.rowconfigure(0, weight=1)
 
         # File dropdown
         self.var_file_name = ctk.CTkLabel(self.selection_frame, text="Select File: ")
-        self.var_file_name.grid(row=0, column=0, padx=(5, 0), pady=10, sticky="e")
+        self.var_file_name.grid(row=0, column=0, padx=(5, 5), pady=10, sticky="e")
 
         # waiting till the input files are ready
         wait(
@@ -77,31 +78,44 @@ class VisualizationStep(ctk.CTkFrame):
             waiting_for="File reading",
         )
         default_value = ctk.StringVar(value="Select Dataset")
-        self.file_dropdown = ctk.CTkOptionMenu(
+        self.file_dropdown = ctk.CTkComboBox(
             master=self.selection_frame,
             values=self.file_handler.base_files,
             command=self.update_frame_with_file,
             variable=default_value,
         )
-        self.file_dropdown.grid(row=0, column=2, padx=(5, 0), pady=10, sticky="e")
+        self.file_dropdown.grid(row=0, column=1, padx=(5, 5), pady=10, sticky="e")
 
         # Color map dropdown
         self.var_color_map = ctk.CTkLabel(
             self.selection_frame, text="Select colorMap: "
         )
-        self.var_color_map.grid(row=0, column=4, padx=(5, 0), pady=10, sticky="e")
+        self.var_color_map.grid(row=0, column=2, padx=(5, 5), pady=10, sticky="e")
         default_value2 = ctk.StringVar(value="gray")
-        self.color_map_dropdown = ctk.CTkOptionMenu(
+        self.color_map_dropdown = ctk.CTkComboBox(
             master=self.selection_frame,
             values=["gray", "magma", "viridis"],
-            command=self.update_frame_with_file,
+            command=self.update_frame_with_selected_color_map,
             variable=default_value2,
         )
-        self.color_map_dropdown.grid(row=0, column=6, padx=(5, 0), pady=10, sticky="e")
+        self.color_map_dropdown.grid(row=0, column=3, padx=(5, 0), pady=10, sticky="e")
+
+        #molecule dropdown
+        self.var_molecule = ctk.CTkLabel(self.selection_frame, text="Select Molecule:")
+        self.var_molecule.grid(row=0, column=4, padx=(5, 5), pady=10, sticky="e")
+        # a dropdown to select the molecule
+        default_value3 = ctk.StringVar(value="Select Molecule")
+        self.molecule_dropdown = ctk.CTkComboBox(
+            master=self.selection_frame,
+            values=[],#self.file_handler.molecule_name[self.file_dropdown.get()],
+            command=self.update_frame_with_molecule,
+            variable=default_value3,
+        )
+        self.molecule_dropdown.grid(row=0, column=5, padx=(5, 0), pady=10, sticky="e")
 
         # scrollable frame on the left side of the visualization frame
         self.slides_display_frame = ctk.CTkScrollableFrame(self.left_frame, height=500)
-        self.slides_display_frame.grid(row=1, column=0, padx=5, pady=1, sticky="sew")
+        self.slides_display_frame.grid(row=1, column=0, padx=5, pady=1, sticky="new")
 
         # loading label
         # self.display_processing()
@@ -116,8 +130,8 @@ class VisualizationStep(ctk.CTkFrame):
         self.right_frame.rowconfigure(0, weight=1)
         self.vis_tabs = ctk.CTkTabview(self.right_frame)
         self.vis_tabs.grid(row=0, column=0, sticky="nsew", padx=5)
-        self.slide = self.vis_tabs.add("Slide")
-        self.animation = self.vis_tabs.add("Animation")
+        self.slide = self.vis_tabs.add("Tissues")
+        # self.animation = self.vis_tabs.add("Animation")
 
     def prepare_visualization_dock_type1(self):
         """This visualization is used for the tabs 1. Visualization and 2. Normalization
@@ -150,16 +164,15 @@ class VisualizationStep(ctk.CTkFrame):
             timeout_seconds=600,
             waiting_for="File reading",
         )
-        logging.info(
-            f"file_inspection: {self.file_handler.input_data_raw[self.file_dropdown.get()].columns}"
-        )
-        logging.info(
-            f"chosen molecule: {self.file_handler.molecule_name[self.file_dropdown.get()][0]}"
-        )
+        logging.info(f"file_inspection: {self.file_handler.input_data_raw[self.file_dropdown.get()].columns}")
+        logging.info(f"chosen molecule: {self.file_handler.molecule_name[self.file_dropdown.get()][0]}")
 
-        self.compound_matrix = create_compound_matrix(
+        #dynamically updating the molecule dropdown
+        self.molecule_dropdown.configure(values= self.file_handler.molecule_name[self.file_dropdown.get()])
+        self.molecule_dropdown.set(self.file_handler.molecule_name[self.file_dropdown.get()][0])
+        self.compound_matrix, self.dict_id_to_tissue_name = create_compound_matrix(
             self.file_handler.input_data_raw[self.file_dropdown.get()],
-            self.file_handler.molecule_name[self.file_dropdown.get()][0],
+            self.molecule_dropdown.get(),
             roi=False,
             reverse=True,
         )
@@ -167,25 +180,21 @@ class VisualizationStep(ctk.CTkFrame):
         # time.sleep(5)
         self.create_frames_in_slides_display_frame(self.compound_matrix)
 
+
     def update_frame_with_selected_color_map(self, choice):
 
-        wait(
-            lambda: self.file_handler.is_files_read,
-            timeout_seconds=600,
-            waiting_for="File reading",
-        )
-        logging.info(
-            f"file_inspection: {self.file_handler.input_data_raw[choice].columns}"
-        )
-        logging.info(f"chosen molecule: {self.file_handler.molecule_name[choice][0]}")
+        self.create_frames_in_slides_display_frame(self.compound_matrix)
 
+    
+    def update_frame_with_molecule(self, choice):
         self.compound_matrix = create_compound_matrix(
-            self.file_handler.input_data_raw[choice],
-            self.file_handler.molecule_name[choice][0],
+            self.file_handler.input_data_raw[self.file_dropdown.get()],
+            choice,
             roi=False,
             reverse=True,
         )
 
+        # time.sleep(5)
         self.create_frames_in_slides_display_frame(self.compound_matrix)
 
     def create_frames_in_slides_display_frame(self, data):
@@ -208,18 +217,18 @@ class VisualizationStep(ctk.CTkFrame):
         for i in range(slices):
             frame = ctk.CTkFrame(
                 self.slides_display_frame,
-                width=100,
-                height=80,
-                border_width=2,
+                width=220,
+                height=140,
+                border_width=4,
                 border_color="#474644",
             )
-            frame.grid(row=i // grid_cols, column=i % grid_cols, padx=2, pady=2, sticky="nsew") 
+            frame.grid(row=i // grid_cols, column=i % grid_cols, padx=3, pady=3, sticky="nsew") 
             # print(data[i])
             self.frames.append((frame, data[i], i))
 
         # Schedule the image processing after the window is rendered
         self.after(100, self.process_images)
-        self.after(500, self.display_animation())
+        # self.after(500, self.display_animation())
 
     def process_images(self):
         for frame, image_array, id in self.frames:
@@ -228,7 +237,7 @@ class VisualizationStep(ctk.CTkFrame):
 
     def display_image_in_frame(self, image_array, frame, id):
 
-        fig = Figure(figsize=(1, 0.57), dpi=100)
+        fig = Figure(figsize=(2, 1.1), dpi=100)
         ax = fig.add_subplot(111)
         ax.set_facecolor("black")
         fig.patch.set_facecolor("black")
@@ -254,8 +263,26 @@ class VisualizationStep(ctk.CTkFrame):
         # Create a label to display the image
         label = ctk.CTkLabel(frame, image=photo, text="")
         label.image = photo  # Keep a reference
-        label.grid(row=0, column=0, padx=2, pady=2)
+        label.grid(row=0, column=0, padx=4, pady=4)
         label.bind("<Button-1>", partial(self.on_label_click, id=id))
+
+        label_tissue  = ctk.CTkLabel(frame, text="Tissue: "+str(self.dict_id_to_tissue_name[id]), height = 14)
+        label_tissue.grid(row=1, column=0, padx=2, pady=0)
+
+        #         # Create a hover label
+        # hover_label = ctk.CTkLabel(frame, text="")
+        # hover_label.grid(row=0, column=0, padx=2, pady=2)
+        # hover_label.bind("<Enter>", partial(self.on_hover_enter, id = id))
+        # hover_label.bind("<Leave>", partial(self.on_hover_leave, id = id))
+
+    # def on_hover_enter(self, event):
+    #     # Code to execute when the mouse enters the hover label
+    #     self.hover_label.configure(text="Hovering")
+
+    # def on_hover_leave(self, event):
+    #     # Code to execute when the mouse leaves the hover label
+    #     self.hover_label.configure(text="")
+    
 
     def on_label_click(self, event, id):
         #print(id)
@@ -294,52 +321,52 @@ class VisualizationStep(ctk.CTkFrame):
         # Turn off axis labels and ticks
         ax.axis("off")
 
-    def display_animation(self):
+    # def display_animation(self):
 
-        for children in self.animation.winfo_children():
-            children.destroy()
+    #     for children in self.animation.winfo_children():
+    #         children.destroy()
 
-        self.ani_fig, self.ani_ax = plt.subplots(figsize=(6, 6), dpi=100)
-        self.current_frame = 0
-        self.ani = animation.FuncAnimation(
-            self.ani_fig,
-            self.update_animation_plot,
-            frames=len(self.compound_matrix),
-            interval=100,
-        )
+    #     self.ani_fig, self.ani_ax = plt.subplots(figsize=(6, 6), dpi=100)
+    #     self.current_frame = 0
+    #     self.ani = animation.FuncAnimation(
+    #         self.ani_fig,
+    #         self.update_animation_plot,
+    #         frames=len(self.compound_matrix),
+    #         interval=100,
+    #     )
 
-        # Embed the plot in the Tkinter window
-        self.animation_canvas = FigureCanvasTkAgg(self.ani_fig, master=self.animation)
-        self.animation_canvas_widget = self.animation_canvas.get_tk_widget()
-        self.animation_canvas_widget.grid(row=0, column=0)
-        self.animation_slider = ctk.CTkSlider(
-            self.animation,
-            from_=0,
-            to=len(self.compound_matrix) - 1,
-            command=self.animation_slider_changed,
-        )
-        self.animation_slider.grid(row=1, column=0)
-        self.animation_slider.columnconfigure(0, weight=1)
-        self.animation_slider.columnconfigure(0, weight=1)
+    #     # Embed the plot in the Tkinter window
+    #     self.animation_canvas = FigureCanvasTkAgg(self.ani_fig, master=self.animation)
+    #     self.animation_canvas_widget = self.animation_canvas.get_tk_widget()
+    #     self.animation_canvas_widget.grid(row=0, column=0)
+    #     self.animation_slider = ctk.CTkSlider(
+    #         self.animation,
+    #         from_=0,
+    #         to=len(self.compound_matrix) - 1,
+    #         command=self.animation_slider_changed,
+    #     )
+    #     self.animation_slider.grid(row=1, column=0)
+    #     self.animation_slider.columnconfigure(0, weight=1)
+    #     self.animation_slider.columnconfigure(0, weight=1)
 
-    def animation_slider_changed(self, event):
-        frame = int(float(self.animation_slider.get()))
-        if frame != self.current_frame:
-            self.update_animation_plot(frame)
-            self.ani.event_source.stop()
-            self.animation_canvas.draw()
+    # def animation_slider_changed(self, event):
+    #     frame = int(float(self.animation_slider.get()))
+    #     if frame != self.current_frame:
+    #         self.update_animation_plot(frame)
+    #         self.ani.event_source.stop()
+    #         self.animation_canvas.draw()
 
-    def update_animation_plot(self, frame):
-        # frame = int(float(self.animation_slider.get()))
-        self.ani_ax.clear()
-        if self.color_map_dropdown.get() == "magma":
-            self.ani_ax.imshow(
-                self.compound_matrix[frame], cmap=new_cmap1, vmin=0, vmax=self.vmax
-            )
-        elif self.color_map_dropdown.get() == "viridis":
-            self.ani_ax.imshow(
-                self.compound_matrix[frame], cmap=new_cmap2, vmin=0, vmax=self.vmax
-            )
-        else:
-            self.ani_ax.imshow(self.compound_matrix[frame], cmap="gray")
-        self.current_frame = frame
+    # def update_animation_plot(self, frame):
+    #     # frame = int(float(self.animation_slider.get()))
+    #     self.ani_ax.clear()
+    #     if self.color_map_dropdown.get() == "magma":
+    #         self.ani_ax.imshow(
+    #             self.compound_matrix[frame], cmap=new_cmap1, vmin=0, vmax=self.vmax
+    #         )
+    #     elif self.color_map_dropdown.get() == "viridis":
+    #         self.ani_ax.imshow(
+    #             self.compound_matrix[frame], cmap=new_cmap2, vmin=0, vmax=self.vmax
+    #         )
+    #     else:
+    #         self.ani_ax.imshow(self.compound_matrix[frame], cmap="gray")
+    #     self.current_frame = frame
