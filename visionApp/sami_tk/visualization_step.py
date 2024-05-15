@@ -1,34 +1,16 @@
-import tkinter as tk
 import customtkinter as ctk
-import pandas as pd
-import os
 import logging
-
-# from tkinter import filedialog, messagebox
-# import threading
-# from sami_tk_utilities import open_file, open_multiple_files
-# import glob
-# from .file_handler import FileOpenbutton
 from .compound_matrix import create_compound_matrix
-
-# from .process_steps import process_state
 import math
 from pylab import Figure
 import numpy as np
 from waiting import wait
 from PIL import Image, ImageTk
-
-# from customtkinter import CTkImage
 from .colormap import *
 import io
 from functools import partial
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
-# from .visualization_step import VisualizationStep
 import matplotlib.animation as animation
-import time
-import threading
-
 
 class VisualizationStep(ctk.CTkFrame):
 
