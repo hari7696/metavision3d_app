@@ -10,11 +10,12 @@ logger = logging.getLogger(__name__)
 
 class FileOpenbutton(ctk.CTkFrame):
 
-    def __init__(self, master):
+    def __init__(self, master, queue):
         super().__init__(
             master,
         )
         self.columnconfigure(0, weight=1)
+        self.queue = queue
         self.files_path = None
         self.input_data_raw = {}
         self.is_files_read = False
@@ -23,6 +24,9 @@ class FileOpenbutton(ctk.CTkFrame):
         self.molecule_name = {}
         self.file_type = None
         self.base_files = []
+        self.loading_label = ctk.CTkLabel(self, text="")
+        self.loading_label.grid(row=0, column=1, padx=(0, 0), pady=(2, 2), sticky="w")
+
 
     def file_opening_button(self, choice):
         """
@@ -104,14 +108,14 @@ class FileOpenbutton(ctk.CTkFrame):
         for file in file_path:
 
             base_filename = os.path.basename(file)
-
             temp_df = pd.read_csv(os.path.join(self.working_folder, base_filename))
             logger.info(f"file read: {base_filename}")
             base_filename = base_filename.strip(".csv")
             self.input_data_raw[base_filename] = self.preprocess(temp_df, base_filename)
         self.is_files_read = True
-        self.loading_label.destroy()
-
+        self.loading_label.configure(text="")
+        self.queue.put("loaded_files")
+        
     def preprocess(self, df, base_filename):
         """
         Preprocess the data
@@ -135,5 +139,5 @@ class FileOpenbutton(ctk.CTkFrame):
     def display_file_loading(self):
         # Displying the loading label
         logger.debug("displaying the loading label")
-        self.loading_label = ctk.CTkLabel(self, text="Loading...")
-        self.loading_label.grid(row=0, column=1, padx=(0, 0), pady=(2, 2), sticky="w")
+        # self.loading_label = ctk.CTkLabel(self, text="Loading...")
+        self.loading_label.configure(text="Loading...")

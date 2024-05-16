@@ -9,6 +9,7 @@ from .cluster_intergration_step import ClusterIntergrationStep
 from .markers_step import MarkerStep
 from .pathways_step import PathwaysStep
 import sys
+import queue
 sys.path.append('../SAMI')
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,9 @@ class SAMIApp(ctk.CTkFrame):
         self.process_step = None
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
+        self.queue = queue.Queue()
         logger.debug("SAMI class initialized")
+        self.check_for_file_load()
 
         # for the SAMI UI, we need to choose whether the processing needs to be done on single file or multiple files
 
@@ -50,13 +53,34 @@ class SAMIApp(ctk.CTkFrame):
         # self.create_left_visualization_dock()
 
     def file_open(self, choice):
-        self.file_handler = FileOpenbutton(self.nav_frame)
+        self.file_handler = FileOpenbutton(self.nav_frame, self.queue)
         self.file_handler.file_opening_button(choice)
         self.file_handler.grid(row=0, column=2, padx=(5, 5), pady=(2, 2), sticky="w", columnspan=2)
         self.file_handler.columnconfigure(0, weight=1)
         self.file_handler.columnconfigure(1, weight=1)
         # updating the process bar based on the file type selected
         self.create_process_bar()
+
+    def check_for_file_load(self):
+
+        # check the queue for messages  
+        try:
+            logger.info("messages in queue : {}".format(self.queue.qsize()))
+            signal = self.queue.get_nowait()
+            if signal == "loaded_files":
+                logger.info("file load thread trigger received")
+                # print("HIT")
+                self.process_step.set("Visualization")
+                # self.after(100, self.process_step.invoke())
+                self.execute_selected_step("Visualization")
+                
+        except Exception as e:
+            logger.error(e)
+        finally:
+            # Schedule the next queue check
+            self.after(1000, self.check_for_file_load)
+            # logger.info("checking the queue")
+
 
     def create_process_bar(self):
         """Bar in the NavFrame to show the process steps
