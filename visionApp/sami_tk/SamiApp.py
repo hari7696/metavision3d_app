@@ -26,6 +26,7 @@ class SAMIApp(ctk.CTkFrame):
         self.columnconfigure(0, weight=1)
         self.queue = queue.Queue()
         logger.debug("SAMI class initialized")
+        # this functions check for messages from file handler, whenever the use opens files, it will refreshes the visualization tab
         self.check_for_file_load()
 
         # for the SAMI UI, we need to choose whether the processing needs to be done on single file or multiple files

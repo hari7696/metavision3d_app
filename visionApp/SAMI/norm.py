@@ -263,19 +263,15 @@ def create_norm_dataset(data_path,pattern):
             df_norm.to_csv(os.path.join(data_path,f"{name}{ext}"),index=False)
             print(f'{name}{ext} is created.')
 
-def create_norm_dataset_gui(data_dict, working_dir, rowNorm, transNorm):
+def create_norm_dataset_gui(df, working_dir, key, rowNorm, transNorm):
 
-    norm_dict= {}
-    for key in data_dict.keys():
-        df = data_dict[key]
-        df_norm = Normalization(df, first_compound_idx=3, rowNorm='SumNorm', transNorm='LogTrans2', c=1, log_base=2)
-        name = key + "_norm" + ".pq"
-        df_norm.to_parquet(os.path.join(working_dir,name), index = False)
-        logger.info(f'{name} is created.')
-        norm_dict[key] = df_norm
-
+    df_norm = Normalization(df, first_compound_idx=3, rowNorm='SumNorm', transNorm='LogTrans2', c=1, log_base=2)
+    name = key + "_norm" + ".pq"
+    df_norm.to_parquet(os.path.join(working_dir,name), index = False)
+    logger.info(f'{name} is created.')
+    # norm_dict[key] = df_norm
     logger.info("Normalization is done.")
-    return norm_dict
+    return df_norm
         
 
         
