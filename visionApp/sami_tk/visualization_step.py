@@ -170,7 +170,7 @@ class VisualizationStep(ctk.CTkFrame):
         #dynamically updating the molecule dropdown
         self.molecule_dropdown.configure(values= self.file_handler.molecule_name[self.file_dropdown.get()])
         self.molecule_dropdown.set(self.file_handler.molecule_name[self.file_dropdown.get()][0])
-        self.compound_matrix, self.dict_id_to_tissue_name = create_compound_matrix(
+        self.compound_matrix, self.compound_matrix_high_res , self.dict_id_to_tissue_name = create_compound_matrix(
             self.file_handler.input_data_raw[self.file_dropdown.get()],
             self.molecule_dropdown.get(),
             roi=False,
@@ -187,7 +187,7 @@ class VisualizationStep(ctk.CTkFrame):
 
     
     def update_frame_with_molecule(self, choice):
-        self.compound_matrix = create_compound_matrix(
+        self.compound_matrix, self.compound_matrix_high_res , self.dict_id_to_tissue_name  = create_compound_matrix(
             self.file_handler.input_data_raw[self.file_dropdown.get()],
             choice,
             roi=False,
@@ -266,60 +266,67 @@ class VisualizationStep(ctk.CTkFrame):
         label.grid(row=0, column=0, padx=4, pady=4)
         label.bind("<Button-1>", partial(self.on_label_click, id=id))
 
-        label_tissue  = ctk.CTkLabel(frame, text="Tissue: "+str(self.dict_id_to_tissue_name[id]), height = 14)
+        label_tissue  = ctk.CTkLabel(frame, text=str(self.dict_id_to_tissue_name[id]), height = 14)
         label_tissue.grid(row=1, column=0, padx=2, pady=0)
 
-        #         # Create a hover label
-        # hover_label = ctk.CTkLabel(frame, text="")
-        # hover_label.grid(row=0, column=0, padx=2, pady=2)
-        # hover_label.bind("<Enter>", partial(self.on_hover_enter, id = id))
-        # hover_label.bind("<Leave>", partial(self.on_hover_leave, id = id))
-
-    # def on_hover_enter(self, event):
-    #     # Code to execute when the mouse enters the hover label
-    #     self.hover_label.configure(text="Hovering")
-
-    # def on_hover_leave(self, event):
-    #     # Code to execute when the mouse leaves the hover label
-    #     self.hover_label.configure(text="")
-    
-
     def on_label_click(self, event, id):
-        #print(id)
-        fig = Figure(figsize=(6, 6), dpi=100)
-        ax = fig.add_subplot(111)
+        matrix = self.compound_matrix_high_res[id]
+        # print(matrix.shape)
+        scale_factor = 1  # Adjust this factor to scale the image size up
+        dpi = 300  # Increasing the DPI for better resolution and larger image
 
-        # Add a Matplotlib canvas to the Tkinter frame
+        # Calculate the figure size based on the image dimensions and scaling factor
+        height, width = matrix.shape
+        figsize = (width / float(dpi) * scale_factor, height / float(dpi) * scale_factor)
+
+        # Create the figure with the adjusted size and dpi
+        fig = Figure(figsize=figsize, dpi=dpi)
+        ax = fig.add_subplot(111)
+        # ax = fig.add_subplot(111)
+        # ax.set_facecolor('white')
+
+        # Clear existing widgets in the container
         for widget in self.slide.winfo_children():
             widget.destroy()
+
+        # Create a frame to hold the canvas
         self.slide_tab_frame = ctk.CTkFrame(self.slide)
         self.slide_tab_frame.grid(row=0, column=0, sticky="nsew")
         self.slide_tab_frame.columnconfigure(0, weight=1)
         self.slide_tab_frame.rowconfigure(0, weight=1)
-        canvas = FigureCanvasTkAgg(fig, master=self.slide_tab_frame)
-        canvas.get_tk_widget().grid(row=0, column=0)
-        matrix = self.compound_matrix[id]
-        if self.color_map_dropdown.get() == "gray":
-            im = ax.imshow(matrix, cmap="gray")
-        elif self.color_map_dropdown.get() == "magma":
-            im = ax.imshow(self.compound_matrix[id], cmap=new_cmap1)
-            cbar = fig.colorbar(
-                im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
-            )
-            cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
-            cbar.ax.set_yticklabels(["low", "high"])
-        elif self.color_map_dropdown.get() == "viridis":
-            im = ax.imshow(self.compound_matrix[id], cmap=new_cmap2)
-            cbar = fig.colorbar(
-                im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
-            )
-            cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
-            cbar.ax.set_yticklabels(["low", "high"])
-        else:
-            im = ax.imshow(matrix, cmap="gray")
 
-        # Turn off axis labels and ticks
+
+        # Add the canvas to the frame
+        canvas = FigureCanvasTkAgg(fig, master=self.slide_tab_frame)
+        canvas.get_tk_widget().grid(row=0, column=0, sticky='nsew')
+
+        # Determine the colormap based on user selection
+        cmap = self.color_map_dropdown.get()
+        cmap_options = {"gray": "gray", "magma": new_cmap1, "viridis": new_cmap2}
+        cmap = cmap_options.get(cmap, "gray")
+
+        # Display the image
+        im = ax.imshow(matrix, cmap=cmap, aspect='equal')
+        #ax.set_title(self.dict_id_to_tissue_name[id], fontsize=12, color='black')
+
+        # Add color bar if applicable
+        if cmap in ["magma", "viridis"]:
+            cbar = fig.colorbar(
+                im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+            )
+            cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
+            cbar.ax.set_yticklabels(["low", "high"])
+
+        # Turn off axis labeling to maximize space for the image
         ax.axis("off")
+        fig.tight_layout(pad=0)  # This reduces the padding around the image
+
+        # Draw the canvas
+        canvas.draw()
+
+        image_label = ctk.CTkLabel(self.slide, text=str(self.dict_id_to_tissue_name[id]), font=("Arial", 16))
+        image_label.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
+
 
     # def display_animation(self):
 

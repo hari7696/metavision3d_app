@@ -29,27 +29,20 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
     # for ii in range(matrix.shape[0]):
     for ii, slice in enumerate(data["region"].unique()):
         data_temp = create_slice_sami(data, slice, col=col, roi=roi, reverse=reverse)
-        # print(np.count_nonzero(data_temp))
-        # x_vals = int((200 - data_temp.shape[0])/2)
-        # y_vals = int((250 - data_temp.shape[1])/2) #find the (x,y) of the start vertex, '/2' means put the slice in the center
-        # matrix[ii, int(x_vals/2):int(x_vals/2)+data_temp.shape[0], int(y_vals/2):int(y_vals/2)+data_temp.shape[1]] = data_temp
-        # matrix[ii, x_vals:x_vals+data_temp.shape[0], y_vals:y_vals+data_temp.shape[1]] = data_temp
         matrix[ii] = data_temp
-        # #print(data_temp.shape)
-        # plt.imshow(matrix[ii], cmap='gray')
-        # plt.axis('off')
-        # plt.show()
         id_to_name[ii] = slice
+
     zarray = np.zeros((nslice, 200, 350))
+    zarray_high_res = np.zeros((nslice, 600, 700))
+
     for key in matrix:
-        # print(zarray.shape[0] / matrix[key].shape[0])
-        # print()
+
         scale_factor = min(
             zarray.shape[1] / matrix[key].shape[0],
             zarray.shape[2] / matrix[key].shape[1],
         )
-        # print("Sacle",scale_factor)
-
+        # print(scale_factor  )
+        # print(matrix[key].shape)
         # Resize the image array
         resized_image = resize(
             matrix[key],
@@ -59,7 +52,6 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
             ),
             anti_aliasing=False,
         )
-
         # Calculate padding
         pad_row = (zarray.shape[1] - resized_image.shape[0]) // 2
         pad_col = (zarray.shape[2] - resized_image.shape[1]) // 2
@@ -70,9 +62,38 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
             pad_row : pad_row + resized_image.shape[0],
             pad_col : pad_col + resized_image.shape[1],
         ] = resized_image
-        # plt.imshow(zarray[key], cmap='gray')
-        # plt.show()
-    return zarray, id_to_name
+
+    for key in matrix:
+
+        scale_factor = min(
+            zarray_high_res.shape[1] / matrix[key].shape[0],
+            zarray_high_res.shape[2] / matrix[key].shape[1],
+        )
+        # print(scale_factor  )
+        # print(matrix[key].shape)
+        # Resize the image array
+        resized_image = resize(
+            matrix[key],
+            (
+                int(matrix[key].shape[0] * scale_factor),
+                int(matrix[key].shape[1] * scale_factor),
+            ),
+            anti_aliasing=False,
+        )
+        # Calculate padding
+        pad_row = (zarray_high_res.shape[1] - resized_image.shape[0]) // 2
+        pad_col = (zarray_high_res.shape[2] - resized_image.shape[1]) // 2
+
+        # Place the resized image into the center of the zero array with padding
+        zarray_high_res[
+            key,
+            pad_row : pad_row + resized_image.shape[0],
+            pad_col : pad_col + resized_image.shape[1],
+        ] = resized_image
+
+
+
+    return zarray, zarray_high_res, id_to_name
 
 
 def create_slice_sami(df_all, slice, col="result", roi=False, reverse=False):
