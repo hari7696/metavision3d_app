@@ -113,9 +113,9 @@ class FileOpenbutton(ctk.CTkFrame):
             base_filename = base_filename.strip(".csv")
             self.input_data_raw[base_filename] = self.preprocess(temp_df, base_filename)
         self.is_files_read = True
-        self.loading_label.configure(text="")
         self.queue.put("loaded_files")
-        
+        self.after(500, self.loading_label.configure(text=""))
+
     def preprocess(self, df, base_filename):
         """
         Preprocess the data
