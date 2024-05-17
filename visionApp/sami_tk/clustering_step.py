@@ -90,12 +90,8 @@ class ClusteringStep(ctk.CTkFrame):
         # specific cluster tab
         self.specific_cluster = ctk.CTkFrame(self.cluster_tab, bg_color="transparent")
         self.specific_cluster.grid(row=2, column=0, sticky="nsw")
-        self.specific_cluster.columnconfigure(0, weight=5)
-        self.specific_cluster.columnconfigure(1, weight=5)
-        self.specific_cluster.columnconfigure(2, weight=5)
-        self.specific_cluster.columnconfigure(3, weight=5)
-        self.specific_cluster.rowconfigure(0, weight=1)
-        self.specific_cluster.rowconfigure(1, weight=1)
+
+        # self.specific_cluster.rowconfigure(1, weight=1)
         # self.specific_cluster.columnconfigure(1, weight=1)
         # self.specific_cluster.columnconfigure(2, weight=1)
 
@@ -222,36 +218,97 @@ class ClusteringStep(ctk.CTkFrame):
         self.image_label.configure(image=ctk_image)
         self.image_label.image = ctk_image 
 
+
     def prepare_specific_cluster_vis(self):
 
-        # a row to select the cluster
+        self.specific_cluster.columnconfigure(0, weight=1)
+        self.specific_cluster.columnconfigure(1, weight=1)
+        self.specific_cluster.columnconfigure(2, weight=1)
+        self.specific_cluster.rowconfigure(0, weight=1)
+
         for child in self.specific_cluster.winfo_children():
             child.destroy()
 
-        label = ctk.CTkLabel(self.specific_cluster, text="Select Cluster :")
-        label.grid(row=0, column=1, padx=(5,0), pady=8, sticky="ew")
+        self.frame1 = ctk.CTkFrame(self.specific_cluster)
+        self.frame1.grid(row=0, column=0, sticky="nsew", padx=(3,3), pady=(3,3))
+        # self.frame1.columnconfigure(0, weight=1)
+        # self.frame1.rowconfigure(0, weight=1)
+
+        self.frame2 = ctk.CTkFrame(self.specific_cluster)
+        self.frame2.grid(row=0, column=1, sticky="nsew", padx=(3,3), pady=(3,3))
+        # self.frame2.columnconfigure(0, weight=1)
+        # self.frame2.rowconfigure(0, weight=1)
+
+        self.frame3 = ctk.CTkFrame(self.specific_cluster)
+        self.frame3.grid(row=0, column=2, sticky="nsew", padx=(3,3), pady=(3,3))
+        # self.frame3.columnconfigure(0, weight=1)
+        # self.frame3.rowconfigure(0, weight=1)
+
+        specific_cluster1 = SpecificCluster(self.frame1, self.cluster, self.n_clusters)
+        specific_cluster1.grid(row=0, column=0, sticky="nsew")
+
+        specific_cluster2 = SpecificCluster(self.frame2, self.cluster, self.n_clusters)
+        specific_cluster2.grid(row=0, column=1, sticky="nsew")
+
+        specific_cluster3 = SpecificCluster(self.frame3, self.cluster, self.n_clusters)
+        specific_cluster3.grid(row=0, column=2, sticky="nsew")
+
+
+       
+class SpecificCluster(ctk.CTkFrame):
+    def __init__(self, master, cluster, n_clusters):
+        super().__init__(
+            master,
+        )
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=10)
+        self.cluster = cluster
+        self.n_clusters = n_clusters    
+        
+        self.cluster_image_label = None
+
+        self.nav_frame = ctk.CTkFrame(self)
+        self.nav_frame.grid(row=0, column=0, sticky="nsew")
+
+        self.image_frame = ctk.CTkFrame(self)
+        self.image_frame.grid(row=1, column=0, sticky="nsew")
+
+
+        self.cluster_image_label = ctk.CTkLabel(self.image_frame, text = '', width=630, height=350)
+        self.cluster_image_label.grid(row=1, column=0, sticky="ew", )
+        self.cluster_image_label.columnconfigure(0, weight=1)
+        self.cluster_image_label.rowconfigure(0, weight=1)
+
+        self.loading_label = ctk.CTkLabel(self.nav_frame, text="", text_color="yellow", width = 80)
+        self.loading_label.grid(row=0, column=2, padx=(5,0), pady=8, sticky="w")
+        self.after(500, self.prepare_specific_cluster_vis())
+    
+    def prepare_specific_cluster_vis(self):
+
+        # a row to select the cluster
+        label = ctk.CTkLabel(self.nav_frame, text="Select Cluster :")
+        label.grid(row=0, column=0, padx=(5,0), pady=8, sticky="w")
 
         _ = tk.StringVar(value='choose cluster to display')
         # a combo box to select the cluster
         clusters = [str(i) for i in range(self.n_clusters)]
-        self.cluster_selection = ctk.CTkComboBox(master= self.specific_cluster,
+        self.cluster_selection = ctk.CTkComboBox(self.nav_frame,
                             values=clusters,
                             variable=_,
                             button_color="#b5b8b0",
                             command=self.display_specific_cluster
                             )
-        self.cluster_selection.grid(row=0,column=2,padx=(10,0),pady=8,sticky="ew")
+        self.cluster_selection.grid(row=0,column=1,padx=(10,0),pady=8,sticky="w")
+
+        # label = ctk.CTkLabel(self.nav_frame, text="Select Cluster :")
+        # label.grid(row=0, column=2, padx=(5,0), pady=8, sticky="w")
 
     def display_specific_cluster(self, choice):
 
-        if self.cluster_image_label is not None:
-            self.cluster_image_label.destroy()
-        
-                # a label for the image
-        self.cluster_image_label = ctk.CTkLabel(self.specific_cluster, width=500, height=350, padx=100)
-        self.cluster_image_label.grid(row=1, column=3, sticky="ew", )
-        self.cluster_image_label.columnconfigure(0, weight=1)
-        self.cluster_image_label.rowconfigure(0, weight=1)
+        self.loading_label.configure(text="Loading...", text_color="yellow")
+        self.update()
+
 
         # attaching image to the label
         image_location = self.cluster.plot_select_cluster(int(choice),size=50,show=False)
@@ -260,8 +317,7 @@ class ClusteringStep(ctk.CTkFrame):
         self.cluster_image_label.configure(image=ctk_image)
         self.cluster_image_label.image = ctk_image
 
-       
-
+        self.loading_label.configure(text="")
 
         
 
