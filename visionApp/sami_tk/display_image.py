@@ -3,26 +3,26 @@ from PIL import Image, ImageTk
 from tkinter import Tk, Canvas
 from multiprocessing import Process, Queue
 import io
+class ImageDisaplay(ctk.CTkFrame):
 
-class ImageZoomer:
-    def __init__(self, master, image_location="cerebellumWT_umap_integrated.png", width =1400, height =450):
-        self.master = master
-        self.frame_width =width
-        self.frame_height =height
+    def __init__(self, master, image_location="cerebellumWT_umap_integrated.png"):
+        super().__init__( master)
+        self.frame_width = 1400
+        self.frame_height = 500
 
         self.cluster_visualization = ctk.CTkFrame(master, width=self.frame_width, height=self.frame_height)
         self.cluster_visualization.grid(row=0, column=0, sticky="nsew")
         self.cluster_visualization.columnconfigure(0, weight=1)
         self.cluster_visualization.rowconfigure(0, weight=1)
 
-        self.canvas = Canvas(self.cluster_visualization, width=self.frame_width, height=self.frame_height, bg='black')
+        self.canvas = Canvas(self.cluster_visualization, width=self.frame_width, height=self.frame_height, bg='#404040')
         self.canvas.grid(row=0, column=0, sticky="nsew")
 
         self.zoom_factor = 0.2
         self.image_id = None
         self.image_location = image_location
         self.queue = Queue()
-        # self.prepare_cluster_visualization()
+        # self.prepare_visualization()
         # self.load_image_thread = threading.Thread(target=self.load_image)
         # self.load_image_thread.start()
         self.process = Process(target=self.load_image_process, args=(self.image_location, self.queue))
@@ -42,28 +42,14 @@ class ImageZoomer:
         if not self.queue.empty():
             image_data = self.queue.get()
             self.original_image = Image.open(io.BytesIO(image_data))
-            self.prepare_cluster_visualization()
+            self.prepare_visualization()
         if self.process.is_alive():
             self.master.after(100, self.check_queue)
         else:
             self.process.join()
 
-    # def process_queue(self):
-    #     try:
-    #         if not self.queue.empty():
-    #             #print("loader thread finished")
-    #             self.original_image = self.queue.get(0)
-    #             self.prepare_cluster_visualization()
-    #     except queue.Empty:
-    #         pass
-    #     finally:
-    #         if self.load_image_thread.is_alive():
-    #             self.master.after(500, self.process_queue)
+    def prepare_visualization(self):
 
-    def prepare_cluster_visualization(self):
-        # image_location = "cerebellumWT_umap_integrated.png"
-        # self.original_image = Image.open(self.image_location)
-        # Ensure initial resize and placement are set correctly
         self.tk_image = ImageTk.PhotoImage(self.original_image.resize((self.frame_width, self.frame_height), Image.LANCZOS))
         self.image_id = self.canvas.create_image(self.frame_width // 2, self.frame_height // 2, image=self.tk_image, anchor="center")
 
@@ -75,7 +61,7 @@ class ImageZoomer:
     def zoom_image(self, event):
         zoom_factor_change = 1.2 if event.delta > 0 else 0.8
         new_zoom_factor = self.zoom_factor * zoom_factor_change
-        print(new_zoom_factor)
+        # print(new_zoom_factor)
         if new_zoom_factor < 0.1:
             return
             # new_zoom_factor = 1.0
@@ -99,8 +85,3 @@ class ImageZoomer:
         self.canvas.itemconfig(self.image_id, image=self.tk_image)
         self.canvas.coords(self.image_id, self.frame_width // 2, self.frame_height // 2)
 
-# Create the main window and pass it to the ImageZoomer class
-if __name__ == "__main__":
-    root = Tk()
-    app = ImageZoomer(root)
-    root.mainloop()
