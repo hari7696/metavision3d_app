@@ -113,9 +113,15 @@ class VisualizationStep(ctk.CTkFrame):
         )
         self.molecule_dropdown.grid(row=0, column=5, padx=(5, 0), pady=10, sticky="e")
 
+        # loading label
+        self.loading_label = ctk.CTkLabel(self.selection_frame,text="", font = ("Arial", 14), width = 65, )
+        self.loading_label.grid(row=0,column=6,padx=(5, 5), pady=10, sticky="e")
+
         # scrollable frame on the left side of the visualization frame
         self.slides_display_frame = ctk.CTkScrollableFrame(self.left_frame, height=500)
         self.slides_display_frame.grid(row=1, column=0, padx=5, pady=1, sticky="new")
+
+
 
         # loading label
         # self.display_processing()
@@ -159,6 +165,9 @@ class VisualizationStep(ctk.CTkFrame):
 
         # threading.Thread(target=self.loading_label_update, args= (),daemon=True).start()
 
+        self.loading_label.configure(text = "Loading...", text_color = "yellow")
+        self.update()
+
         wait(
             lambda: self.file_handler.is_files_read,
             timeout_seconds=600,
@@ -180,13 +189,23 @@ class VisualizationStep(ctk.CTkFrame):
         # time.sleep(5)
         self.create_frames_in_slides_display_frame(self.compound_matrix)
 
+        self.loading_label.configure(text = "")
+
 
     def update_frame_with_selected_color_map(self, choice):
 
-        self.create_frames_in_slides_display_frame(self.compound_matrix)
+        self.loading_label.configure(text = "Loading...", text_color = "yellow")
+        self.update()
+        
 
+        self.create_frames_in_slides_display_frame(self.compound_matrix)
+        self.loading_label.configure(text = "")
     
     def update_frame_with_molecule(self, choice):
+
+        self.loading_label.configure(text = "Loading...", text_color = "yellow")
+        self.update()
+        
         self.compound_matrix, self.compound_matrix_high_res , self.dict_id_to_tissue_name  = create_compound_matrix(
             self.file_handler.input_data_raw[self.file_dropdown.get()],
             choice,
@@ -196,6 +215,7 @@ class VisualizationStep(ctk.CTkFrame):
 
         # time.sleep(5)
         self.create_frames_in_slides_display_frame(self.compound_matrix)
+        self.loading_label.configure(text = "")
 
     def create_frames_in_slides_display_frame(self, data):
         for widget in self.slides_display_frame.winfo_children():

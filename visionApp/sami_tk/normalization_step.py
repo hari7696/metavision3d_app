@@ -96,7 +96,9 @@ class NormalizationStep(ctk.CTkFrame):
         self.selection_frame.grid(
             row=0, column=0, sticky="nsew", padx=5, pady=1,)
         # self.file_selection_frame.columnconfigure(0,weight=1)
-        self.selection_frame.rowconfigure(0, weight=1)
+        # self.selection_frame.rowconfigure(0, weight=1)
+        # self.selection_frame.columnconfigure((0,1,2,3,4,5, 6, 7 , 8), weight=1)
+        
 
         # File dropdown
         self.var_file_name = ctk.CTkLabel(self.selection_frame, text="Select File: ")
@@ -114,6 +116,7 @@ class NormalizationStep(ctk.CTkFrame):
             values=self.file_handler.base_files,
             command=self.update_frame_with_file,
             variable=default_value,
+            width= 180
         )
         self.file_dropdown.grid(row=0, column=1, padx=(5, 5), pady=10, sticky="e")
 
@@ -143,6 +146,10 @@ class NormalizationStep(ctk.CTkFrame):
             variable=default_value3,
         )
         self.molecule_dropdown.grid(row=0, column=5, padx=(5, 5), pady=10, sticky="e")
+
+        # loading label
+        self.loading_label = ctk.CTkLabel(self.selection_frame,text="", font = ("Arial", 14), width = 65, )
+        self.loading_label.grid(row=0,column=6,padx=(5, 5), pady=10, sticky="e")
 
         # scrollable frame on the left side of the visualization frame
         self.slides_display_frame = ctk.CTkScrollableFrame(self.left_frame, height=500)
@@ -282,7 +289,7 @@ class NormalizationStep(ctk.CTkFrame):
     def onlick_run_normalization(self):
 
         if self.file_dropdown.get() == "Select Dataset":
-            messagebox.showerror("Error", "Please select a dataset on the left panel")
+            messagebox.Message("Error", "Please select a dataset on the left panel")
         else:
             self.norm_done_label.configure(text="Normalization is running")
             self.timer.reset_timer()
@@ -315,6 +322,11 @@ class NormalizationStep(ctk.CTkFrame):
 
     def update_frame_with_file(self, choice):
 
+        self.loading_label.configure(text="Loading...", text_color="yellow")
+        self.update()
+    
+
+        # time.sleep(3)
         wait(
             lambda: self.file_handler.is_files_read,
             timeout_seconds=600,
@@ -331,29 +343,43 @@ class NormalizationStep(ctk.CTkFrame):
         )
         # time.sleep(5)
         self.create_frames_in_slides_display_frame(self.compound_matrix)
+        self.loading_label.configure(text="")
         
 
     def update_frame_with_selected_color_map(self, choice):
 
+
+        self.loading_label.configure(text="Loading...", text_color="yellow")
+        self.update()
         self.create_frames_in_slides_display_frame(self.compound_matrix)
+        self.loading_label.configure(text="")
+        
 
     def update_frame_with_molecule(self, choice):
-        self.compound_matrix, self.compound_matrix_high_res , self.dict_id_to_tissue_name  = create_compound_matrix(
-            self.file_handler.input_data_raw[self.file_dropdown.get()],
-            choice,
-            roi=False,
-            reverse=True,
-        )
+        
+        if self.file_dropdown.get() not in self.normalized_data.keys():
+            messagebox.Message("Please run the normilsation to display normalized iamges")
+        else:
 
-        self.norm_compound_matrix, self.normalised_compound_matrix_high_res, _ = create_compound_matrix( 
-                                                    self.normalized_data[self.file_dropdown.get()],
-                                                    choice,
-                                                    roi=False,
-                                                    reverse=True,
-                                                    )
+            self.loading_label.configure(text="Loading...", text_color="yellow")
+            self.update()
+            self.compound_matrix, self.compound_matrix_high_res , self.dict_id_to_tissue_name  = create_compound_matrix(
+                self.file_handler.input_data_raw[self.file_dropdown.get()],
+                choice,
+                roi=False,
+                reverse=True,
+            )
 
-        self.create_frames_in_slides_display_frame(self.compound_matrix)
-        self.display_norm_plot(self.compound_matrix, self.norm_compound_matrix)
+            self.norm_compound_matrix, self.normalised_compound_matrix_high_res, _ = create_compound_matrix( 
+                                                        self.normalized_data[self.file_dropdown.get()],
+                                                        choice,
+                                                        roi=False,
+                                                        reverse=True,
+                                                        )
+
+            self.create_frames_in_slides_display_frame(self.compound_matrix)
+            self.display_norm_plot(self.compound_matrix, self.norm_compound_matrix)
+            self.loading_label.configure(text="")
 
     def create_frames_in_slides_display_frame(self, data):
         for widget in self.slides_display_frame.winfo_children():
@@ -428,8 +454,12 @@ class NormalizationStep(ctk.CTkFrame):
         label_tissue.grid(row=1, column=0, padx=2, pady=0)
 
     def on_label_click_main(self, event, id):
-        self.on_label_click(event, id)
-        self.on_label_click_pre_post_norm_comparison(event, id)
+
+        if self.file_dropdown.get() not in self.normalized_data.keys():
+            messagebox.Message("Please run the normilsation to display normalized iamges")
+        else:
+            self.on_label_click(event, id)
+            self.on_label_click_pre_post_norm_comparison(event, id)
 
     def on_label_click(self, event, id):
 
