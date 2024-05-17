@@ -27,6 +27,7 @@ from SAMI.preprocessing import pooldata, csv2h5ad
 import logging
 from .timer import TimerApp
 from SAMI.clustering import Clusters, Cluster_Integration
+from .display_image import ImageDisaplay
 logger = logging.getLogger(__name__)
 
 class ClusterIntergrationStep(ctk.CTkFrame):
@@ -43,7 +44,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         self.umap_overlay_label = None
         self.image_label = None
         self.queue = Queue()
-        self.trigger_visz_functions_on_thread_run()
+        # self.trigger_visz_functions_on_thread_run()
         self.prepare_visualization_dock_type2()
         self.prep_cluster_int_options_tab()
 
@@ -87,12 +88,10 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         # region1
         self.type1 = ctk.CTkFrame(self.cluster_int_tab, bg_color="transparent")
         self.type1.grid(row=1, column=0, sticky="nsew")
-        self.type1.columnconfigure(0, weight=1)
 
         # region2
         self.type2 = ctk.CTkFrame(self.cluster_int_tab, bg_color="transparent")
-        self.type2.grid(row=2, column=0, sticky="nsw")
-        self.type2.columnconfigure(0, weight=5)
+        self.type2.grid(row=2, column=0, sticky="nsew")
 
         # Intergrated cluster overlay umap
         self.cluster_overlay_umap = self.vis_tabs.add("Umpa Overlay")
@@ -188,17 +187,25 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         return cluster_int
     
     @staticmethod
-    def cluster_Integration(queue, cluster_int, integrated_file1, integrated_file2):
+    def clusterintegration(queue, cluster_int, integrated_file1, integrated_file2, region1, region2):
         
+        response_dict = {}
         # checking whether the clustering is already performed or not
         if not (os.path.exists(integrated_file1) and os.path.exists(integrated_file2)):
             logger.info("didnt find any existing file, Performing Integration")
             cluster_int.integrate()
         else:
             logger.info("Clustering already done")
+
+        image_location1, n_clusters = cluster_int.plot_umap_cluster(region1 ,size=50,show=False)
+        image_location2, n_clusters = cluster_int.plot_umap_cluster(region2 ,size=50,show=False)
+
+        response_dict['image_location1'] = image_location1
+        response_dict['image_location2'] = image_location2
+        response_dict['n_clusters'] = n_clusters
         # sending a message to the queue that thread is completed
         logger.info("sending signal to the queue")
-        queue.put("cluster_int_done")
+        queue.put(response_dict)
         logger.info("signal sent to the queue")
         logger.info("messages in queue : {}".format(queue.qsize()))
 
@@ -207,28 +214,35 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         self.timer.start_timer()
         self.cluster_int = self.prepare_cluster_module()
         self.time_constraint_label.configure(text="Note : cluster Integration usally takes roughly 10 minutes")
-        clustering_process = Process(target=self.cluster_Integration, args=(self.queue, self.cluster_int, 
-                                                                   self.integrated_file1, self.integrated_file2))
-        clustering_process.start()
+
+        region1, _, _ = self.splitname(self.region1_selection.get())
+        region2, _, _ = self.splitname(self.region2_selection.get())
+
+        # image_location1, self.n_clusters = self.cluster_int.plot_umap_cluster(region ,size=50,show=False)
+        # image_location2, self.n_clusters = self.cluster_int.plot_umap_cluster(region ,size=50,show=False)
+
+        self.clustering_process = Process(target=self.clusterintegration, args=(self.queue, self.cluster_int, 
+                                                                   self.integrated_file1, self.integrated_file2, region1, region2))
+        self.clustering_process.start()
+        self.trigger_visz_functions_on_thread_run()
 
 
     def trigger_visz_functions_on_thread_run(self):
 
-        try:
-            logger.info("messages in queue : {}".format(self.queue.qsize()))
-            signal = self.queue.get_nowait()
-            if signal == "cluster_int_done":
-                logger.info("thread trigger received")
-                self.prepare_cluster_visualization()
-                self.dsplay_umpa_overlay()
-                self.timer.stop_timer()
-                self.time_constraint_label.configure(text="Clustering Done")
-        except Exception as e:
-            logger.error(e)
-        finally:
-            # Schedule the next queue check
-            self.after(10000, self.trigger_visz_functions_on_thread_run)
-            logger.info("checking the queue")
+        if not self.queue.empty():
+            logger.info("thread trigger received")
+            message = self.queue.get()
+            self.image_location1 = message['image_location1']
+            self.image_location2 = message['image_location2']
+            self.n_clusters = message['n_clusters']
+            self.prepare_cluster_visualization()
+            self.dsplay_umpa_overlay()
+            self.timer.stop_timer()
+            self.time_constraint_label.configure(text="Clustering Intergration Completed", text_color="green")
+        if self.clustering_process.is_alive():
+            self.after(100, self.trigger_visz_functions_on_thread_run)
+        else:
+            self.clustering_process.join()
 
     def prepare_cluster_visualization(self):
 
@@ -240,42 +254,100 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         for child in self.type2.winfo_children():
             child.destroy() 
 
+        self.type1.columnconfigure(0, weight=1)
+        self.type1.columnconfigure(1, weight=9)
         # region1 display
-        region1_label = ctk.CTkLabel(self.type1, text="Region 1 :")
-        region1_label.grid(row=0, column=0, padx=(5,0), pady=8, sticky="w")
+        region_label_frame = ctk.CTkFrame(self.type1, bg_color="transparent")
+        region_label_frame.grid(row=0, column=0, sticky="nsew", padx=(5,5) , pady = 0)
+        region_label_frame.columnconfigure(0, weight=1)
+        region_label_frame.rowconfigure(0, weight=1)
+        
+        type1_display_frame = ctk.CTkFrame(self.type1, bg_color="transparent")
+        type1_display_frame.grid(row=0, column=1, sticky="sew", padx=(5,0) , pady = (2,2))
+        type1_display_frame.columnconfigure(0, weight=1)
+        type1_display_frame.rowconfigure(0, weight=1)
 
-        region, _, _ = self.splitname(self.region1_selection.get())
-        image_location1, self.n_clusters = self.cluster_int.plot_umap_cluster(region ,size=50,show=False)
+        #values
+        region1_label = ctk.CTkLabel(region_label_frame, text="Region 1 :")
+        region1_label.grid(row=0, column=0, padx=(5,0), pady=2, sticky="w")
 
-        self.image_label1 = ctk.CTkLabel(self.type1, width=1400, height=400 )
-        self.image_label1.grid(row=1, column=0, sticky="w", )
-        self.image_label1.columnconfigure(0, weight=1)
-        self.image_label1.rowconfigure(0, weight=1)
+        image_display = ImageDisaplay(type1_display_frame, self.image_location1)
+        image_display.grid(row=0, column=0, sticky="nsew", padx=(5,0) , pady = (2,2))
+        image_display.columnconfigure(0, weight=1)
+        image_display.rowconfigure(0, weight=1)
 
-        ctk_image1 = ctk.CTkImage(light_image=Image.open(image_location1),
-                                     dark_image=None, size = (1400,400))
+        self.type2.columnconfigure(0, weight=1)
+        self.type2.columnconfigure(1, weight=9)
+        # region2 display
 
-        self.image_label1.configure(image=ctk_image1)
-        self.image_label1.image = ctk_image1 
+        #frames
+        region_label_frame2 = ctk.CTkFrame(self.type2, bg_color="transparent")
+        region_label_frame2.grid(row=0, column=0, sticky="nsew", padx=(5,5) , pady = (2,2)) 
+        region_label_frame2.columnconfigure(0, weight=1)
+        region_label_frame2.rowconfigure(0, weight=1)
 
-        # region2 display   
+        type2_display_frame = ctk.CTkFrame(self.type2, bg_color="transparent")
+        type2_display_frame.grid(row=0, column=1, sticky="sew", padx=(5,0) , pady = (2,2))
+        type2_display_frame.columnconfigure(0, weight=1)
+        type2_display_frame.rowconfigure(0, weight=1)
 
-        region2_label = ctk.CTkLabel(self.type2, text="Region 2 :")
-        region2_label.grid(row=0, column=0, padx=(5,0), pady=8, sticky="w")
+        #values
+        region2_label = ctk.CTkLabel(region_label_frame2, text="Region 2 :")
+        region2_label.grid(row=0, column=0, padx=(5,0), pady=2, sticky="w")
 
-        region, _, _ = self.splitname(self.region2_selection.get())
-        image_location2, self.n_clusters = self.cluster_int.plot_umap_cluster(region ,size=50,show=False)
+        image_display2 = ImageDisaplay(type2_display_frame, self.image_location2)
+        image_display2.grid(row=0, column=0, sticky="nsew", padx=(5,0) , pady = 0)
+        image_display2.columnconfigure(0, weight=1)
+        image_display2.rowconfigure(0, weight=1)
 
-        self.image_label2 = ctk.CTkLabel(self.type2, width=1400, height=400 )
-        self.image_label2.grid(row=1, column=0, sticky="w", )
-        self.image_label2.columnconfigure(0, weight=1)
-        self.image_label2.rowconfigure(0, weight=1)
 
-        ctk_image2 = ctk.CTkImage(light_image=Image.open(image_location2),
-                                     dark_image=None, size = (1400,400))
 
-        self.image_label2.configure(image=ctk_image2)
-        self.image_label2.image = ctk_image2 
+
+        # # region2 display   
+
+        # region2_label = ctk.CTkLabel(self.type2, text="Region 2 :")
+        # region2_label.grid(row=0, column=0, padx=(5,0), pady=8, sticky="w")
+
+        # # region, _, _ = self.splitname(self.region2_selection.get())
+        # # image_location2, self.n_clusters = self.cluster_int.plot_umap_cluster(region ,size=50,show=False)
+
+        # self.image_label2 = ctk.CTkLabel(self.type2, width=1400, height=400 )
+        # self.image_label2.grid(row=1, column=0, sticky="w", )
+        # self.image_label2.columnconfigure(0, weight=1)
+        # self.image_label2.rowconfigure(0, weight=1)
+
+        # ctk_image2 = ctk.CTkImage(light_image=Image.open(self.image_location2),
+        #                              dark_image=None, size = (1400,400))
+
+        # self.image_label2.configure(image=ctk_image2)
+        # self.image_label2.image = ctk_image2 
+
+        
+        # type1_display_frame = ctk.CTkFrame(self.type1, bg_color="transparent")
+        # type1_display_frame.grid(row=1, column=0, sticky="sew")
+        # type1_display_frame.columnconfigure(0, weight=1)
+        # type1_display_frame.rowconfigure(0, weight=1)
+
+        # image_display = ImageDisaplay(type1_display_frame, self.image_location1, 1400, 350)
+        # image_display.grid(row=1, column=0, sticky="sew", )
+        # image_display.columnconfigure(0, weight=1)
+        # image_display.rowconfigure(0, weight=1)
+
+        # # region2 display   
+
+        # region2_label = ctk.CTkLabel(self.type2, text="Region 2 :" ,bg_color= "red")
+        # region2_label.grid(row=0, column=0, padx=(5,0), pady=0, sticky="w")
+
+        # type2_display_frame = ctk.CTkFrame(self.type2, bg_color="yellow")
+        # type2_display_frame.grid(row=1, column=0, sticky="sew")
+        # type2_display_frame.columnconfigure(0, weight=1) 
+        # type2_display_frame.rowconfigure(0, weight=1)
+
+        # image_display2 = ImageDisaplay(type2_display_frame, self.image_location2, 1400, 350)
+        # image_display2.grid(row=1, column=0, sticky="sew", )
+        # image_display2.columnconfigure(0, weight=1)
+        # image_display2.rowconfigure(0, weight=1)
+
 
 
 

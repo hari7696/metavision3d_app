@@ -5,12 +5,12 @@ from multiprocessing import Process, Queue
 import io
 class ImageDisaplay(ctk.CTkFrame):
 
-    def __init__(self, master, image_location="cerebellumWT_umap_integrated.png"):
+    def __init__(self, master, image_location="cerebellumWT_umap_integrated.png", width = 1400, height = 400):
         super().__init__( master)
         self.frame_width = 1400
-        self.frame_height = 500
+        self.frame_height = 400
 
-        self.cluster_visualization = ctk.CTkFrame(master, width=self.frame_width, height=self.frame_height)
+        self.cluster_visualization = ctk.CTkFrame(master, width=self.frame_width, height=self.frame_height, bg_color = "red")
         self.cluster_visualization.grid(row=0, column=0, sticky="nsew")
         self.cluster_visualization.columnconfigure(0, weight=1)
         self.cluster_visualization.rowconfigure(0, weight=1)
