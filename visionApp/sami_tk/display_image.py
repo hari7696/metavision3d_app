@@ -3,12 +3,15 @@ from PIL import Image, ImageTk
 from tkinter import Tk, Canvas
 from multiprocessing import Process, Queue
 import io
+import time
 class ImageDisaplay(ctk.CTkFrame):
 
     def __init__(self, master, image_location="cerebellumWT_umap_integrated.png", width = 1400, height = 400):
         super().__init__( master)
         self.frame_width = 1400
         self.frame_height = 400
+        self.last_event_time = 0
+
 
         self.cluster_visualization = ctk.CTkFrame(master, width=self.frame_width, height=self.frame_height, bg_color = "red")
         self.cluster_visualization.grid(row=0, column=0, sticky="nsew")
@@ -59,7 +62,16 @@ class ImageDisaplay(ctk.CTkFrame):
         self.canvas.bind("<Double-Button-1>", self.reset_zoom)
 
     def zoom_image(self, event):
-        zoom_factor_change = 1.2 if event.delta > 0 else 0.8
+
+        current_time = time.time()
+        # print(current_time - self.last_event_time)
+        if current_time - self.last_event_time < 1:  # Adjust this value as needed
+            # print("Hit")
+            return  # Skip this update
+        self.last_event_time = current_time
+
+
+        zoom_factor_change = 1.1 if event.delta > 0 else 0.9
         new_zoom_factor = self.zoom_factor * zoom_factor_change
         # print(new_zoom_factor)
         if new_zoom_factor < 0.1:
