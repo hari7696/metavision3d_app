@@ -247,7 +247,7 @@ class NormalizationStep(ctk.CTkFrame):
         self.timer.grid(row=3,column=0,padx=(60,0),pady=8,sticky="w")
 
         # creating a label to show the normalization is in processing
-        self.norm_done_label = ctk.CTkLabel(self.norm_frame, text="", font = ("Arial", 12))
+        self.norm_done_label = ctk.CTkLabel(self.norm_frame, text="", font = ("Arial", 14) , width= 600, height=80)
         self.norm_done_label.grid(row=4,column=0,padx=(0,0),pady=8,sticky="w", rowspan = 3, columnspan = 3)
         
  
@@ -308,7 +308,7 @@ class NormalizationStep(ctk.CTkFrame):
                 # print("HIT")
                 self.norm_done_label.configure(text="Normalization is completed. \n\
                                                Make sure, you run the omics pooling once you are done with Normalization\n\
-                                               Otherwise, the Next steps, will not use the latest normalized data", font = ("Arial", 12))
+                                               Otherwise, the Next steps, will not use the latest normalized data", font = ("Arial", 14))
                 self.display_norm_plot(self.compound_matrix, self.norm_compound_matrix )
                 self.timer.stop_timer()   
         except Exception as e:
@@ -631,8 +631,6 @@ class NormalizationStep(ctk.CTkFrame):
         ax2.axis("off")
         fig2.tight_layout(pad=0)  # This reduces the padding around the image
         canvas2.draw()
-
-
     #     return fig
     
     def generate_boxplot_directly(self, matrix, ax, title):
