@@ -28,6 +28,7 @@ from SAMI.preprocessing import pooldata, csv2h5ad
 import logging
 from .timer import TimerApp
 from SAMI.clustering import Clusters
+from .display_image import ImageDisaplay
 logger = logging.getLogger(__name__)
 
 class ClusteringStep(ctk.CTkFrame):
@@ -45,7 +46,7 @@ class ClusteringStep(ctk.CTkFrame):
         self.cluster_image_label = None
         self.image_label = None
         self.queue = Queue()
-        self.trigger_visz_functions_on_thread_run()
+        # self.trigger_visz_functions_on_thread_run()
 
 
 
@@ -129,8 +130,9 @@ class ClusteringStep(ctk.CTkFrame):
         # write a label for resolution
         resolution_label = ctk.CTkLabel(self.cluster_options, text="Resolution :")
         resolution_label.grid(row=0,column=2,padx=(10,0),pady=8,sticky="ew")
-        self.resolution = ctk.CTkEntry(self.cluster_options,placeholder_text="Resolution",width=100)
+        self.resolution = ctk.CTkEntry(self.cluster_options,placeholder_text="1",width=100)
         self.resolution.grid(row=0,column=3,padx=(10,0),pady=8,sticky="ew")
+        self.resolution.insert(0, "1")
 
         self.cluster_button = ctk.CTkButton(self.cluster_options,text="Run Clustering",command=self.perform_clustering)
         self.cluster_button.grid(row=0,column=4,padx=(100,0),pady=8,sticky="ew")
@@ -162,6 +164,7 @@ class ClusteringStep(ctk.CTkFrame):
     @staticmethod
     def clustering(queue, cluster, clustered_file):
         
+        response_dict = {}
         # checking whether the clustering is already performed or not
         if not os.path.exists(clustered_file):
             logger.info("didnt any existing file, Performing clustering ")
@@ -169,54 +172,63 @@ class ClusteringStep(ctk.CTkFrame):
         else:
             logger.info("Clustering already done")
 
+        image_location, n_clusters = cluster.plot_umap_cluster(size=50,show=False)
+        response_dict['image_location'] = image_location
+        response_dict['n_clusters'] = n_clusters
+
         # sending a message to the queue that thread is completed
-        queue.put("clustering_done")
+        queue.put(response_dict)
 
     def perform_clustering(self):
         self.timer.reset_timer()
         self.timer.start_timer()
         cluster, clustered_file = self.prepare_cluster_module()
         self.time_constraint_label.configure(text="Note : clustering usally takes roughly 10 minutes")
-        clustering_process = Process(target=self.clustering, args=(self.queue, cluster,clustered_file ))
-        clustering_process.start()
+        self.clustering_process = Process(target=self.clustering, args=(self.queue, cluster,clustered_file ))
+        self.clustering_process.start()
+        self.trigger_visz_functions_on_thread_run()
 
     def trigger_visz_functions_on_thread_run(self):
 
-        try:
-            signal = self.queue.get_nowait()
-            if signal == "clustering_done":
-                logger.info("thread trigger received")
-                self.cluster, _ = self.prepare_cluster_module()
-                self.prepare_cluster_visualization()
-                self.prepare_specific_cluster_vis()
-                self.timer.stop_timer()
-                self.time_constraint_label.configure(text="Clustering Done")
-        except :
-            pass
-        finally:
-            # Schedule the next queue check
-            self.after(10000, self.trigger_visz_functions_on_thread_run)
-            logger.info("checking the queue")
+        if not self.queue.empty():
+            logger.info("thread trigger received")
+            message = self.queue.get()
+            self.image_location = message['image_location']
+            self.n_clusters = message['n_clusters']
+            self.cluster, _ = self.prepare_cluster_module()
+            self.prepare_cluster_visualization()
+            self.prepare_specific_cluster_vis()
+            self.timer.stop_timer()
+            self.time_constraint_label.configure(text="Clustering Done")
+        if self.clustering_process.is_alive():
+            self.after(100, self.trigger_visz_functions_on_thread_run)
+        else:
+            self.clustering_process.join()
 
     def prepare_cluster_visualization(self):
 
-        if self.image_label is not None:
-            self.image_label.destroy()
+        # if self.image_label is not None:
+        #     self.image_label.destroy()
 
-        # waiting till the thread completes the execution
-        # waiting till the thread completes the execution
-        image_location, self.n_clusters = self.cluster.plot_umap_cluster(size=50,show=False)
+        # self.image_label = ctk.CTkLabel(self.cluster_visualization, width=1400, height=450 )
+        # self.image_label.grid(row=0, column=0, sticky="nsew", )
+        # self.image_label.columnconfigure(0, weight=1)
+        # self.image_label.rowconfigure(0, weight=1)
 
-        self.image_label = ctk.CTkLabel(self.cluster_visualization, width=1400, height=450 )
-        self.image_label.grid(row=0, column=0, sticky="nsew", )
-        self.image_label.columnconfigure(0, weight=1)
-        self.image_label.rowconfigure(0, weight=1)
+        # ctk_image = ctk.CTkImage(light_image=Image.open(self.image_location),
+        #                              dark_image=None, size = (1400,450))
 
-        ctk_image = ctk.CTkImage(light_image=Image.open(image_location),
-                                     dark_image=None, size = (1400,450))
+        # self.image_label.configure(image=ctk_image)
+        # self.image_label.image = ctk_image 
+        for children in self.cluster_visualization.winfo_children():
+            children.destroy()
 
-        self.image_label.configure(image=ctk_image)
-        self.image_label.image = ctk_image 
+        self.image_display = ImageDisaplay(self.cluster_visualization, self.image_location)
+        self.image_display.grid(row=0, column=0, sticky="nsew", )
+        self.image_display.columnconfigure(0, weight=1)
+        self.image_display.rowconfigure(0, weight=1)
+
+        
 
 
     def prepare_specific_cluster_vis(self):
@@ -313,7 +325,7 @@ class SpecificCluster(ctk.CTkFrame):
         # attaching image to the label
         image_location = self.cluster.plot_select_cluster(int(choice),size=50,show=False)
         ctk_image = ctk.CTkImage(light_image=Image.open(image_location),
-                                     dark_image=None, size = (300,300))
+                                     dark_image=None, size = (400,300))
         self.cluster_image_label.configure(image=ctk_image)
         self.cluster_image_label.image = ctk_image
 
