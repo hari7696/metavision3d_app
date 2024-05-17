@@ -18,12 +18,13 @@ from .colormap import *
 import io
 from functools import partial
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
+from multiprocessing import Process, Queue
 # from .visualization_step import VisualizationStep
 import matplotlib.animation as animation
 import time
 import threading
 from SAMI.preprocessing import pooldata, csv2h5ad
+from .timer import TimerApp
 import logging
 logger = logging.getLogger(__name__)
 
@@ -37,8 +38,10 @@ class PoolingStep(ctk.CTkFrame):
         self.rowconfigure(0, weight=1)
         self.isrendering = False
         self.file_handler = file_handler    
+        self.queue = Queue()
         self.prepare_visualization_dock_type2()
         self.creating_pooling_tab()
+        # self.check_queue()
 
         # threading.Thread(target=self.displaying_loading_on_main_thread, args= (),daemon=True).start()
 
@@ -50,10 +53,8 @@ class PoolingStep(ctk.CTkFrame):
         for child in self.winfo_children():
             child.destroy()
 
-        self.root_visualization_frame = ctk.CTkFrame(
-            self, bg_color="transparent")
+        self.root_visualization_frame = ctk.CTkFrame(self, bg_color="transparent")
         self.root_visualization_frame.columnconfigure(0, weight=1)
-        # self.root_visualization_frame.columnconfigure(1,weight=2)
         self.root_visualization_frame.rowconfigure(0, weight=1)
         self.root_visualization_frame.grid(row=0, column=0, sticky="nsew")
 
@@ -74,23 +75,76 @@ class PoolingStep(ctk.CTkFrame):
         self.pooling_tab.rowconfigure(0, weight=1)
         self.pooling_frame = ctk.CTkFrame(self.pooling_tab)
         self.pooling_frame.grid(row=0, column=0, sticky="new")
-        self.pooling_frame.columnconfigure(0, weight=1)
+        self.pooling_frame.columnconfigure(0, weight=10)
+        self.pooling_frame.columnconfigure(1, weight=3)
+        self.pooling_frame.columnconfigure(2, weight=10)
+        # self.pooling_frame.columnconfigure((0, 1), weight=1)
         # self.pooling_frame.columnconfigure((0,1,2), weight=(1,1,1))
         # self.pooling_frame.rowconfigure(0, weight=1)
 
+        # breaking own the pooling frame
+        # self.pooling_options_frame = ctk.CTkFrame(self.pooling_frame)
+        # self.pooling_options_frame.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
+        # self.pooling_options_frame.columnconfigure(0, weight=1)
+        # self.pooling_options_frame.rowconfigure((0,1,2, 3, 4) ,weight=1)
+
+        # display files
+        # display_file_frame = ctk.CTkFrame(self.pooling_frame) 
+        # display_file_frame.grid(row=0, column=1, sticky="nw", padx=5, pady=5)
+
+
+
         # writing a ahead label about functionalty
-        self.head_label = ctk.CTkLabel(self.pooling_frame, text="Pooling of the matrix" , font=("Arial", 20))
-        self.head_label.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
+        self.head_label = ctk.CTkLabel(self.pooling_frame, text="Omics Pooling" , font=("Arial", 20))
+        self.head_label.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
+        # self.head_label.columnconfigure(0, weight=1)
+        # self.head_label.rowconfigure(0, weight=1)
 
         # making a button to start the pooling  
-        self.pooling_button = ctk.CTkButton(self.pooling_frame, text="Start Pooling", command=self.start_pooling, width=70)
-        self.pooling_button.grid(row=1, column=0, sticky="nw", padx=5, pady=5)
+        self.pooling_button = ctk.CTkButton(self.pooling_frame, text="Start Pooling", command=self.spin_seperate_process_for_pooling, width=40)
+        self.pooling_button.grid(row=1, column=1, sticky="ew", padx=5, pady=5)
 
-    def start_pooling(self):
+        # adding a timer
+        self.timer = TimerApp(self.pooling_frame)
+        self.timer.grid(row=2, column=1, sticky="ew", padx=5, pady=(5, 5))
+
+        # adding a status label
+        self.status_label = ctk.CTkLabel(self.pooling_frame, text="", font = ("Arial", 15), width = 80)
+        self.status_label.grid(row=3, column=1, sticky="ew", padx=0, pady=10)
+
+        # adding a label to display the files generated
+        self.files_label = ctk.CTkLabel(self.pooling_frame, text="", font = ("Arial", 15), width = 300, height = 300)
+        self.files_label.grid(row=4, column=1, sticky="ew", padx=0, pady=10, )
+
+
+
+    def spin_seperate_process_for_pooling(self):
+        self.timer.reset_timer()
+        self.timer.start_timer()
+        self.status_label.configure(text= "Omics Pooling started")    
+        self.process = Process(target=self.start_pooling, args=(self.file_handler.working_folder, self.queue))
+        self.process.start()
+        self.check_queue()
+
+    def check_queue(self):
+        if not self.queue.empty():
+            messgae = self.queue.get()
+            # print(messgae)
+            self.status_label.configure(text= "Omics pooling completed", text_color="green")
+            self.files_label.configure(text= messgae)
+            self.timer.stop_timer()
+        if self.process.is_alive():
+            self.master.after(500, self.check_queue)
+        # else:
+        #     self.process.join()
+
+        print("checking")
+        
+    @staticmethod   
+    def start_pooling(working_dir, queue):
         
         logger.info("Pooling started")  
-        # csv2had conversion
-        working_dir = self.file_handler.working_folder
+
         data_saving_path = os.path.join(working_dir, 'pooled_data')
         
         if not os.path.exists(data_saving_path):
@@ -109,15 +163,10 @@ class PoolingStep(ctk.CTkFrame):
             file_name = os.path.basename(file)
             if '_pool' in file_name:
                 str = str + file_name + "\n"
-        
-
-        self.status_label = ctk.CTkLabel(self.pooling_tab, text="Pooling Completed \n The Following files are generated \n\n{}".format(str), font = ("Arial", 15))
-        self.status_label.grid(row=2, column=0, sticky="nsew", padx=0, pady=10)
-
-        self.status_label = ctk.CTkLabel(self.pooling_tab, text="Switch to next step for clustering", font = ("Arial", 18))
-        self.status_label.grid(row=3, column=0, sticky="nsew", padx=0, pady=20)
-
+        queue.put(str)
         logger.info("Pooling completed")
+
+
 
 
 
