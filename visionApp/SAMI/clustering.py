@@ -213,7 +213,7 @@ class Cluster_Integration:
             
             
     def plot_select_cluster(self,region,cluster,size=50,show=False):
-        adata = sc.read(os.path.join('../results/clustering',f'{region}_integrated.h5ad'))
+        adata = sc.read(os.path.join(self.working_folder,f'{region}_integrated.h5ad'))
         clusters_colors = dict(zip([str(i) for i in range(102)], sc.pl.palettes.default_102))
         
         if isinstance(cluster, int):
@@ -233,8 +233,11 @@ class Cluster_Integration:
             palette=palette,
             show=False
         )
-        plt.savefig(os.path.join('../results/clustering/',f'{region}_{cluster}.png'),dpi=400) 
+        plt.savefig(os.path.join(self.working_folder,f'{region}_{cluster}.png'),dpi=400) 
         if show==False:
             plt.close()
         else:
             plt.show()
+
+
+        return os.path.join(self.working_folder,f'{region}_{cluster}.png')

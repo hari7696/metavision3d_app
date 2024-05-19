@@ -256,19 +256,19 @@ class ClusteringStep(ctk.CTkFrame):
         # self.frame3.columnconfigure(0, weight=1)
         # self.frame3.rowconfigure(0, weight=1)
 
-        specific_cluster1 = SpecificCluster(self.frame1, self.cluster, self.n_clusters)
+        specific_cluster1 = SpecificCluster(self.frame1, self.cluster, self.n_clusters, 0)
         specific_cluster1.grid(row=0, column=0, sticky="nsew")
 
-        specific_cluster2 = SpecificCluster(self.frame2, self.cluster, self.n_clusters)
+        specific_cluster2 = SpecificCluster(self.frame2, self.cluster, self.n_clusters, 1)
         specific_cluster2.grid(row=0, column=1, sticky="nsew")
 
-        specific_cluster3 = SpecificCluster(self.frame3, self.cluster, self.n_clusters)
+        specific_cluster3 = SpecificCluster(self.frame3, self.cluster, self.n_clusters, 2)
         specific_cluster3.grid(row=0, column=2, sticky="nsew")
 
 
        
 class SpecificCluster(ctk.CTkFrame):
-    def __init__(self, master, cluster, n_clusters):
+    def __init__(self, master, cluster, n_clusters, initial_choice=0):
         super().__init__(
             master,
         )
@@ -276,7 +276,9 @@ class SpecificCluster(ctk.CTkFrame):
         self.rowconfigure(0, weight=1)
         self.rowconfigure(1, weight=10)
         self.cluster = cluster
-        self.n_clusters = n_clusters    
+        self.initial_choice = initial_choice
+        self.n_clusters = n_clusters
+        self.queue = Queue()    
         
         self.cluster_image_label = None
 
@@ -312,6 +314,8 @@ class SpecificCluster(ctk.CTkFrame):
                             command=self.display_specific_cluster
                             )
         self.cluster_selection.grid(row=0,column=1,padx=(10,0),pady=8,sticky="w")
+        self.cluster_selection.set(str(self.initial_choice))
+        self.display_specific_cluster(self.initial_choice)
 
         # label = ctk.CTkLabel(self.nav_frame, text="Select Cluster :")
         # label.grid(row=0, column=2, padx=(5,0), pady=8, sticky="w")
@@ -320,16 +324,39 @@ class SpecificCluster(ctk.CTkFrame):
 
         self.loading_label.configure(text="Loading...", text_color="yellow")
         self.update()
+        
+        self.image_getter = Process(target=self.trigger_process_for_specific_cluster, args=(self.cluster, int(choice), 50, False, self.queue))
+        self.image_getter.start()
+        self.check_queue()
 
+    def check_queue(self):
+        if not self.queue.empty():
+            image_data = self.queue.get()
+            image_temp = Image.open(io.BytesIO(image_data))
+            self.display_image(image_temp)
+        if self.image_getter.is_alive():
+            self.after(100, self.check_queue)
+        else:
+            self.image_getter.join()
 
-        # attaching image to the label
-        image_location = self.cluster.plot_select_cluster(int(choice),size=50,show=False)
-        ctk_image = ctk.CTkImage(light_image=Image.open(image_location),
+    @staticmethod
+    def trigger_process_for_specific_cluster(cluster, choice, size, show=False, queue=None):
+        image_path = cluster.plot_select_cluster(choice,size=50,show=False)
+        image = Image.open(image_path)
+        with io.BytesIO() as output:
+            image.save(output, format="PNG")
+            image_data = output.getvalue()
+        queue.put(image_data)
+
+    def display_image(self, image_data):
+
+        ctk_image = ctk.CTkImage(light_image=image_data,
                                      dark_image=None, size = (400,300))
         self.cluster_image_label.configure(image=ctk_image)
         self.cluster_image_label.image = ctk_image
 
         self.loading_label.configure(text="")
+        
 
         
 
