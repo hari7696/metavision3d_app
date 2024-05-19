@@ -28,6 +28,7 @@ import logging
 from .timer import TimerApp
 from SAMI.clustering import Clusters, Cluster_Integration
 from .display_image import ImageDisaplay
+from .cluster_int_selective_clusters import ClusterIntSelectiveClusters
 logger = logging.getLogger(__name__)
 
 class ClusterIntergrationStep(ctk.CTkFrame):
@@ -93,8 +94,11 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         self.type2 = ctk.CTkFrame(self.cluster_int_tab, bg_color="transparent")
         self.type2.grid(row=2, column=0, sticky="nsew")
 
+        #adding a frame for the specific cluster selection
+        self.specific_cluster_tab = self.vis_tabs.add("Selective Clusters")
+
         # Intergrated cluster overlay umap
-        self.cluster_overlay_umap = self.vis_tabs.add("Umpa Overlay")
+        self.cluster_overlay_umap = self.vis_tabs.add("Umap Overlay")
         self.cluster_overlay_umap.columnconfigure(0, weight=1)
         self.cluster_overlay_umap.rowconfigure(0, weight = 1)
 
@@ -155,7 +159,18 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         # time constraint
         self.time_constraint_label = ctk.CTkLabel(self.cluster_int_options, text="Note : cluster Integration takes roughly 10 minutes", text_color="yellow")
         self.time_constraint_label.grid(row=0,column=6,padx=(10,0),pady=8,sticky="ew")
-    
+
+
+    def prep_specific_cluster_tab(self):
+
+        self.specific_cluster = ClusterIntSelectiveClusters(self.specific_cluster_tab, 
+                                                            self.cluster_int, self.n_clusters,
+                                                              self.region1, self.region2)
+        
+        self.specific_cluster.grid(row=0, column=0, sticky="nsew", padx=(3,3), pady=(3,3))
+
+        
+
     @staticmethod
     def splitname(adata):
         # name,_ = os.path.splitext(adata)
@@ -215,14 +230,14 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         self.cluster_int = self.prepare_cluster_module()
         self.time_constraint_label.configure(text="Note : cluster Integration usally takes roughly 10 minutes")
 
-        region1, _, _ = self.splitname(self.region1_selection.get())
-        region2, _, _ = self.splitname(self.region2_selection.get())
+        self.region1, _, _ = self.splitname(self.region1_selection.get())
+        self.region2, _, _ = self.splitname(self.region2_selection.get())
 
         # image_location1, self.n_clusters = self.cluster_int.plot_umap_cluster(region ,size=50,show=False)
         # image_location2, self.n_clusters = self.cluster_int.plot_umap_cluster(region ,size=50,show=False)
 
         self.clustering_process = Process(target=self.clusterintegration, args=(self.queue, self.cluster_int, 
-                                                                   self.integrated_file1, self.integrated_file2, region1, region2))
+                                                                   self.integrated_file1, self.integrated_file2,self.region1, self.region2))
         self.clustering_process.start()
         self.trigger_visz_functions_on_thread_run()
 
@@ -237,6 +252,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
             self.n_clusters = message['n_clusters']
             self.prepare_cluster_visualization()
             self.dsplay_umpa_overlay()
+            self.prep_specific_cluster_tab()
             self.timer.stop_timer()
             self.time_constraint_label.configure(text="Clustering Intergration Completed", text_color="green")
         if self.clustering_process.is_alive():
@@ -278,6 +294,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
 
         self.type2.columnconfigure(0, weight=1)
         self.type2.columnconfigure(1, weight=9)
+
         # region2 display
 
         #frames
@@ -299,77 +316,6 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         image_display2.grid(row=0, column=0, sticky="nsew", padx=(5,0) , pady = 0)
         image_display2.columnconfigure(0, weight=1)
         image_display2.rowconfigure(0, weight=1)
-
-
-
-
-        # # region2 display   
-
-        # region2_label = ctk.CTkLabel(self.type2, text="Region 2 :")
-        # region2_label.grid(row=0, column=0, padx=(5,0), pady=8, sticky="w")
-
-        # # region, _, _ = self.splitname(self.region2_selection.get())
-        # # image_location2, self.n_clusters = self.cluster_int.plot_umap_cluster(region ,size=50,show=False)
-
-        # self.image_label2 = ctk.CTkLabel(self.type2, width=1400, height=400 )
-        # self.image_label2.grid(row=1, column=0, sticky="w", )
-        # self.image_label2.columnconfigure(0, weight=1)
-        # self.image_label2.rowconfigure(0, weight=1)
-
-        # ctk_image2 = ctk.CTkImage(light_image=Image.open(self.image_location2),
-        #                              dark_image=None, size = (1400,400))
-
-        # self.image_label2.configure(image=ctk_image2)
-        # self.image_label2.image = ctk_image2 
-
-        
-        # type1_display_frame = ctk.CTkFrame(self.type1, bg_color="transparent")
-        # type1_display_frame.grid(row=1, column=0, sticky="sew")
-        # type1_display_frame.columnconfigure(0, weight=1)
-        # type1_display_frame.rowconfigure(0, weight=1)
-
-        # image_display = ImageDisaplay(type1_display_frame, self.image_location1, 1400, 350)
-        # image_display.grid(row=1, column=0, sticky="sew", )
-        # image_display.columnconfigure(0, weight=1)
-        # image_display.rowconfigure(0, weight=1)
-
-        # # region2 display   
-
-        # region2_label = ctk.CTkLabel(self.type2, text="Region 2 :" ,bg_color= "red")
-        # region2_label.grid(row=0, column=0, padx=(5,0), pady=0, sticky="w")
-
-        # type2_display_frame = ctk.CTkFrame(self.type2, bg_color="yellow")
-        # type2_display_frame.grid(row=1, column=0, sticky="sew")
-        # type2_display_frame.columnconfigure(0, weight=1) 
-        # type2_display_frame.rowconfigure(0, weight=1)
-
-        # image_display2 = ImageDisaplay(type2_display_frame, self.image_location2, 1400, 350)
-        # image_display2.grid(row=1, column=0, sticky="sew", )
-        # image_display2.columnconfigure(0, weight=1)
-        # image_display2.rowconfigure(0, weight=1)
-
-
-
-
-    # def prepare_specific_cluster_vis(self):
-
-    #     # a row to select the cluster
-    #     for child in self.specific_cluster.winfo_children():
-    #         child.destroy()
-
-    #     label = ctk.CTkLabel(self.specific_cluster, text="Select Cluster :")
-    #     label.grid(row=0, column=1, padx=(5,0), pady=8, sticky="ew")
-
-    #     _ = tk.StringVar(value='choose cluster to display')
-    #     # a combo box to select the cluster
-    #     clusters = [str(i) for i in range(self.n_clusters)]
-    #     self.cluster_selection = ctk.CTkComboBox(master= self.specific_cluster,
-    #                         values=clusters,
-    #                         variable=_,
-    #                         button_color="#b5b8b0",
-    #                         command=self.display_specific_cluster
-    #                         )
-    #     self.cluster_selection.grid(row=0,column=2,padx=(10,0),pady=8,sticky="ew")
 
     def dsplay_umpa_overlay(self):
 
