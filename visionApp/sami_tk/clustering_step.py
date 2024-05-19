@@ -117,7 +117,7 @@ class ClusteringStep(ctk.CTkFrame):
         path = os.path.join(self.file_handler.working_folder, 'pooled_data')
         files = os.listdir(path)
         # print(files)
-        files = [file for file in files if '_pool' in file]
+        #files = [file for file in files if '_pool' in file]
 
         self.file_selection = ctk.CTkComboBox(master= self.cluster_options,
                                             values=files,

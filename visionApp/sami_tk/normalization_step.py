@@ -1,5 +1,6 @@
 import tkinter as tk
 import customtkinter as ctk
+from CTkMessagebox import CTkMessagebox
 import pandas as pd
 import os
 import logging
@@ -57,7 +58,7 @@ class NormalizationStep(ctk.CTkFrame):
         self.create_visualization_dock_type1()
         self.prepare_visualization_dock_type1()
         self.create_normalization_tab()
-        self.check_for_normalization_thread_signal()
+        # self.check_for_normalization_thread_signal()
 
         # threading.Thread(target=self.displaying_loading_on_main_thread, args= (),daemon=True).start()
 
@@ -289,36 +290,31 @@ class NormalizationStep(ctk.CTkFrame):
     def onlick_run_normalization(self):
 
         if self.file_dropdown.get() == "Select Dataset":
-            messagebox.Message("Error", "Please select a dataset on the left panel")
+            CTkMessagebox(title="Info", message="Please select a dataset on the left panel")
         else:
             self.norm_done_label.configure(text="Normalization is running")
             self.timer.reset_timer()
             self.timer.start_timer()
             #creating a thread to run the normalization
             threading.Thread(target=self.run_normalization, args=(), daemon=True).start()
+            self.check_for_normalization_thread_signal()
     
     def check_for_normalization_thread_signal(self):
+        
 
-        # check the queue for messages  
-        try:
-            logger.info("messages in queue : {}".format(self.queue.qsize()))
-            signal = self.queue.get_nowait()
-            if signal == "Normalization_done":
-                logger.info("normalization thread trigger received")
+        if not self.queue.empty():
+            message = self.queue.get()
+            if message == 'Normalization_done':
+                logger.info("Normaliztion done, trigger received")
                 # print("HIT")
                 self.norm_done_label.configure(text="Normalization is completed. \n\
                                                Make sure, you run the omics pooling once you are done with Normalization\n\
                                                Otherwise, the Next steps, will not use the latest normalized data", font = ("Arial", 14))
-                self.display_norm_plot(self.compound_matrix, self.norm_compound_matrix )
+                self.display_norm_plot(self.compound_matrix_high_res, self.normalised_compound_matrix_high_res )
                 self.timer.stop_timer()   
-        except Exception as e:
-            logger.error(e)
-        finally:
+        else:
             # Schedule the next queue check
             self.after(1000, self.check_for_normalization_thread_signal)
-            # logger.info("checking the queue")
-
-
 
     def update_frame_with_file(self, choice):
 
@@ -342,7 +338,7 @@ class NormalizationStep(ctk.CTkFrame):
             reverse=True,
         )
         # time.sleep(5)
-        self.create_frames_in_slides_display_frame(self.compound_matrix)
+        self.create_frames_in_slides_display_frame(self.compound_matrix_high_res)
         self.loading_label.configure(text="")
         
 
@@ -351,14 +347,14 @@ class NormalizationStep(ctk.CTkFrame):
 
         self.loading_label.configure(text="Loading...", text_color="yellow")
         self.update()
-        self.create_frames_in_slides_display_frame(self.compound_matrix)
+        self.create_frames_in_slides_display_frame(self.compound_matrix_high_res)
         self.loading_label.configure(text="")
         
 
     def update_frame_with_molecule(self, choice):
         
         if self.file_dropdown.get() not in self.normalized_data.keys():
-            messagebox.Message("Please run the normilsation to display normalized iamges")
+            CTkMessagebox(title="Info", message="Please run the normilsation to display normalized iamges")
         else:
 
             self.loading_label.configure(text="Loading...", text_color="yellow")
@@ -377,14 +373,19 @@ class NormalizationStep(ctk.CTkFrame):
                                                         reverse=True,
                                                         )
 
-            self.create_frames_in_slides_display_frame(self.compound_matrix)
-            self.display_norm_plot(self.compound_matrix, self.norm_compound_matrix)
+            self.create_frames_in_slides_display_frame(self.compound_matrix_high_res)
+            self.display_norm_plot(self.compound_matrix_high_res, self.normalised_compound_matrix_high_res)
             self.loading_label.configure(text="")
 
     def create_frames_in_slides_display_frame(self, data):
+
+        logger.info("creating frames in slides display frame")
+        logger.info("number children in slides display frame : {}".format(len(self.slides_display_frame.winfo_children()) ))
+
         for widget in self.slides_display_frame.winfo_children():
             widget.destroy()
         # self.display_montage(data)
+        logger.info("num children in slides after destruction in disaply frame : {}".format(len(self.slides_display_frame.winfo_children()) ))
 
         slices, rows, cols = data.shape
         N = round(math.sqrt(slices))
@@ -456,7 +457,7 @@ class NormalizationStep(ctk.CTkFrame):
     def on_label_click_main(self, event, id):
 
         if self.file_dropdown.get() not in self.normalized_data.keys():
-            messagebox.Message("Please run the normilsation to display normalized iamges")
+            CTkMessagebox(title="Info", message="Please run the normilsation to display normalized iamges")
         else:
             self.on_label_click(event, id)
             self.on_label_click_pre_post_norm_comparison(event, id)
@@ -475,6 +476,8 @@ class NormalizationStep(ctk.CTkFrame):
         ax = fig.add_subplot(111)
         # ax = fig.add_subplot(111)
         # ax.set_facecolor('white')
+
+        # 
 
         # Clear existing widgets in the container
         for widget in self.norm_slides.winfo_children():
@@ -519,12 +522,17 @@ class NormalizationStep(ctk.CTkFrame):
     
 
     def on_label_click_pre_post_norm_comparison(self,  event, id):
-        print("comparison", id)
+        # print("comparison", id)
+
+        #num children in comparison frame
+        logger.info("num children in comparison frame : {}".format(len(self.comparison.winfo_children())))
 
         # Add a Matplotlib canvas to the Tkinter frame
         for widget in self.comparison.winfo_children():
             if widget != self.pre_norm_label or widget != self.post_norm_label:
                 widget.destroy()
+
+        logger.info("num children in comparison frame after destruction : {}".format(len(self.comparison.winfo_children())))
         
         # creatded a parent frame for the comparison tab
         self.comp_parent_frame = ctk.CTkFrame(self.comparison)

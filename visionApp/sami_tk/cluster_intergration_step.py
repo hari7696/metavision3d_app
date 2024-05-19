@@ -121,7 +121,8 @@ class ClusterIntergrationStep(ctk.CTkFrame):
 
         # getting the clustered files
         files = os.listdir(self.working_folder)
-        files = [file for file in files if ('_pool') in file and ('h5ad' in file)]
+        #files = [file for file in files if ('_pool') in file and ('h5ad' in file)]
+        files = [file for file in files if 'h5ad' in file]
 
         # region selection 1
         region1_label = ctk.CTkLabel(self.cluster_int_options, text="Select Region1 :" )

@@ -41,7 +41,9 @@ class SAMIApp(ctk.CTkFrame):
         self.dropdown_file_type_single_multi.grid(
             row=0, column=1, padx=(5, 0), pady=(2, 2), sticky="w"
         )
-
+        self.steps = {} 
+        self.loaded_steps = {}
+        self.file_handler = None
         self.create_process_bar()
         logger.debug(
             f"Number of children in nav_frame: { len(self.nav_frame.winfo_children())}"
@@ -52,6 +54,7 @@ class SAMIApp(ctk.CTkFrame):
         self.create_parent_tab_switch()
         # self.create_visualization_dock()
         # self.create_left_visualization_dock()
+ 
 
     def file_open(self, choice):
         self.file_handler = FileOpenbutton(self.nav_frame, self.queue)
@@ -63,26 +66,21 @@ class SAMIApp(ctk.CTkFrame):
         self.create_process_bar()
 
     def check_for_file_load(self):
+        
+        if not self.queue.empty():
+            message = self.queue.get()
+            logger.info("file load thread trigger received")
+            # print("HIT")
+            # when the file switch happens we need to reinitialize the process steps, the old views will be garbage collected
+            self.loaded_steps = {}
+            self.initialize_step_constructor()
+            self.process_step.set("Visualization")
+            # self.after(100, self.process_step.invoke())
+            self.execute_selected_step("Visualization")
 
-        # check the queue for messages  
-        try:
-            logger.info("messages in queue : {}".format(self.queue.qsize()))
-            signal = self.queue.get_nowait()
-            if signal == "loaded_files":
-                logger.info("file load thread trigger received")
-                # print("HIT")
-                self.process_step.set("Visualization")
-                # self.after(100, self.process_step.invoke())
-                self.execute_selected_step("Visualization")
-                
-        except Exception as e:
-            logger.error(e)
-        finally:
             # Schedule the next queue check
-            self.after(1000, self.check_for_file_load)
-            # logger.info("checking the queue")
-
-
+        self.after(1000, self.check_for_file_load)
+        
     def create_process_bar(self):
         """Bar in the NavFrame to show the process steps
         This bar is gonna trigger the process steps
@@ -123,6 +121,29 @@ class SAMIApp(ctk.CTkFrame):
             row=0, column=4, padx=(5, 5), pady=(2, 2), sticky="w"
         )
 
+    def initialize_step_constructor(self):
+        self.steps = {
+            "Visualization": (VisualizationStep, self.file_handler),
+            "Normalization": (NormalizationStep, self.file_handler),
+            "Pooling": (PoolingStep, self.file_handler),
+            "Clustering": (ClusteringStep, self.file_handler),
+            "Clusters Integration": (ClusterIntergrationStep, self.file_handler),
+            "Markers": (MarkerStep, self.file_handler),
+            "Pathways": (PathwaysStep, self.file_handler)
+        }
+
+    def initialize_step(self, step_name):
+
+        """Initialize a step only if it has not been created yet."""
+        if step_name not in self.loaded_steps:
+            # Create the step using the constructor and parameters stored in `steps`
+            step = self.steps[step_name][0](self.visualization_tab, *self.steps[step_name][1:])
+            step.columnconfigure(0, weight=1)
+            step.rowconfigure(0, weight=1)
+            step.grid(row=0, column=0, sticky="nsew")
+            self.loaded_steps[step_name] = step
+        return self.loaded_steps[step_name]
+
     def create_parent_tab_switch(self):
         """Parent Tab consists of Visualization and Export tabs"""
 
@@ -141,65 +162,76 @@ class SAMIApp(ctk.CTkFrame):
         # it goes to parent frame row 1
         self.parent_tab_switch.grid(row=0, column=0, sticky="new", padx=5)
 
-
     def execute_selected_step(self, choice):
-        """
-        This functions acts as a key trigger for the process steps
-        It controls the right framme of the visualization tab
+        # Initialize the step if necessary
+        step = self.initialize_step(choice)
+        # Hide all steps
+        for s in self.loaded_steps.values():
+            s.grid_remove()
+        # Show the selected step
+        step.grid(row=0, column=0, sticky="nsew")
 
-        """
 
-        logger.info(f"Processing step: {choice}")
-        # tabview visualization on the right frame
+    # def execute_selected_step(self, choice):
+    #     """
+    #     This functions acts as a key trigger for the process steps
+    #     It controls the right framme of the visualization tab
 
-        if choice == "Visualization":
+    #     """
+    #     for step in self.steps.values():
+    #         step.grid_remove()
 
-            self.vis_step = VisualizationStep(self.visualization_tab, self.file_handler)
-            self.vis_step.columnconfigure(0, weight=1)
-            self.vis_step.rowconfigure(0, weight=1)
-            self.vis_step.grid(row=0, column=0, sticky="nsew")
+    #     logger.info(f"Processing step: {choice}")
+    #     # tabview visualization on the right frame
 
-        elif choice == "Normalization":
+    #     if choice == "Visualization":
 
-            self.norm_step = NormalizationStep(self.visualization_tab, self.file_handler)
-            self.norm_step.columnconfigure(0, weight=1)
-            self.norm_step.rowconfigure(0, weight=1)
-            self.norm_step.grid(row=0, column=0, sticky="nsew")
-            # self.norm_plot.columnconfigure(0,weight=1)
-            # self.norma_regions.columnconfigure(0,weight=1)
+    #         # self.vis_step = VisualizationStep(self.visualization_tab, self.file_handler)
+    #         # self.vis_step.columnconfigure(0, weight=1)
+    #         # self.vis_step.rowconfigure(0, weight=1)
+    #         self.steps["Visualization"].grid(row=0, column=0, sticky="nsew")
 
-        elif choice == "Pooling":
-            self.pooling_step = PoolingStep(self.visualization_tab, self.file_handler)
-            self.pooling_step.columnconfigure(0, weight=1)  
-            self.pooling_step.rowconfigure(0, weight=1)
-            self.pooling_step.grid(row=0, column=0, sticky="nsew")
+    #     elif choice == "Normalization":
 
-            # self.pooling.columnconfigure(0,weight=1)
+    #         # self.norm_step = NormalizationStep(self.visualization_tab, self.file_handler)
+    #         # self.norm_step.columnconfigure(0, weight=1)
+    #         # self.norm_step.rowconfigure(0, weight=1)
+    #         self.steps["Normalization"].grid(row=0, column=0, sticky="nsew")
+    #         # self.norm_plot.columnconfigure(0,weight=1)
+    #         # self.norma_regions.columnconfigure(0,weight=1)
 
-        elif choice == "Clustering":
+    #     elif choice == "Pooling":
+    #         # self.pooling_step = PoolingStep(self.visualization_tab, self.file_handler)
+    #         # self.pooling_step.columnconfigure(0, weight=1)  
+    #         # self.pooling_step.rowconfigure(0, weight=1)
+    #         self.steps["Pooling"].grid(row=0, column=0, sticky="nsew")
 
-            self.clustering_step = ClusteringStep(self.visualization_tab, self.file_handler)
-            self.clustering_step.columnconfigure(0, weight=1)  
-            self.clustering_step.rowconfigure(0, weight=1)
-            self.clustering_step.grid(row=0, column=0, sticky="nsew")
+    #         # self.pooling.columnconfigure(0,weight=1)
 
-            # self.clustering.columnconfigure(0,weight=1)
-        elif choice == "Clusters Integration":
+    #     elif choice == "Clustering":
 
-            self.clustering_step = ClusterIntergrationStep(self.visualization_tab, self.file_handler)
-            self.clustering_step.columnconfigure(0, weight=1)  
-            self.clustering_step.rowconfigure(0, weight=1)
-            self.clustering_step.grid(row=0, column=0, sticky="nsew")
+    #         # self.clustering_step = ClusteringStep(self.visualization_tab, self.file_handler)
+    #         # self.clustering_step.columnconfigure(0, weight=1)  
+    #         # self.clustering_step.rowconfigure(0, weight=1)
+    #         self.steps["Clustering"].grid(row=0, column=0, sticky="nsew")
 
-        elif choice == "Markers":
-            self.clustering_step = MarkerStep(self.visualization_tab, self.file_handler)
-            self.clustering_step.columnconfigure(0, weight=1)  
-            self.clustering_step.rowconfigure(0, weight=1)
-            self.clustering_step.grid(row=0, column=0, sticky="nsew")
+    #         # self.clustering.columnconfigure(0,weight=1)
+    #     elif choice == "Clusters Integration":
 
-        elif choice == "Pathways":
+    #         # self.clustering_step = ClusterIntergrationStep(self.visualization_tab, self.file_handler)
+    #         # self.clustering_step.columnconfigure(0, weight=1)  
+    #         # self.clustering_step.rowconfigure(0, weight=1)
+    #         self.steps["Clusters Integration"].grid(row=0, column=0, sticky="nsew")
+
+    #     elif choice == "Markers":
+    #         # self.clustering_step = MarkerStep(self.visualization_tab, self.file_handler)
+    #         # self.clustering_step.columnconfigure(0, weight=1)  
+    #         # self.clustering_step.rowconfigure(0, weight=1)
+    #         self.steps["Markers"].grid(row=0, column=0, sticky="nsew")
+
+    #     elif choice == "Pathways":
             
-            self.clustering_step = PathwaysStep(self.visualization_tab, self.file_handler)
-            self.clustering_step.columnconfigure(0, weight=1)  
-            self.clustering_step.rowconfigure(0, weight=1)
-            self.clustering_step.grid(row=0, column=0, sticky="nsew")
+    #         # self.clustering_step = PathwaysStep(self.visualization_tab, self.file_handler)
+    #         # self.clustering_step.columnconfigure(0, weight=1)  
+    #         # self.clustering_step.rowconfigure(0, weight=1)
+    #         self.steps["Pathways"].grid(row=0, column=0, sticky="nsew")

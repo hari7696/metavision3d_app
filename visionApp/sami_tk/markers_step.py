@@ -106,24 +106,10 @@ class MarkerStep(ctk.CTkFrame):
         self.prepare_options_panel()
     
     def prepare_options_panel(self):
+        
+        for i in range(0,15):
+            self.options_panel.columnconfigure(i, weight=1)
 
-        self.options_panel.columnconfigure(0, weight=1)
-        self.options_panel.columnconfigure(1, weight=1)
-        self.options_panel.columnconfigure(2, weight=1)
-        self.options_panel.columnconfigure(3, weight=1)
-        self.options_panel.columnconfigure(4, weight=1)
-        self.options_panel.columnconfigure(5, weight=1)
-        self.options_panel.columnconfigure(6, weight=1)
-        self.options_panel.columnconfigure(7, weight=1)
-        self.options_panel.columnconfigure(8, weight=1)
-        self.options_panel.columnconfigure(9, weight=1)
-        self.options_panel.columnconfigure(10, weight=1)
-        self.options_panel.columnconfigure(11, weight=1)
-        self.options_panel.columnconfigure(12, weight=1)
-        self.options_panel.columnconfigure(13, weight=1)
-        self.options_panel.columnconfigure(14, weight=1)
-        # self.options_panel.columnconfigure(15, weight=1)
-        # self.options_panel.columnconfigure(16, weight=1)
 
         files = os.listdir(self.working_folder)
         files = [file for file in files if ('_integrated.h5ad') in file]
@@ -310,10 +296,17 @@ class MarkerStep(ctk.CTkFrame):
         # button to run the function
         self.run_button = ctk.CTkButton(self.circular_options_panel, text="Run", command=self.display_circular_plot)
         self.run_button.grid(row=0, column=2, sticky="w", padx=(20,0), pady=5)
+
+        # adding a status label
+        # self.status_label_circular_plot = ctk.CTkLabel(self.circular_options_panel, text="", text_color="yellow", width= 150)
+        # self.status_label_circular_plot.grid(row=0, column=3, sticky="w", padx=(20,0), pady=5)
+
         
 
     def display_circular_plot(self):
-        
+
+        # self.status_label_circular_plot.configure(text="Loading...", text_color="yellow")
+        # self.update()
         if self.circular_image_label is not None:
             self.circular_image_label.destroy()
 
@@ -330,6 +323,9 @@ class MarkerStep(ctk.CTkFrame):
                                      dark_image=None, size = (800,800))
         self.circular_image_label.configure(image=ctk_image1)
         self.circular_image_label.image = ctk_image1
+
+        # self.status_label_circular_plot.configure(text="", text_color="yellow")
+        # self.update()
     
     def prepare_volcano_plot(self):
 
@@ -368,7 +364,14 @@ class MarkerStep(ctk.CTkFrame):
         self.run_button = ctk.CTkButton(self.volocano_options_panel, text="Run", command=self.display_volcano_plot)
         self.run_button.grid(row=0, column=2, sticky="w", padx=(20,0), pady=5)
 
+        # adding a status label
+        # self.status_label_volcano_plot = ctk.CTkLabel(self.volocano_options_panel, text="", text_color="yellow", width= 150)
+        # self.status_label_volcano_plot.grid(row=0, column=3, sticky="w", padx=(20,0), pady=5)
+
     def display_volcano_plot(self):
+
+        # self.status_label_circular_plot.configure(text="Loading...", text_color="yellow")
+        # self.update()
 
         if self.volcano_image_label is not None:
             self.volcano_image_label.destroy()
@@ -384,4 +387,7 @@ class MarkerStep(ctk.CTkFrame):
                                      dark_image=None, size = (400,400))
         self.volcano_image_label.configure(image=ctk_image2)
         self.volcano_image_label.image = ctk_image2
+
+        # self.status_label_volcano_plot.configure(text="", text_color="yellow")
+        # self.update()
 
