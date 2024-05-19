@@ -46,6 +46,9 @@ class PathwaysStep(ctk.CTkFrame):
         self.plot_dot_image_label = None
         self.network_image_label = None
         # self.sami_type = file_handler.file_type
+        if not os.path.exists(self.pathways_folder):
+            os.makedirs(self.pathways_folder)
+            print("DIRECTORY CREATED")
 
         self.prepare_visualization_dock_type2()
         self.trigger_visz_functions_on_thread_run()
@@ -275,11 +278,18 @@ class PathwaysStep(ctk.CTkFrame):
         # button to run the function
         self.run_button = ctk.CTkButton(self.plot_dot_options_panel, text="Run", command=self.display_plot_plot)
         self.run_button.grid(row=0, column=4, sticky="w", padx=(20,0), pady=5)
+
+        self.status_label_plot_dot = ctk.CTkLabel(self.plot_dot_options_panel, text="", text_color="yellow", width = 150)
+        self.status_label_plot_dot.grid(row=0,column=5,padx=(5,5),pady=2,sticky="w")
+
         
     def display_plot_plot(self):
         
         if self.plot_dot_image_label is not None:
             self.plot_dot_image_label.destroy()
+
+        self.status_label_plot_dot.configure(text="Loading...", text_color="yellow")
+        self.update()
 
         logger.info("displaying plot plot")
         # get the value from top N entry
@@ -295,6 +305,9 @@ class PathwaysStep(ctk.CTkFrame):
                                      dark_image=None, size = (1200,600))
         self.plot_dot_image_label.configure(image=ctk_image1)
         self.plot_dot_image_label.image = ctk_image1
+
+        self.status_label_plot_dot.configure(text="", text_color="yellow")
+        self.update()
     
     def prepare_network_plot(self):
 
@@ -334,7 +347,6 @@ class PathwaysStep(ctk.CTkFrame):
                                             values=values,
                                             variable=_,
                                             button_color="#b5b8b0",
-                                            width = 250
                                             )
         self.network_cluster_entry.grid(row=0, column=1, sticky="w", padx=5, pady=5)
         self.network_cluster_entry.set("1")
@@ -351,9 +363,16 @@ class PathwaysStep(ctk.CTkFrame):
         # button to run the function
         self.run_button_network = ctk.CTkButton(self.network_options_panel, text="Run", command=self.display_network_plot)
         self.run_button_network.grid(row=0, column=4, sticky="w", padx=(20,0), pady=5)
+
+        # adding a status label
+        self.status_label_network_plot = ctk.CTkLabel(self.network_options_panel, text="", text_color="yellow", width = 150)
+        self.status_label_network_plot.grid(row=0,column=5,padx=(5,5),pady=2,sticky="w")
+
         
     def display_network_plot(self):
 
+        self.status_label_network_plot.configure(text="Loading...", text_color="yellow")
+        self.update()
         if self.network_image_label is not None:
             self.network_image_label.destroy()
 
@@ -370,5 +389,8 @@ class PathwaysStep(ctk.CTkFrame):
                                      dark_image=None, size = (800,600))
         self.network_image_label.configure(image=ctk_image2)
         self.network_image_label.image = ctk_image2
+        self.status_label_network_plot.configure(text="", text_color="yellow")
+        self.update()
+
 
     

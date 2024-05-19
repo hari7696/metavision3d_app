@@ -11,6 +11,8 @@ import io
 from functools import partial
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.animation as animation
+import logging
+logger = logging.getLogger(__name__)    
 
 class VisualizationStep(ctk.CTkFrame):
 
@@ -187,7 +189,7 @@ class VisualizationStep(ctk.CTkFrame):
         )
 
         # time.sleep(5)
-        self.create_frames_in_slides_display_frame(self.compound_matrix)
+        self.create_frames_in_slides_display_frame(self.compound_matrix_high_res)
 
         self.loading_label.configure(text = "")
 
@@ -198,7 +200,7 @@ class VisualizationStep(ctk.CTkFrame):
         self.update()
         
 
-        self.create_frames_in_slides_display_frame(self.compound_matrix)
+        self.create_frames_in_slides_display_frame(self.compound_matrix_high_res)
         self.loading_label.configure(text = "")
     
     def update_frame_with_molecule(self, choice):
@@ -214,13 +216,15 @@ class VisualizationStep(ctk.CTkFrame):
         )
 
         # time.sleep(5)
-        self.create_frames_in_slides_display_frame(self.compound_matrix)
+        self.create_frames_in_slides_display_frame(self.compound_matrix_high_res)
         self.loading_label.configure(text = "")
 
     def create_frames_in_slides_display_frame(self, data):
         for widget in self.slides_display_frame.winfo_children():
             widget.destroy()
         # self.display_montage(data)
+
+        logger.info("Num children in visualization left pane: %s", len(self.slides_display_frame.winfo_children()))
 
         slices, rows, cols = data.shape
         N = round(math.sqrt(slices))
@@ -306,8 +310,11 @@ class VisualizationStep(ctk.CTkFrame):
         # ax.set_facecolor('white')
 
         # Clear existing widgets in the container
+
         for widget in self.slide.winfo_children():
             widget.destroy()
+
+        logger.info("num childer in tissues tab : %s", len(self.slide.winfo_children()))
 
         # Create a frame to hold the canvas
         self.slide_tab_frame = ctk.CTkFrame(self.slide)
