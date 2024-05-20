@@ -152,7 +152,7 @@ class Cluster_Integration:
         #region, modality, resolution = name.split('_')
         resolution = name.split('_')[-1]
         modality = name.split('_')[-2]
-        region = '_'.join(name.split('_')[:-2])
+        region = '_'.join(name.split('_')[:-1])
 
         return region, modality, resolution
     

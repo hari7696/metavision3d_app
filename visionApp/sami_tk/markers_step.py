@@ -105,6 +105,16 @@ class MarkerStep(ctk.CTkFrame):
 
         self.prepare_options_panel()
     
+    def refresh(self):
+        "whenever the tab swtich happens this function updates the files available in dropdowns"
+        files = os.listdir(self.working_folder)
+        files = [file for file in files if ('_integrated.h5ad') in file]
+
+        self.region1_selection.configure(values=files)
+
+        if self.sami_type == "multi":
+            self.region2_selection.configure(values=files)
+
     def prepare_options_panel(self):
         
         for i in range(0,15):

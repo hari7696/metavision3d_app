@@ -32,6 +32,10 @@ class VisualizationStep(ctk.CTkFrame):
 
         # threading.Thread(target=self.displaying_loading_on_main_thread, args= (),daemon=True).start()
 
+    def refresh(self):
+        pass
+
+
     def create_visualization_dock_type1(self):
         """Under the visualization tab, we have two frames, left and right frame
         Left frame is for displaying the files and color maps and right frame is for displaying the results
