@@ -148,7 +148,7 @@ class Cluster_Integration:
         # region, modality, resolution = name.split('_')
         # return region, modality, resolution
         # changed for GUI braoder handling
-        name = adata.strip('.h5ad')
+        name = adata.replace('.h5ad', "")
         #region, modality, resolution = name.split('_')
         resolution = name.split('_')[-1]
         modality = name.split('_')[-2]

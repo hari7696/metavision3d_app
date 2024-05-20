@@ -4,7 +4,7 @@ import pandas as pd
 import os
 import logging
 from multiprocessing import Process, Queue
-
+from CTkMessagebox import CTkMessagebox
 from .compound_matrix import create_compound_matrix
 
 # from .process_steps import process_state
@@ -108,7 +108,7 @@ class MarkerStep(ctk.CTkFrame):
     def refresh(self):
         "whenever the tab swtich happens this function updates the files available in dropdowns"
         files = os.listdir(self.working_folder)
-        files = [file for file in files if ('_integrated.h5ad') in file]
+        files = [file for file in files if ('.h5ad') in file]
 
         self.region1_selection.configure(values=files)
 
@@ -122,8 +122,7 @@ class MarkerStep(ctk.CTkFrame):
 
 
         files = os.listdir(self.working_folder)
-        files = [file for file in files if ('_integrated.h5ad') in file]
-
+        files = [file for file in files if ('.h5ad') in file]
         # region selection 1
         region1_label = ctk.CTkLabel(self.options_panel, text="Select Region 1 :" )
         region1_label.grid(row=0,column=0,padx=(2,0),pady=2,sticky="ew")    
@@ -213,10 +212,10 @@ class MarkerStep(ctk.CTkFrame):
         adata1_path = os.path.join(self.working_folder, region1)
         if self.sami_type == "multi":
             adata2_path = os.path.join(self.working_folder, region2)
-            reference_name = '_'.join(region1.strip('.h5ad').split('_')[:-1]) + '_with_' + '_'.join(region2.strip('.h5ad').split('_')[:-1])
+            reference_name = '_'.join(region1.replace('.h5ad' , "").split('_')[:-1]) + '_with_' + '_'.join(region2.replace('.h5ad', "").split('_')[:-1])
         else:
             adata2_path = None
-            reference_name = '_'.join(region1.strip('.h5ad').split('_')[:-1]) + '_single'
+            reference_name = '_'.join(region1.replace('.h5ad', "").split('_')[:-1]) + '_single'
         logger.info(f"adata1_path: {adata1_path}")
         logger.info(f"adata2_path: {adata2_path}")
         logger.info(f"top_n_molecules: {top_n_molecules}")
@@ -324,7 +323,15 @@ class MarkerStep(ctk.CTkFrame):
 
         # get the value from top N entry
         top = int(self.top_n_entry.get())
-        image_location = self.markers.circular_tree(clusters=None,top=top, show=False, workdir= self.makers_working_folder)
+        
+
+        try:
+            image_location = self.markers.circular_tree(clusters=None,top=top, show=False, workdir= self.makers_working_folder)
+        except Exception as e:
+            logger.error(f"Error in plot_dot: {e}")
+            CTkMessagebox(title="Error", message="Something went wrong in Markers calculation", icon="cancel")
+
+
         # creating a label to display the image
         self.circular_image_label = ctk.CTkLabel(self.circular_image_frame , width=800, height=800)
         self.circular_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)
@@ -388,7 +395,13 @@ class MarkerStep(ctk.CTkFrame):
 
         # get the value from top N entry
         cluster = int(self.cluster_selection.get())
-        image_location = self.markers.volcano_plot(cluster, show=False, work_dir= self.makers_working_folder)
+        try:
+            image_location = self.markers.volcano_plot(cluster, show=False, work_dir= self.makers_working_folder)
+        except Exception as e:
+            logger.error(f"Error in plot_dot: {e}")
+            CTkMessagebox(title="Error", message="Something went wrong in Markers calculation", icon="cancel")
+
+
         # creating a label to display the image
         self.volcano_image_label = ctk.CTkLabel(self.volcano_image_frame , width=400, height=400)
         self.volcano_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)

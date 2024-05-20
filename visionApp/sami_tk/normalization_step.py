@@ -11,7 +11,7 @@ import logging
 # import glob
 # from .file_handler import FileOpenbutton
 from .compound_matrix import create_compound_matrix
-
+from multiprocessing import Process
 # from .process_steps import process_state
 import math
 from pylab import Figure
@@ -58,6 +58,10 @@ class NormalizationStep(ctk.CTkFrame):
         self.create_visualization_dock_type1()
         self.prepare_visualization_dock_type1()
         self.create_normalization_tab()
+
+        norm_dir = os.path.join(*[self.file_handler.working_folder, 'normalised_data'])
+        if not os.path.exists(norm_dir):
+            os.mkdir(norm_dir)
         # self.check_for_normalization_thread_signal()
 
         # threading.Thread(target=self.displaying_loading_on_main_thread, args= (),daemon=True).start()
@@ -286,6 +290,7 @@ class NormalizationStep(ctk.CTkFrame):
                                                             roi=False,
                                                             reverse=True,
                                                             )
+        
         self.queue.put("Normalization_done")
         
         # writing a ctk label to show the normalization is done
@@ -314,10 +319,26 @@ class NormalizationStep(ctk.CTkFrame):
                                                Make sure, you run the omics pooling once you are done with Normalization\n\
                                                Otherwise, the Next steps, will not use the latest normalized data", font = ("Arial", 14))
                 self.display_norm_plot(self.compound_matrix_high_res, self.normalised_compound_matrix_high_res )
-                self.timer.stop_timer()   
+                self.timer.stop_timer() 
+                # Spinning a process to convert the normalized to csv
+                file_name = self.file_dropdown.get() + '_normalized.csv'
+                file_name = os.path.join(*[self.file_handler.working_folder, 'normalised_data', file_name])
+                csv_saving_process = Process(target=self.save_normalized_files_in_csv,
+                                              args=(file_name,self.normalized_data[self.file_dropdown.get()] ), daemon=True)
+                csv_saving_process.start()
+
+
         else:
             # Schedule the next queue check
             self.after(1000, self.check_for_normalization_thread_signal)
+
+    @staticmethod
+    def save_normalized_files_in_csv(file_name, df):
+        df.to_csv(file_name, index=False)
+        logger.info(f"file saved in csv : {file_name}")
+        return
+
+
 
     def update_frame_with_file(self, choice):
 
