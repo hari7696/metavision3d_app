@@ -65,7 +65,10 @@ class Markers:
 
         # crude updates
         marker_result['omics'] = marker_result['omics'].replace({'lip':'lipidomics','sm':'metabolomics'})
-
+        marker_result['omics'] = marker_result['omics'].apply(lambda x: 'lipidomics' if x.startswith('lip') else x)
+        marker_result['omics'] = marker_result['omics'].apply(lambda x: 'glycomics' if x.startswith('gly') else x)
+        marker_result['omics'] = marker_result['omics'].apply(lambda x: 'metabolomics' if x.startswith('met') else x)
+        
         pvalue_result.to_csv(os.path.join(workdir,f'{self.region}_pvalue.csv'),index=False)
         marker_result.to_csv(os.path.join(workdir,f'{self.region}_marker.csv'),index=False)
         

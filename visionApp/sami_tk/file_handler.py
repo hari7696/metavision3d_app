@@ -74,7 +74,7 @@ class FileOpenbutton(ctk.CTkFrame):
             self.working_folder = os.path.dirname(self.filepath)
             logger.info(f"working folder: {self.working_folder}")
             self.base_files = [os.path.basename(file) for file in [self.filepath]]
-            self.base_files = [file.strip(".csv") for file in self.base_files]
+            self.base_files = [file.replace(".csv", "") for file in self.base_files]
             self.display_file_loading()
             threading.Thread(
                 target=self.async_read_files, args=([self.filepath],), daemon=True
@@ -91,7 +91,7 @@ class FileOpenbutton(ctk.CTkFrame):
         self.working_folder = os.path.dirname(self.files_path[0])
         logger.info(f"working folder: {self.working_folder}")
         self.base_files = [os.path.basename(file) for file in self.files_path]
-        self.base_files = [file.strip(".csv") for file in self.base_files]
+        self.base_files = [file.replace(".csv", "") for file in self.base_files]
 
         self.display_file_loading()
         threading.Thread(
@@ -110,7 +110,7 @@ class FileOpenbutton(ctk.CTkFrame):
             base_filename = os.path.basename(file)
             temp_df = pd.read_csv(os.path.join(self.working_folder, base_filename))
             logger.info(f"file read: {base_filename}")
-            base_filename = base_filename.strip(".csv")
+            base_filename = base_filename.replace(".csv", "")
             self.input_data_raw[base_filename] = self.preprocess(temp_df, base_filename)
         self.is_files_read = True
         self.queue.put("loaded_files")

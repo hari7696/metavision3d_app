@@ -13,7 +13,7 @@ def csv2h5ad(data_path,pattern,data_saving_path, split=False):
     for file in os.listdir(data_path):
         name, ext = os.path.splitext(file)
         
-        if re.match(pattern,file):
+        if '_norm.pq' in file:
             logger.info(f'csv2h5ad processing {file}')
             split_file = name.split('_')
             data_temp = pd.read_parquet(os.path.join(data_path, file))
@@ -51,8 +51,7 @@ def pooldata(data_path,pattern, data_saving_path, split=False):
     for file in os.listdir(data_path):
         name, ext = os.path.splitext(file)
         logger.info(f'pooling file before if {file}')             
-        if '_norm' in name:
-        # if re.match(pattern,file):
+        if '_norm.pq' in file:
             split_file = name.split('_')
             print("converting", os.path.join(data_path, file))
             data_temp = pd.read_parquet(os.path.join(data_path, file))

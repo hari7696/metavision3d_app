@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from CTkMessagebox import CTkMessagebox
 import logging
 from .file_handler import FileOpenbutton
 from .visualization_step import VisualizationStep
@@ -25,6 +26,7 @@ class SAMIApp(ctk.CTkFrame):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.queue = queue.Queue()
+        self.file_loading_status = False
         logger.debug("SAMI class initialized")
         # this functions check for messages from file handler, whenever the use opens files, it will refreshes the visualization tab
         self.check_for_file_load()
@@ -74,12 +76,15 @@ class SAMIApp(ctk.CTkFrame):
             # when the file switch happens we need to reinitialize the process steps, the old views will be garbage collected
             self.loaded_steps = {}
             self.initialize_step_constructor()
+            self.file_loading_status = True
             self.process_step.set("Visualization")
             # self.after(100, self.process_step.invoke())
             self.execute_selected_step("Visualization")
 
+
             # Schedule the next queue check
         self.after(1000, self.check_for_file_load)
+
         
     def create_process_bar(self):
         """Bar in the NavFrame to show the process steps
@@ -154,7 +159,7 @@ class SAMIApp(ctk.CTkFrame):
         self.parent_tab_switch.rowconfigure(0, weight=1)
 
         self.visualization_tab = self.parent_tab_switch.add("Visualization")
-        self.export_tab = self.parent_tab_switch.add("Export")
+        # self.export_tab = self.parent_tab_switch.add("Export")
 
         self.visualization_tab.columnconfigure(0, weight=1)
         self.visualization_tab.rowconfigure(0, weight=1)
@@ -164,6 +169,12 @@ class SAMIApp(ctk.CTkFrame):
 
     def execute_selected_step(self, choice):
         # Initialize the step if necessary
+
+        if self.file_loading_status == False:
+            logger.info("Please load the files first")
+            CTkMessagebox(title="Info", message="Wait till the files reading is complete")
+            return
+
         step = self.initialize_step(choice)
         # Hide all steps
         for s in self.loaded_steps.values():

@@ -267,7 +267,7 @@ def create_norm_dataset_gui(df, working_dir, key, rowNorm, transNorm):
 
     df_norm = Normalization(df, first_compound_idx=3, rowNorm='SumNorm', transNorm='LogTrans2', c=1, log_base=2)
     name = key + "_norm" + ".pq"
-    df_norm.to_parquet(os.path.join(working_dir,name), index = False)
+    df_norm.to_parquet(os.path.join(*[working_dir,'normalised_data', name]), index = False)
     logger.info(f'{name} is created.')
     # norm_dict[key] = df_norm
     logger.info("Normalization is done.")

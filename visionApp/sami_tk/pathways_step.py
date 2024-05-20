@@ -1,5 +1,6 @@
 import tkinter as tk
 import customtkinter as ctk
+from CTkMessagebox import CTkMessagebox
 import pandas as pd
 import os
 import logging
@@ -301,7 +302,12 @@ class PathwaysStep(ctk.CTkFrame):
         cluster = int(self.cluster_entry.get())
         top_n = int(self.top_n_entry.get())
 
-        image_location = self.pathway.plot_dot(cluster=cluster,scale=30,height=10,top=top_n,show=False)
+        try:
+            image_location = self.pathway.plot_dot(cluster=cluster,scale=30,height=10,top=top_n,show=False)
+        except Exception as e:
+            logger.error(f"Error in plot_dot: {e}")
+            CTkMessagebox(title="Error", message="Something went wrong in pathway calculation", icon="cancel")
+
         # creating a label to display the image
         self.plot_dot_image_label = ctk.CTkLabel(self.pot_image_frame , text = "", width=1200, height=600)
         self.plot_dot_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)
@@ -385,7 +391,13 @@ class PathwaysStep(ctk.CTkFrame):
         cluster = int(self.network_cluster_entry.get())
         top_n = int(self.network_top_n_entry.get())
 
-        image_location = self.pathway.pathway_network(cluster=cluster,top=top_n,show=False)
+        try:
+            image_location = self.pathway.pathway_network(cluster=cluster,top=top_n,show=False)
+        except Exception as e:
+            logger.error(f"Error in plot_dot: {e}")
+            CTkMessagebox(title="Error", message="Something went wrong in pathway calculation", icon="cancel")
+
+
         # creating a label to display the image
         self.network_image_label = ctk.CTkLabel(self.network_image_frame , text = "", width=600, height=600)
         self.network_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)
