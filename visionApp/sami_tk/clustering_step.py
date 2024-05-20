@@ -96,6 +96,12 @@ class ClusteringStep(ctk.CTkFrame):
         # self.specific_cluster.columnconfigure(1, weight=1)
         # self.specific_cluster.columnconfigure(2, weight=1)
 
+    def refresh(self):
+        "whenever the tab swtich happens this function updates the files available in dropdowns"
+        path = os.path.join(self.file_handler.working_folder, 'pooled_data')
+        files = os.listdir(path)
+        self.file_selection.configure(values=files)
+
 
     def prep_cluster_options_tab(self):
         
@@ -297,6 +303,8 @@ class SpecificCluster(ctk.CTkFrame):
         self.loading_label = ctk.CTkLabel(self.nav_frame, text="", text_color="yellow", width = 80)
         self.loading_label.grid(row=0, column=2, padx=(5,0), pady=8, sticky="w")
         self.after(500, self.prepare_specific_cluster_vis())
+
+
     
     def prepare_specific_cluster_vis(self):
 

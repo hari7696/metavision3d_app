@@ -62,6 +62,9 @@ class NormalizationStep(ctk.CTkFrame):
 
         # threading.Thread(target=self.displaying_loading_on_main_thread, args= (),daemon=True).start()
 
+    def refresh(self):
+        pass
+
     def create_visualization_dock_type1(self):
         """Under the visualization tab, we have two frames, left and right frame
         Left frame is for displaying the files and color maps and right frame is for displaying the results
@@ -222,7 +225,7 @@ class NormalizationStep(ctk.CTkFrame):
 
         norm_default_value = ctk.StringVar(value="SumNorm :")
         self.algo_selection_dropdown = ctk.CTkComboBox(master= self.norm_frame,
-                                            values=['SumNorm', 'MedianNorm'],
+                                            values=['SumNorm'],
                                             variable=norm_default_value,button_color="#b5b8b0"
                                             )
         self.algo_selection_dropdown.grid(row=0,column=1,padx=(0,0),pady=8,sticky="w")
@@ -234,7 +237,7 @@ class NormalizationStep(ctk.CTkFrame):
 
         norm_default_value2 = ctk.StringVar(value="LogTrans2")
         self.algo_selection_dropdown2 = ctk.CTkComboBox(master= self.norm_frame,
-                                            values=['LogTrans1', 'LogTrans2'],  
+                                            values=['LogTrans2'],  
                                             variable=norm_default_value2, button_color="#b5b8b0"
                                             )
         self.algo_selection_dropdown2.grid(row=1,column=1,padx=(0,0),pady=8,sticky="w")

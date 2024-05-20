@@ -107,6 +107,15 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         self.umap_overlay_frame.columnconfigure(0, weight=1)
         self.umap_overlay_frame.rowconfigure(0, weight=1)
 
+    def refresh(self):
+        "whenever the tab swtich happens this function updates the files available in dropdowns"
+        files = os.listdir(self.working_folder)
+        #files = [file for file in files if ('_pool') in file and ('h5ad' in file)]
+        files = [file for file in files if 'h5ad' in file]
+
+        self.region1_selection.configure(values=files)
+        self.region2_selection.configure(values=files)
+
 
     def prep_cluster_int_options_tab(self):
         
@@ -178,11 +187,12 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         # region, modality, resolution = name.split('_')
         # return region, modality, resolution
         # changed for GUI braoder handling
-        name = adata.strip('.h5ad')
+        # cerebellum_2_WT_lip_1.0.h5ad
+        name = adata.replace('.h5ad', '')
         #region, modality, resolution = name.split('_')
         resolution = name.split('_')[-1]
         modality = name.split('_')[-2]
-        region = '_'.join(name.split('_')[:-2])
+        region = '_'.join(name.split('_')[:-1])
         logger.info(f"region : {region}, modality : {modality}, resolution : {resolution}")
 
         return region, modality, resolution

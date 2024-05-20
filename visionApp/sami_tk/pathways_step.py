@@ -100,7 +100,12 @@ class PathwaysStep(ctk.CTkFrame):
         self.network_frame.grid(row=0, column=1, sticky="new", padx=5, pady=5)
 
         self.prepare_options_panel()
-    
+
+    def refresh(self):
+        files = os.listdir(self.makers_folder)
+        files = [file for file in files if ('_marker.csv') in file]
+        self.file_selection.configure(values=files)
+
     def prepare_options_panel(self):
 
         self.options_panel.columnconfigure(0, weight=1)

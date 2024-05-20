@@ -169,6 +169,7 @@ class SAMIApp(ctk.CTkFrame):
         for s in self.loaded_steps.values():
             s.grid_remove()
         # Show the selected step
+        step.refresh()
         step.grid(row=0, column=0, sticky="nsew")
 
 

@@ -36,6 +36,9 @@ class PoolingStep(ctk.CTkFrame):
 
         # threading.Thread(target=self.displaying_loading_on_main_thread, args= (),daemon=True).start()
 
+    def refresh(self):
+        pass
+
     def prepare_visualization_dock_type2(self):
         """This visualization is used for the tabs 1. Pooling, 2. Clustering, 3. Clusters Integration, 4. Markers, 5. Pathways
         A separate tabview is created for this type of visualization, as it doesnt need left and right frames
