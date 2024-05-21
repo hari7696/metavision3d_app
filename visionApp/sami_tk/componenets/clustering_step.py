@@ -68,7 +68,7 @@ class ClusteringStep(ctk.CTkFrame):
         self.vis_tabs = ctk.CTkTabview(self.root_visualization_frame)
         self.vis_tabs.columnconfigure(0, weight=1)
         self.vis_tabs.rowconfigure(0, weight=1)
-        self.vis_tabs.grid(row=0, column=0, sticky="new", padx=5)
+        self.vis_tabs.grid(row=0, column=0, sticky="nsew", padx=5)
         
         self.cluster_tab = self.vis_tabs.add("Clustering")
         self.cluster_tab.columnconfigure(0, weight=1)
@@ -79,7 +79,7 @@ class ClusteringStep(ctk.CTkFrame):
 
         # cluster options tab
         self.cluster_options = ctk.CTkFrame(self.cluster_tab, bg_color="transparent")
-        self.cluster_options.grid(row=0, column=0, sticky="nsw")
+        self.cluster_options.grid(row=0, column=0, sticky="nsew")
         # self.cluster_options.columnconfigure(0, weight=1)
         # self.cluster_options.rowconfigure(0, weight=1)
 
@@ -90,7 +90,7 @@ class ClusteringStep(ctk.CTkFrame):
 
         # specific cluster tab
         self.specific_cluster = ctk.CTkFrame(self.cluster_tab, bg_color="transparent")
-        self.specific_cluster.grid(row=2, column=0, sticky="nsw")
+        self.specific_cluster.grid(row=2, column=0, sticky="nsew")
 
         # self.specific_cluster.rowconfigure(1, weight=1)
         # self.specific_cluster.columnconfigure(1, weight=1)
@@ -111,12 +111,12 @@ class ClusteringStep(ctk.CTkFrame):
         self.cluster_options.columnconfigure(3, weight=5)
         self.cluster_options.columnconfigure(4, weight=5)
         self.cluster_options.columnconfigure(5, weight=5)
-        self.cluster_options.columnconfigure(5, weight=15)
+        self.cluster_options.columnconfigure(5, weight=100)
         self.cluster_options.rowconfigure(0, weight=1)
 
 
         file_name_label = ctk.CTkLabel(self.cluster_options, text="Select File :" )
-        file_name_label.grid(row=0,column=0,padx=(5,0),pady=8,sticky="ew")
+        file_name_label.grid(row=0,column=0,padx=(5,0),pady=8,sticky="w")
         
         _ = tk.StringVar(value='choose file')
 
@@ -131,25 +131,26 @@ class ClusteringStep(ctk.CTkFrame):
                                             button_color="#b5b8b0",
                                             width = 200
                                             )
-        self.file_selection.grid(row=0,column=1,padx=(10,0),pady=8,sticky="ew")
+        self.file_selection.grid(row=0,column=1,padx=(10,0),pady=8,sticky="w")
 
         # write a label for resolution
         resolution_label = ctk.CTkLabel(self.cluster_options, text="Resolution :")
-        resolution_label.grid(row=0,column=2,padx=(10,0),pady=8,sticky="ew")
+        resolution_label.grid(row=0,column=2,padx=(10,0),pady=8,sticky="w")
         self.resolution = ctk.CTkEntry(self.cluster_options,placeholder_text="1",width=100)
-        self.resolution.grid(row=0,column=3,padx=(10,0),pady=8,sticky="ew")
+        self.resolution.grid(row=0,column=3,padx=(5,0),pady=8,sticky="w")
         self.resolution.insert(0, "1")
 
         self.cluster_button = ctk.CTkButton(self.cluster_options,text="Run Clustering",command=self.perform_clustering)
-        self.cluster_button.grid(row=0,column=4,padx=(100,0),pady=8,sticky="ew")
+        self.cluster_button.grid(row=0,column=4,padx=(10,0),pady=8,sticky="w")
 
         # timer button
         self.timer = TimerApp(self.cluster_options)
-        self.timer.grid(row=0,column=5,padx=(200,0),pady=8,sticky="w")
+        self.timer.grid(row=0,column=5,padx=(50,0),pady=8,sticky="w")
 
         # time constraint
-        self.time_constraint_label = ctk.CTkLabel(self.cluster_options, text="Note : clustering usally takes roughly 10 minutes", text_color="yellow")
-        self.time_constraint_label.grid(row=0,column=6,padx=(10,0),pady=8,sticky="ew")
+        self.time_constraint_label = ctk.CTkLabel(self.cluster_options, text="Note : clustering usally takes roughly 10 minutes",
+                                                   text_color="yellow", width=300)
+        self.time_constraint_label.grid(row=0,column=6,padx=(10,0),pady=8,sticky="e")
 
     def prepare_cluster_module(self, ):
         selected_file = self.file_selection.get()
@@ -205,7 +206,7 @@ class ClusteringStep(ctk.CTkFrame):
             self.prepare_cluster_visualization()
             self.prepare_specific_cluster_vis()
             self.timer.stop_timer()
-            self.time_constraint_label.configure(text="Clustering Done")
+            self.time_constraint_label.configure(text="Clustering Done", text_color="green")    
         if self.clustering_process.is_alive():
             self.after(100, self.trigger_visz_functions_on_thread_run)
         else:

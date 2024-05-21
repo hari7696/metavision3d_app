@@ -1,14 +1,14 @@
 import customtkinter as ctk
 from CTkMessagebox import CTkMessagebox
 import logging
-from .file_handler import FileOpenbutton
-from .visualization_step import VisualizationStep
-from .normalization_step import NormalizationStep
-from .pooling_step import PoolingStep
-from .clustering_step import ClusteringStep
-from .cluster_intergration_step import ClusterIntergrationStep
-from .markers_step import MarkerStep
-from .pathways_step import PathwaysStep
+from .componenets.file_handler import FileOpenbutton
+from .componenets.visualization_step import VisualizationStep
+from .componenets.normalization_step import NormalizationStep
+from .componenets.pooling_step import PoolingStep
+from .componenets.clustering_step import ClusteringStep
+from .componenets.cluster_intergration_step import ClusterIntergrationStep
+from .componenets.markers_step import MarkerStep
+from .componenets.pathways_step import PathwaysStep
 import sys
 import queue
 sys.path.append('../SAMI')
