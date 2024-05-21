@@ -262,7 +262,7 @@ class NormalizationStep(ctk.CTkFrame):
         note = ctk.CTkTextbox(self.norm_frame, font = ("Arial", 14) , width= 700, height= 100)
         note.grid(row=5,column=0,padx=(0,0),pady=8,sticky="sw", )
 
-        note.insert("0.0", "Notes:\n1. Make sure you to run the normalization on all of your files \n2. Make sure, you run the omics pooling once you are done with Normalization\nOtherwise, the Next steps, will not use the latest normalized data")
+        note.insert("0.0", "Notes:\n1. Make sure to run the normalization on all of your files \n2. Make sure, to run the omics pooling once you are done with Normalization\nOtherwise, the Next steps, will not use the latest normalized data")
         note.configure(state="disabled")  
 
     def run_normalization(self):
