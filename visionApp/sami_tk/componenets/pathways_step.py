@@ -30,7 +30,7 @@ from .timer import TimerApp
 from SAMI.markers import Markers
 from SAMI.pathway import Pathway
 import scanpy as sc
-from .utils import adata_filter
+from ..utils import adata_filter
 logger = logging.getLogger(__name__)
 
 class PathwaysStep(ctk.CTkFrame):
@@ -115,7 +115,7 @@ class PathwaysStep(ctk.CTkFrame):
         self.options_panel.columnconfigure(3, weight=1)
         self.options_panel.columnconfigure(4, weight=1)
         self.options_panel.columnconfigure(5, weight=1)
-        self.options_panel.columnconfigure(6, weight=1)
+        self.options_panel.columnconfigure(6, weight=7)
         # self.options_panel.rowconfigure(0, weight=1)
         self.options_panel.columnconfigure(7, weight=1)
         self.options_panel.columnconfigure(8, weight=1)
@@ -167,7 +167,7 @@ class PathwaysStep(ctk.CTkFrame):
         self.timer.grid(row=0,column=5,padx=(5,5),pady=2,sticky="w")
 
         # time constraint
-        self.time_constraint_label = ctk.CTkLabel(self.options_panel, text="", text_color="yellow", width = 150)
+        self.time_constraint_label = ctk.CTkLabel(self.options_panel, text="", text_color="yellow", width = 300)
         self.time_constraint_label.grid(row=0,column=6,padx=(5,5),pady=2,sticky="w")
 
     def generate_pathways(self):

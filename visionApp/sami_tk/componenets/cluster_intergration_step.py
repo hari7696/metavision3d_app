@@ -82,7 +82,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
 
         # cluster options tab
         self.cluster_int_options = ctk.CTkFrame(self.cluster_int_tab, bg_color="transparent")
-        self.cluster_int_options.grid(row=0, column=0, sticky="nsw")
+        self.cluster_int_options.grid(row=0, column=0, sticky="nsew")
         # self.cluster_int_options.columnconfigure(0, weight=1)
         # self.cluster_int_options.rowconfigure(0, weight=1)
 
@@ -125,7 +125,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         self.cluster_int_options.columnconfigure(3, weight=5)
         self.cluster_int_options.columnconfigure(4, weight=5)
         self.cluster_int_options.columnconfigure(5, weight=5)
-        self.cluster_int_options.columnconfigure(6, weight=15)
+        self.cluster_int_options.columnconfigure(6, weight=100)
         self.cluster_int_options.rowconfigure(0, weight=1)
 
         # getting the clustered files
@@ -135,7 +135,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
 
         # region selection 1
         region1_label = ctk.CTkLabel(self.cluster_int_options, text="Select Region1 :" )
-        region1_label.grid(row=0,column=0,padx=(5,0),pady=8,sticky="ew")
+        region1_label.grid(row=0,column=0,padx=(5,0),pady=8,sticky="w")
         
         _ = tk.StringVar(value='choose file')
         self.region1_selection = ctk.CTkComboBox(master= self.cluster_int_options,
@@ -144,11 +144,11 @@ class ClusterIntergrationStep(ctk.CTkFrame):
                                             button_color="#b5b8b0",
                                             width = 250
                                             )
-        self.region1_selection.grid(row=0,column=1,padx=(10,0),pady=8,sticky="ew")
+        self.region1_selection.grid(row=0,column=1,padx=(10,0),pady=8,sticky="w")
 
         # region selection 2
         region1_labe2 = ctk.CTkLabel(self.cluster_int_options, text="Select Region2 :" )
-        region1_labe2.grid(row=0,column=2,padx=(20,0),pady=8,sticky="ew")
+        region1_labe2.grid(row=0,column=2,padx=(20,0),pady=8,sticky="w")
         
         _ = tk.StringVar(value='choose file')
         self.region2_selection = ctk.CTkComboBox(master= self.cluster_int_options,
@@ -157,18 +157,18 @@ class ClusterIntergrationStep(ctk.CTkFrame):
                                             button_color="#b5b8b0",
                                             width = 250
                                             )
-        self.region2_selection.grid(row=0,column=3,padx=(10,0),pady=8,sticky="ew")
+        self.region2_selection.grid(row=0,column=3,padx=(10,0),pady=8,sticky="w")
 
         self.cluster_button = ctk.CTkButton(self.cluster_int_options,text="Run Intergration",command=self.perform_clustering)
-        self.cluster_button.grid(row=0,column=4,padx=(50,0),pady=8,sticky="ew")
+        self.cluster_button.grid(row=0,column=4,padx=(20,0),pady=8,sticky="w")
 
         # timer button
         self.timer = TimerApp(self.cluster_int_options)
-        self.timer.grid(row=0,column=5,padx=(100,0),pady=8,sticky="w")
+        self.timer.grid(row=0,column=5,padx=(50,0),pady=8,sticky="w")
 
         # time constraint
-        self.time_constraint_label = ctk.CTkLabel(self.cluster_int_options, text="Note : cluster Integration takes roughly 10 minutes", text_color="yellow")
-        self.time_constraint_label.grid(row=0,column=6,padx=(10,0),pady=8,sticky="ew")
+        self.time_constraint_label = ctk.CTkLabel(self.cluster_int_options, text="Note : cluster Integration takes roughly 10 minutes", text_color="yellow", width=300)
+        self.time_constraint_label.grid(row=0,column=6,padx=(10,0),pady=8,sticky="e")
 
 
     def prep_specific_cluster_tab(self):

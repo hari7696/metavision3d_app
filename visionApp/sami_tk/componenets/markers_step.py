@@ -28,7 +28,7 @@ import logging
 from .timer import TimerApp
 from SAMI.markers import Markers
 import scanpy as sc
-from .utils import adata_filter
+from ..utils import adata_filter
 logger = logging.getLogger(__name__)
 
 class MarkerStep(ctk.CTkFrame):
