@@ -158,6 +158,8 @@ class PathwaysStep(ctk.CTkFrame):
                                             )
         self.omics_selection.grid(row=0,column=3,padx=(2,5),pady=2,sticky="ew")
 
+        self.omics_selection.set('metabolomics')
+
         # adding a Run button to run the markers generation
         self.run_button = ctk.CTkButton(self.options_panel, text="Generate Pathways", command=self.generate_pathways, width=80)
         self.run_button.grid(row=0,column=4,padx=(15,5),pady=2,sticky="ew")
@@ -267,7 +269,7 @@ class PathwaysStep(ctk.CTkFrame):
                                             values=values,
                                             variable=_,
                                             button_color="#b5b8b0",
-                                            width = 250
+                                            width = 140
                                             )
         self.cluster_entry.grid(row=0, column=1, sticky="w", padx=5, pady=5)
         self.cluster_entry.set("1")
@@ -307,6 +309,9 @@ class PathwaysStep(ctk.CTkFrame):
         except Exception as e:
             logger.error(f"Error in plot_dot: {e}")
             CTkMessagebox(title="Error", message="Something went wrong in pathway calculation", icon="cancel")
+            self.status_label_plot_dot.configure(text="", text_color="yellow")
+            self.update()
+    
 
         # creating a label to display the image
         self.plot_dot_image_label = ctk.CTkLabel(self.pot_image_frame , text = "", width=1200, height=600)
@@ -357,7 +362,7 @@ class PathwaysStep(ctk.CTkFrame):
         self.network_cluster_entry = ctk.CTkComboBox(master= self.network_options_panel,
                                             values=values,
                                             variable=_,
-                                            button_color="#b5b8b0",
+                                            button_color="#b5b8b0", width= 140
                                             )
         self.network_cluster_entry.grid(row=0, column=1, sticky="w", padx=5, pady=5)
         self.network_cluster_entry.set("1")

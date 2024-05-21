@@ -74,6 +74,9 @@ class SAMIApp(ctk.CTkFrame):
             logger.info("file load thread trigger received")
             # print("HIT")
             # when the file switch happens we need to reinitialize the process steps, the old views will be garbage collected
+            for step in self.loaded_steps.values():
+                step.destroy()
+            self.file_loading_status = False
             self.loaded_steps = {}
             self.initialize_step_constructor()
             self.file_loading_status = True
