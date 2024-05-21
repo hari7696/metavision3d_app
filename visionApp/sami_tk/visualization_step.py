@@ -300,7 +300,7 @@ class VisualizationStep(ctk.CTkFrame):
     def on_label_click(self, event, id):
         matrix = self.compound_matrix_high_res[id]
         # print(matrix.shape)
-        scale_factor = 1  # Adjust this factor to scale the image size up
+        scale_factor = 0.42  # Adjust this factor to scale the image size up
         dpi = 300  # Increasing the DPI for better resolution and larger image
 
         # Calculate the figure size based on the image dimensions and scaling factor

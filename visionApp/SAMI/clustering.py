@@ -19,10 +19,10 @@ class Clusters:
 
     def clustering(self):
         adata=sc.read(os.path.join(self.pooled_data_folder,f'{self.region}_{self.modality}.h5ad'))
-        sc.pp.pca(adata)
-        sc.pp.neighbors(adata,n_pcs=20)
-        sc.tl.umap(adata)
-        sc.tl.leiden(adata,resolution=self.resolution)
+        sc.pp.pca(adata, random_state = 7)
+        sc.pp.neighbors(adata,n_pcs=20, random_state = 7)
+        sc.tl.umap(adata, random_state = 7)
+        sc.tl.leiden(adata,resolution=self.resolution, random_state = 7)
 
         if not os.path.exists(self.file_path):
             os.makedirs(self.file_path)

@@ -152,20 +152,28 @@ class SAMIApp(ctk.CTkFrame):
     def create_parent_tab_switch(self):
         """Parent Tab consists of Visualization and Export tabs"""
 
+        # self.rowconfigure(0, weight=1)
+        # self.columnconfigure(0, weight=1)
+        # self.parent_tab_switch = ctk.CTkTabview(self, bg_color="transparent")
+        # self.parent_tab_switch.columnconfigure(0, weight=1)
+        # self.parent_tab_switch.rowconfigure(0, weight=1)
+
+        # self.visualization_tab = self.parent_tab_switch.add("Visualization")
+        # # self.export_tab = self.parent_tab_switch.add("Export")
+
+        # self.visualization_tab.columnconfigure(0, weight=1)
+        # self.visualization_tab.rowconfigure(0, weight=1)
+
+        # # it goes to parent frame row 1
+        # self.parent_tab_switch.grid(row=0, column=0, sticky="new", padx=5)
+
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-        self.parent_tab_switch = ctk.CTkTabview(self, bg_color="transparent")
-        self.parent_tab_switch.columnconfigure(0, weight=1)
-        self.parent_tab_switch.rowconfigure(0, weight=1)
-
-        self.visualization_tab = self.parent_tab_switch.add("Visualization")
-        # self.export_tab = self.parent_tab_switch.add("Export")
-
+        self.visualization_tab = ctk.CTkFrame(self, bg_color="transparent")
         self.visualization_tab.columnconfigure(0, weight=1)
         self.visualization_tab.rowconfigure(0, weight=1)
-
         # it goes to parent frame row 1
-        self.parent_tab_switch.grid(row=0, column=0, sticky="new", padx=5)
+        self.visualization_tab.grid(row=0, column=0, sticky="new", padx=(5,5), pady=(5,5))
 
     def execute_selected_step(self, choice):
         # Initialize the step if necessary
