@@ -255,10 +255,15 @@ class NormalizationStep(ctk.CTkFrame):
         self.timer.grid(row=3,column=0,padx=(60,0),pady=8,sticky="w")
 
         # creating a label to show the normalization is in processing
-        self.norm_done_label = ctk.CTkLabel(self.norm_frame, text="", font = ("Arial", 14) , width= 600, height=80)
-        self.norm_done_label.grid(row=4,column=0,padx=(0,0),pady=8,sticky="w", rowspan = 3, columnspan = 3)
-        
- 
+        self.norm_done_label = ctk.CTkLabel(self.norm_frame, text="", font = ("Arial", 14) , width= 300)
+        self.norm_done_label.grid(row=4,column=0,padx=(0,0),pady=8,sticky="w")
+
+
+        note = ctk.CTkTextbox(self.norm_frame, font = ("Arial", 14) , width= 700, height= 100)
+        note.grid(row=5,column=0,padx=(0,0),pady=8,sticky="sw", )
+
+        note.insert("0.0", "Notes:\n1. Make sure you to run the normalization on all of your files \n2. Make sure, you run the omics pooling once you are done with Normalization\nOtherwise, the Next steps, will not use the latest normalized data")
+        note.configure(state="disabled")  
 
     def run_normalization(self):
 
@@ -315,9 +320,7 @@ class NormalizationStep(ctk.CTkFrame):
             if message == 'Normalization_done':
                 logger.info("Normaliztion done, trigger received")
                 # print("HIT")
-                self.norm_done_label.configure(text="Normalization is completed. \n\
-                                               Make sure, you run the omics pooling once you are done with Normalization\n\
-                                               Otherwise, the Next steps, will not use the latest normalized data", font = ("Arial", 14))
+                self.norm_done_label.configure(text="Normalization is completed", font = ("Arial", 14))
                 self.display_norm_plot(self.compound_matrix_high_res, self.normalised_compound_matrix_high_res )
                 self.timer.stop_timer() 
                 # Spinning a process to convert the normalized to csv
@@ -490,7 +493,7 @@ class NormalizationStep(ctk.CTkFrame):
 
         matrix = self.normalised_compound_matrix_high_res[id]
         # print(matrix.shape)
-        scale_factor = 1  # Adjust this factor to scale the image size up
+        scale_factor = 0.42  # Adjust this factor to scale the image size up
         dpi = 300  # Increasing the DPI for better resolution and larger image
         # Calculate the figure size based on the image dimensions and scaling factor
         height, width = matrix.shape
@@ -592,7 +595,7 @@ class NormalizationStep(ctk.CTkFrame):
         # Prenormalizaton frame
         matrix = self.compound_matrix_high_res[id]
         # print(matrix.shape)
-        scale_factor = 0.6  # Adjust this factor to scale the image size up
+        scale_factor = 0.18  # Adjust this factor to scale the image size up
         dpi = 300  # Increasing the DPI for better resolution and larger image
         # Calculate the figure size based on the image dimensions and scaling factor
         height, width = matrix.shape
@@ -630,7 +633,7 @@ class NormalizationStep(ctk.CTkFrame):
         # POST Normalization frame
         matrix = self.normalised_compound_matrix_high_res[id]
         # print(matrix.shape)
-        scale_factor = 0.6  # Adjust this factor to scale the image size up
+        scale_factor = 0.18  # Adjust this factor to scale the image size up
         dpi = 300  # Increasing the DPI for better resolution and larger image
         # Calculate the figure size based on the image dimensions and scaling factor
         height, width = matrix.shape
