@@ -77,12 +77,15 @@ class ClusteringStep(ctk.CTkFrame):
         self.specific_cluster = ctk.CTkFrame(self.cluster_tab, bg_color="transparent")
         self.specific_cluster.grid(row=2, column=0, sticky="nsew")
 
+        logger.info("Clustering tab prepared")
+
         # self.specific_cluster.rowconfigure(1, weight=1)
         # self.specific_cluster.columnconfigure(1, weight=1)
         # self.specific_cluster.columnconfigure(2, weight=1)
 
     def refresh(self):
         "whenever the tab swtich happens this function updates the files available in dropdowns"
+        logger.info("Refreshing the files in the dropdown")
         path = os.path.join(self.file_handler.working_folder, 'pooled_data')
         files = os.listdir(path)
         self.file_selection.configure(values=files)
@@ -137,6 +140,8 @@ class ClusteringStep(ctk.CTkFrame):
                                                    text_color="yellow", width=300)
         self.time_constraint_label.grid(row=0,column=6,padx=(10,0),pady=8,sticky="e")
 
+        logger.info("Cluster options tab prepared")
+
     def prepare_cluster_module(self, ):
 
         """
@@ -146,11 +151,16 @@ class ClusteringStep(ctk.CTkFrame):
         selected_file = self.file_selection.get()
         region = '_'.join(selected_file.split('_')[:-1])
         modality = selected_file.split('_')[-1].split('.')[0] 
+        logger.info("CLuster module is created")
+        logger.info(f"Selected file is {selected_file}")
+        logger.info(f"{region} and {modality} are the region and modality selected")
         # print(region, modality)   
         res = float(self.resolution.get())
         # print(res)
         file_location = os.path.join(*[self.file_handler.working_folder, 'results', 'clustering'])
         clustered_file = os.path.join(file_location,f'{region}_{modality}_{res}.h5ad')
+        logger.info(f"File location is {file_location}")
+        logger.info(f"Clustered file location is {clustered_file}")
         cluster = Clusters(region, 
                                modality,
                                res,
@@ -182,6 +192,7 @@ class ClusteringStep(ctk.CTkFrame):
         """This function gets triggered when the Run clustering button is clicked
         It starts the clustering process in a separate process
         Once the clustering is done, it triggers the visualization functions"""
+        logger.info("perform_clustering Triggered" )
         self.timer.reset_timer()
         self.timer.start_timer()
         cluster, clustered_file = self.prepare_cluster_module()
@@ -199,13 +210,17 @@ class ClusteringStep(ctk.CTkFrame):
         """
 
         if not self.queue.empty():
-            logger.info("thread trigger received")
+            logger.info("clustering complete message received")
             message = self.queue.get()
             self.image_location = message['image_location']
+            logger.info(f"saved cluster Image location is {self.image_location}")
+            
             self.n_clusters = message['n_clusters']
             self.cluster, _ = self.prepare_cluster_module()
             self.prepare_cluster_visualization()
             self.prepare_specific_cluster_vis()
+            logger.info("visualization prepared")
+            
             self.timer.stop_timer()
             self.time_constraint_label.configure(text="Clustering Done", text_color="green")    
         if self.clustering_process.is_alive():
@@ -218,7 +233,7 @@ class ClusteringStep(ctk.CTkFrame):
         """
         This function prepares the cluster visualization by getting the image location and displaying it using the ImageDisplay class
         """
-
+        logger.info("Preparing cluster visualization")
         for children in self.cluster_visualization.winfo_children():
             children.destroy()
 
@@ -228,11 +243,12 @@ class ClusteringStep(ctk.CTkFrame):
         self.image_display.rowconfigure(0, weight=1)
 
     def prepare_specific_cluster_vis(self):
+        
 
         """
         This function prepares the specific cluster visualization by getting the cluster object and the number of clusters
         """
-
+        logger.info("Preparing specific cluster visualization")
         self.specific_cluster.columnconfigure(0, weight=1)
         self.specific_cluster.columnconfigure(1, weight=1)
         self.specific_cluster.columnconfigure(2, weight=1)

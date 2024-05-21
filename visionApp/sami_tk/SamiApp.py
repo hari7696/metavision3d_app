@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class SAMIApp(ctk.CTkFrame):
-    def __init__(self, master, nav_frame):
+    def __init__(self, master, nav_frame, algo_drop_down):
         super().__init__(
             master,
         )
@@ -27,6 +27,7 @@ class SAMIApp(ctk.CTkFrame):
         self.columnconfigure(0, weight=1)
         self.queue = queue.Queue()
         self.file_loading_status = False
+        self.algo_drop_down = algo_drop_down    
         logger.debug("SAMI class initialized")
         # this functions check for messages from file handler, whenever the use opens files, it will refreshes the visualization tab
         self.check_for_file_load()
@@ -50,13 +51,18 @@ class SAMIApp(ctk.CTkFrame):
         logger.debug(
             f"Number of children in nav_frame: { len(self.nav_frame.winfo_children())}")
         logger.debug(
-            "Number of children in parent: {}".format(len(list(self.winfo_children()))))
+            "Number of children in parent frame: {}".format(len(list(self.winfo_children()))))
         self.create_parent_tab_switch()
         # self.create_visualization_dock()
         # self.create_left_visualization_dock()
  
 
     def file_open(self, choice):
+
+        for child in self.nav_frame.winfo_children():
+            if (child != self.dropdown_file_type_single_multi) and (child != self.algo_drop_down):
+                child.destroy()
+
         self.file_handler = FileOpenbutton(self.nav_frame, self.queue)
         self.file_handler.file_opening_button(choice)
         self.file_handler.grid(row=0, column=2, padx=(5, 5), pady=(2, 2), sticky="w", columnspan=2)

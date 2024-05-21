@@ -11,15 +11,22 @@ import logging
 import re
 sys.path.append('SAMI')
 # Set up logging configuration
-class FilteredLogs(logging.Filter):
-    def filter(self, record):
-        if re.search(r'Embedded R', record.getMessage()):
-            return False
-        return True
+# from multiprocessing_logging import install_mp_handler
 
-logging.basicConfig(filename='file.log', 
-                    level=logging.INFO, format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', filemode='a')
-logging.getLogger().addFilter(FilteredLogs())
+# class FilteredLogs(logging.Filter):
+#     def filter(self, record):
+#         if re.search(r'Embedded R', record.getMessage()):
+#             return False
+#         return True
+
+# logging.basicConfig(filename='file.log', 
+#                     level=logging.INFO, format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', filemode='w')
+# logging.getLogger().addFilter(FilteredLogs())
+# install_mp_handler()
+from logger_tt import setup_logging    
+
+setup_logging(full_context=1, log_path = 'file.log' , 
+              config_path = r'C:\Users\ghari\Documents\OPS\UI\metavision3d_app\visionApp\log_config.yaml', use_multiprocessing = True)
 
 class VisionApp(ctk.CTk):
 
@@ -80,7 +87,7 @@ class VisionApp(ctk.CTk):
         total_children = count_all_children(self.parent_frame)
 
         logging.info("Frequent_checker :: Total children {}".format(str(total_children)))
-        self.after(1000, self.write_num_children_to_logs)
+        self.after(10000, self.write_num_children_to_logs)
         
 
     def destroy_children(self):
@@ -106,15 +113,15 @@ class VisionApp(ctk.CTk):
 
             self.destroy_children()
             logging.info("num children in parent_frame {}".format(str(len(self.parent_frame.winfo_children()))))
-            self.meta_app = MetaVision3DApp(self.parent_frame, self.nav_frame)
+            self.meta_app = MetaVision3DApp(self.parent_frame, self.nav_frame, self.algo_selection_dropdown)
             self.meta_app.grid(row=1, column=0, sticky="nsew")
 
         elif choice == "SAMI":
             # Destroy all widgets in the parent frame except nav_frame and dropdown bar in it
             self.destroy_children()
             logging.info("num children in parent_frame {}".format(str(len(self.parent_frame.winfo_children()))))
-            self.sami_ap = SAMIApp(self.parent_frame, self.nav_frame)
-            self.sami_ap.grid(row=1, column=0, sticky="nsew", pady=(5,0), padx=(0,0))
+            self.sami_ap = SAMIApp(self.parent_frame, self.nav_frame, self.algo_selection_dropdown)
+            self.sami_ap.grid(row=1, column=0, sticky="nsew", pady=(5,0), padx=(0,0),)
 
 
 if __name__ == "__main__":

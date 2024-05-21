@@ -4,9 +4,7 @@ from tkinter import filedialog
 import threading
 import os
 import pandas as pd
-
 logger = logging.getLogger(__name__)
-
 
 class FileOpenbutton(ctk.CTkFrame):
 
@@ -65,6 +63,7 @@ class FileOpenbutton(ctk.CTkFrame):
 
         The moment the file is selected, its starts reading the files via threading
         """
+        logger.info("open_file Triggered")
         self.is_files_read = False
         self.filepath = filedialog.askopenfilename(
             filetypes=[("CSV Files", "*.csv"), ("All Files", "*.*")]
@@ -85,6 +84,7 @@ class FileOpenbutton(ctk.CTkFrame):
         Open folder dialog to select multuple files.
         Once the files are selected, they will be read via threading
         """
+        logger.info("open_multiple_files Triggered")
         self.is_files_read = False
         self.files_path = filedialog.askopenfilenames(title="Select  multiple files")
         logger.info(f"selected files:  {self.files_path}")
@@ -127,6 +127,8 @@ class FileOpenbutton(ctk.CTkFrame):
         The field 'region' is adhoc, need to discuss with the team to get the correct field name
 
         """
+        # writing all columns names to log file
+        logger.info(f"Original columns: {df.columns}")
         for col in ['Unnamed: 0', 'spotId','raster', 'z', 'Date', ]:
             if col in df.columns:
                 df = df.drop(col, axis=1)
@@ -135,6 +137,7 @@ class FileOpenbutton(ctk.CTkFrame):
         df.dropna(subset=['region'], inplace=True)
         self.tissue_ids[base_filename] = list(df["region"].unique())
         self.molecule_name[base_filename] = list(df.columns[3:])
+        logger.info(f"Preprocessed columns: {df.columns}")
         return df
 
     def display_file_loading(self):
