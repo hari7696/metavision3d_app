@@ -1,33 +1,15 @@
 import tkinter as tk
 import customtkinter as ctk
-import pandas as pd
 import os
 import logging
 from multiprocessing import Process, Queue
 from CTkMessagebox import CTkMessagebox
-from .compound_matrix import create_compound_matrix
-
-# from .process_steps import process_state
-import math
-from pylab import Figure
-import numpy as np
-from waiting import wait
-from PIL import Image, ImageTk
-
-# from customtkinter import CTkImage
 from .colormap import *
-import io
-from functools import partial
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-# from .visualization_step import VisualizationStep
-import matplotlib.animation as animation
-import time
-import threading
-from SAMI.preprocessing import pooldata, csv2h5ad
 import logging
 from .timer import TimerApp
 from SAMI.markers import Markers
 import scanpy as sc
+from PIL import Image
 from ..utils import adata_filter
 logger = logging.getLogger(__name__)
 

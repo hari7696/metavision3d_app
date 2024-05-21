@@ -1,30 +1,11 @@
 import tkinter as tk
 import customtkinter as ctk
-import pandas as pd
 import os
 import logging
 from multiprocessing import Process, Queue
-
-from .compound_matrix import create_compound_matrix
-
-# from .process_steps import process_state
-import math
-from pylab import Figure
-import numpy as np
-from waiting import wait
-from PIL import Image, ImageTk
-
-# from customtkinter import CTkImage
+from PIL import Image
 from .colormap import *
 import io
-from functools import partial
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-# import queue
-# from .visualization_step import VisualizationStep
-import matplotlib.animation as animation
-import time
-import threading
-from SAMI.preprocessing import pooldata, csv2h5ad
 import logging
 from .timer import TimerApp
 from SAMI.clustering import Clusters
@@ -32,6 +13,10 @@ from .display_image import ImageDisaplay
 logger = logging.getLogger(__name__)
 
 class ClusteringStep(ctk.CTkFrame):
+
+    """"
+    This class is used to perform the clustering on the pooled data
+    """
 
     def __init__(self, master, file_handler):
         super().__init__(
@@ -153,6 +138,11 @@ class ClusteringStep(ctk.CTkFrame):
         self.time_constraint_label.grid(row=0,column=6,padx=(10,0),pady=8,sticky="e")
 
     def prepare_cluster_module(self, ):
+
+        """
+        This function prepares the cluster module by getting the selected file, region, modality and resolution
+        """
+
         selected_file = self.file_selection.get()
         region = '_'.join(selected_file.split('_')[:-1])
         modality = selected_file.split('_')[-1].split('.')[0] 
@@ -168,9 +158,11 @@ class ClusteringStep(ctk.CTkFrame):
                                os.path.join(self.file_handler.working_folder))
         
         return cluster, clustered_file
+    
     @staticmethod
     def clustering(queue, cluster, clustered_file):
-        
+        "This function is used to perform the clustering"
+
         response_dict = {}
         # checking whether the clustering is already performed or not
         if not os.path.exists(clustered_file):
@@ -187,6 +179,9 @@ class ClusteringStep(ctk.CTkFrame):
         queue.put(response_dict)
 
     def perform_clustering(self):
+        """This function gets triggered when the Run clustering button is clicked
+        It starts the clustering process in a separate process
+        Once the clustering is done, it triggers the visualization functions"""
         self.timer.reset_timer()
         self.timer.start_timer()
         cluster, clustered_file = self.prepare_cluster_module()
@@ -196,6 +191,12 @@ class ClusteringStep(ctk.CTkFrame):
         self.trigger_visz_functions_on_thread_run()
 
     def trigger_visz_functions_on_thread_run(self):
+
+        """
+        This function checks the queue for the message from the clustering process
+        If the message is received, it triggers the visualization functions
+
+        """
 
         if not self.queue.empty():
             logger.info("thread trigger received")
@@ -214,19 +215,10 @@ class ClusteringStep(ctk.CTkFrame):
 
     def prepare_cluster_visualization(self):
 
-        # if self.image_label is not None:
-        #     self.image_label.destroy()
+        """
+        This function prepares the cluster visualization by getting the image location and displaying it using the ImageDisplay class
+        """
 
-        # self.image_label = ctk.CTkLabel(self.cluster_visualization, width=1400, height=450 )
-        # self.image_label.grid(row=0, column=0, sticky="nsew", )
-        # self.image_label.columnconfigure(0, weight=1)
-        # self.image_label.rowconfigure(0, weight=1)
-
-        # ctk_image = ctk.CTkImage(light_image=Image.open(self.image_location),
-        #                              dark_image=None, size = (1400,450))
-
-        # self.image_label.configure(image=ctk_image)
-        # self.image_label.image = ctk_image 
         for children in self.cluster_visualization.winfo_children():
             children.destroy()
 
@@ -235,10 +227,11 @@ class ClusteringStep(ctk.CTkFrame):
         self.image_display.columnconfigure(0, weight=1)
         self.image_display.rowconfigure(0, weight=1)
 
-        
-
-
     def prepare_specific_cluster_vis(self):
+
+        """
+        This function prepares the specific cluster visualization by getting the cluster object and the number of clusters
+        """
 
         self.specific_cluster.columnconfigure(0, weight=1)
         self.specific_cluster.columnconfigure(1, weight=1)
@@ -275,6 +268,13 @@ class ClusteringStep(ctk.CTkFrame):
 
        
 class SpecificCluster(ctk.CTkFrame):
+
+    """
+    This class is used to display the specific cluster visualization
+
+    It spins a seperate process to get the image data and displays it 
+    To make the process faster, the image data is sent as bytes and displayed
+    """
     def __init__(self, master, cluster, n_clusters, initial_choice=0):
         super().__init__(
             master,

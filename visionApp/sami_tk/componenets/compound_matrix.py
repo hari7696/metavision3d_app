@@ -1,7 +1,6 @@
 import pandas as pd
 import logging
 import numpy as np
-from PIL import Image
 import pickle
 from skimage.transform import resize
 

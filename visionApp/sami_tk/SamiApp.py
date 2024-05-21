@@ -48,11 +48,9 @@ class SAMIApp(ctk.CTkFrame):
         self.file_handler = None
         self.create_process_bar()
         logger.debug(
-            f"Number of children in nav_frame: { len(self.nav_frame.winfo_children())}"
-        )
+            f"Number of children in nav_frame: { len(self.nav_frame.winfo_children())}")
         logger.debug(
-            "Number of children in parent: {}".format(len(list(self.winfo_children())))
-        )
+            "Number of children in parent: {}".format(len(list(self.winfo_children()))))
         self.create_parent_tab_switch()
         # self.create_visualization_dock()
         # self.create_left_visualization_dock()
@@ -68,12 +66,22 @@ class SAMIApp(ctk.CTkFrame):
         self.create_process_bar()
 
     def check_for_file_load(self):
+
+        """
+        whenever the file handler sends a message, this function will be triggered
+        When the file load happens, the process steps need to be deleted and reinitialized,
+        other the count of frames will increase and the memory will be wasted by retaining the old frames
+
+        This functions kinds of acts like a messaging service, the moment it recievies messages from
+        the file handler, it destroys the old process steps and calls the visualization step
+        """
         
         if not self.queue.empty():
             message = self.queue.get()
             logger.info("file load thread trigger received")
             # print("HIT")
-            # when the file switch happens we need to reinitialize the process steps, the old views will be garbage collected
+            # when the file switch happens we need to reinitialize the process steps, the old views are not automatically destroyed,
+            # so we need to destroy them manually
             for step in self.loaded_steps.values():
                 step.destroy()
             self.file_loading_status = False
@@ -83,14 +91,13 @@ class SAMIApp(ctk.CTkFrame):
             self.process_step.set("Visualization")
             # self.after(100, self.process_step.invoke())
             self.execute_selected_step("Visualization")
-
-
             # Schedule the next queue check
         self.after(1000, self.check_for_file_load)
 
         
     def create_process_bar(self):
-        """Bar in the NavFrame to show the process steps
+        """
+        Bar in the NavFrame to show the process steps
         This bar is gonna trigger the process steps
         """
         # destroying the existing process bar, before creating a new one. The initial value of of process_step is None
@@ -130,6 +137,10 @@ class SAMIApp(ctk.CTkFrame):
         )
 
     def initialize_step_constructor(self):
+        """
+        This function initializes the steps constructor
+        """
+
         self.steps = {
             "Visualization": (VisualizationStep, self.file_handler),
             "Normalization": (NormalizationStep, self.file_handler),
@@ -153,7 +164,12 @@ class SAMIApp(ctk.CTkFrame):
         return self.loaded_steps[step_name]
 
     def create_parent_tab_switch(self):
-        """Parent Tab consists of Visualization and Export tabs"""
+        """Parent Tab consists of Visualization and Export tabs
+            Visualization tab is the main tab where all the processing steps are done
+            Export tab is the tab where the user can export the results
+
+            But the requirement is changed now, so I deleted the Export tab and the made the original frame as the parent tab
+        """
 
         # self.rowconfigure(0, weight=1)
         # self.columnconfigure(0, weight=1)
@@ -179,7 +195,9 @@ class SAMIApp(ctk.CTkFrame):
         self.visualization_tab.grid(row=0, column=0, sticky="new", padx=(5,5), pady=(5,5))
 
     def execute_selected_step(self, choice):
-        # Initialize the step if necessary
+        """This finctions is the key trigger for the process steps
+            It forgets the previous steps and shows the selected step
+            It also initailizes the step if it has not been created yet"""
 
         if self.file_loading_status == False:
             logger.info("Please load the files first")

@@ -10,11 +10,14 @@ from .colormap import *
 import io
 from functools import partial
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import matplotlib.animation as animation
 import logging
 logger = logging.getLogger(__name__)    
 
 class VisualizationStep(ctk.CTkFrame):
+
+    """
+    This class is used to display the visualization tab in the main window
+    """
 
     def __init__(self, master, file_handler):
         super().__init__(
@@ -33,12 +36,17 @@ class VisualizationStep(ctk.CTkFrame):
         # threading.Thread(target=self.displaying_loading_on_main_thread, args= (),daemon=True).start()
 
     def refresh(self):
+        """
+        Between the tabs switches, some components needs to be refreshed, this function is used to refresh the components
+        before gridding the selected step into the main window, the refresh function is called from the SAMIApp class
+        """
         pass
 
 
     def create_visualization_dock_type1(self):
-        """Under the visualization tab, we have two frames, left and right frame
-        Left frame is for displaying the files and color maps and right frame is for displaying the results
+        """
+        Under the visualization tab, we have two frames, left and right frame
+        Left frame is for displaying the files, color maps and molecule and right frame is for displaying the results
         """
 
         for widget in self.winfo_children():
@@ -57,9 +65,16 @@ class VisualizationStep(ctk.CTkFrame):
         self.right_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=1)
         self.root_visualization_frame.grid(row=0, column=0, sticky="nsew")
 
+        logger.info("Num children in visualization frame: %s", len(self.winfo_children()))
+        logger.info("left and right frame created in visualization frame")
+
     def create_left_visualization_dock_type1(self):
-        """This function deals with the left side of the visualization frame
-        It consists of file selection and color map display frame and the scrollable frame
+        """
+        This function deals with the left side of the visualization frame
+        It consists of file selection and color map, and molecues display frame and 
+        the scrollable frame where the image grids are displayed
+
+        This function also waits for the input files to be ready before displaying the image grdis
         """
 
         # file selection and color map display frame
@@ -127,16 +142,16 @@ class VisualizationStep(ctk.CTkFrame):
         self.slides_display_frame = ctk.CTkScrollableFrame(self.left_frame, height=500)
         self.slides_display_frame.grid(row=1, column=0, padx=5, pady=1, sticky="new")
 
+        logger.info("Num children in visualization left pane: %s", len(self.left_frame.winfo_children()))
+        logger.info("file dropdown, color map dropdown and molecule dropdown created in the left frame")
 
-
-        # loading label
-        # self.display_processing()
-        # self.loading_label = ctk.CTkLabel(self.left_frame,text="NOT Loading....", font = ("Arial", 24))
-        # self.loading_label.grid(row=2,column=0,padx=5,pady=1,sticky ="sew")
 
     def create_right_visualization_dock_type1(self):
-        """This function deals with the right side of the visualization frame
+        """
+        This function deals with the right side of the visualization frame
         It consists of tabview for the visualization results
+
+
         """
         self.right_frame.columnconfigure(0, weight=1)
         self.right_frame.rowconfigure(0, weight=1)
@@ -146,30 +161,25 @@ class VisualizationStep(ctk.CTkFrame):
         # self.animation = self.vis_tabs.add("Animation")
 
     def prepare_visualization_dock_type1(self):
-        """This visualization is used for the tabs 1. Visualization and 2. Normalization
-        This view have left and right visualization frames"""
+        """
+        This function is called to prepare the visualization frame
+        """
 
         # self.destroy_children_vis_tabs()
         self.create_visualization_dock_type1()
         self.create_left_visualization_dock_type1()
         self.create_right_visualization_dock_type1()
 
-    # def display_processing(self):
-    #     """ The onclick function will perofrm once its entirely executed, it would not display anything intermediate like 'loading or processing'"""
-
-    #     self.loading_label = ctk.CTkLabel(self.left_frame,text="NOT Loading....", font = ("Arial", 24))
-    #     self.loading_label.grid(row=2,column=0,padx=5,pady=1,sticky ="sew")
-
-    # def loading_label_update(self):
-    #     self.loading_label.configure(text = "Loading....")
-
-    # def update_frame_handler(self, choice):
-    #     self.loading_label_update()
-    #     self.update_frame_with_file(choice)
-
     def update_frame_with_file(self, choice):
+        """
+        This function is triggered when the user selects a file from the dropdown
 
-        # threading.Thread(target=self.loading_label_update, args= (),daemon=True).start()
+        It calculates a new compound matrix based on the selected file and first molecule in the molecule dropdown
+        It also updates the molecule dropdown with the molecules present in the selected file
+
+        after the above operations, it calculates the high resolution compound matrix and displays the image grids in the left frame
+
+        """
 
         self.loading_label.configure(text = "Loading...", text_color = "yellow")
         self.update()
@@ -194,20 +204,28 @@ class VisualizationStep(ctk.CTkFrame):
 
         # time.sleep(5)
         self.create_frames_in_slides_display_frame(self.compound_matrix_high_res)
-
         self.loading_label.configure(text = "")
 
 
     def update_frame_with_selected_color_map(self, choice):
 
+        """ 
+        This function is triggered when the user selects a color map from the dropdown
+        It triggers the creation of the image grids in the left frame with the selected color map
+        """
+
         self.loading_label.configure(text = "Loading...", text_color = "yellow")
         self.update()
-        
-
+    
         self.create_frames_in_slides_display_frame(self.compound_matrix_high_res)
         self.loading_label.configure(text = "")
     
     def update_frame_with_molecule(self, choice):
+
+        """
+        This function is triggered when the user selects a molecule from the dropdown
+        It calculates the compound matrix based on the selected molecule and displays the image grids in the left frame
+        """
 
         self.loading_label.configure(text = "Loading...", text_color = "yellow")
         self.update()
@@ -218,12 +236,15 @@ class VisualizationStep(ctk.CTkFrame):
             roi=False,
             reverse=True,
         )
-
-        # time.sleep(5)
         self.create_frames_in_slides_display_frame(self.compound_matrix_high_res)
         self.loading_label.configure(text = "")
 
     def create_frames_in_slides_display_frame(self, data):
+        """
+        This function creates the frames required for displaying the image grids in the left frame
+
+        """
+
         for widget in self.slides_display_frame.winfo_children():
             widget.destroy()
         # self.display_montage(data)
@@ -259,11 +280,18 @@ class VisualizationStep(ctk.CTkFrame):
         # self.after(500, self.display_animation())
 
     def process_images(self):
+        """
+        This function processes the images by calling the function "display_image_in_frame" and displays them in the left frame
+        """
         for frame, image_array, id in self.frames:
             self.display_image_in_frame(image_array, frame, id)
         # self.show_cmap_switch()
 
     def display_image_in_frame(self, image_array, frame, id):
+
+        """
+        The function displays the image in the frame using the pylab Figure and matplotlib
+        """
 
         fig = Figure(figsize=(2, 1.1), dpi=100)
         ax = fig.add_subplot(111)
@@ -298,6 +326,11 @@ class VisualizationStep(ctk.CTkFrame):
         label_tissue.grid(row=1, column=0, padx=2, pady=0)
 
     def on_label_click(self, event, id):
+
+        """
+        This function is triggered when the user clicks on the image grid
+        """
+
         matrix = self.compound_matrix_high_res[id]
         # print(matrix.shape)
         scale_factor = 0.42  # Adjust this factor to scale the image size up

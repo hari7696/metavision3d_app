@@ -1,34 +1,14 @@
 import tkinter as tk
 import customtkinter as ctk
-import pandas as pd
 import os
 import logging
 from multiprocessing import Process, Queue
-
-from .compound_matrix import create_compound_matrix
-
-# from .process_steps import process_state
-import math
-from pylab import Figure
-import numpy as np
-from waiting import wait
-from PIL import Image, ImageTk
-
-# from customtkinter import CTkImage
-from .colormap import *
-import io
-from functools import partial
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-# from .visualization_step import VisualizationStep
-import matplotlib.animation as animation
-import time
-import threading
-from SAMI.preprocessing import pooldata, csv2h5ad
 import logging
 from .timer import TimerApp
-from SAMI.clustering import Clusters, Cluster_Integration
+from SAMI.clustering import Cluster_Integration
 from .display_image import ImageDisaplay
 from .cluster_int_selective_clusters import ClusterIntSelectiveClusters
+from PIL import Image
 logger = logging.getLogger(__name__)
 
 class ClusterIntergrationStep(ctk.CTkFrame):
@@ -53,8 +33,8 @@ class ClusterIntergrationStep(ctk.CTkFrame):
 
 
     def prepare_visualization_dock_type2(self):
-        """This visualization is used for the tabs 1. Pooling, 2. Clustering, 3. Clusters Integration, 4. Markers, 5. Pathways
-        A separate tabview is created for this type of visualization, as it doesnt need left and right frames
+        """
+        This function prepares the visualization dock for the cluster integration tab
         """
 
         for child in self.winfo_children():
@@ -172,7 +152,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
 
 
     def prep_specific_cluster_tab(self):
-
+        # For the selective cluster tab
         self.specific_cluster = ClusterIntSelectiveClusters(self.specific_cluster_tab, 
                                                             self.cluster_int, self.n_clusters,
                                                               self.region1, self.region2)
