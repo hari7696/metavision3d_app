@@ -7,10 +7,19 @@ from Metavision_tk import MetaVision3DApp
 from sami_tk.SamiApp import SAMIApp
 import logging
 import sys
+import logging
+import re
 sys.path.append('SAMI')
 # Set up logging configuration
+class FilteredLogs(logging.Filter):
+    def filter(self, record):
+        if re.search(r'Embedded R', record.getMessage()):
+            return False
+        return True
+
 logging.basicConfig(filename='file.log', 
                     level=logging.INFO, format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', filemode='a')
+logging.getLogger().addFilter(FilteredLogs())
 
 class VisionApp(ctk.CTk):
 
@@ -54,7 +63,24 @@ class VisionApp(ctk.CTk):
                                             )
         self.algo_selection_dropdown.grid(row=0,column=0,padx=(5,5),pady=10, sticky="w")
 
+        self.write_num_children_to_logs()
 
+    def write_num_children_to_logs(self):
+
+        def count_all_children(widget):
+            """
+            Recursively counts all descendants of a given widget.
+            """
+            count = len(widget.winfo_children())
+            for child in widget.winfo_children():
+                count += count_all_children(child)
+            return count
+
+        # Assuming self.parent_frame is your root widget from which you want to start counting
+        total_children = count_all_children(self.parent_frame)
+
+        logging.info("Frequent_checker :: Total children {}".format(str(total_children)))
+        self.after(1000, self.write_num_children_to_logs)
         
 
     def destroy_children(self):
@@ -79,14 +105,14 @@ class VisionApp(ctk.CTk):
             # Destroy all widgets in the parent frame except nav_frame
 
             self.destroy_children()
-            logging.info("num children {}".format(str(len(self.parent_frame.winfo_children()))))
+            logging.info("num children in parent_frame {}".format(str(len(self.parent_frame.winfo_children()))))
             self.meta_app = MetaVision3DApp(self.parent_frame, self.nav_frame)
             self.meta_app.grid(row=1, column=0, sticky="nsew")
 
         elif choice == "SAMI":
             # Destroy all widgets in the parent frame except nav_frame and dropdown bar in it
             self.destroy_children()
-            logging.info("num children {}".format(str(len(self.parent_frame.winfo_children()))))
+            logging.info("num children in parent_frame {}".format(str(len(self.parent_frame.winfo_children()))))
             self.sami_ap = SAMIApp(self.parent_frame, self.nav_frame)
             self.sami_ap.grid(row=1, column=0, sticky="nsew", pady=(5,0), padx=(0,0))
 

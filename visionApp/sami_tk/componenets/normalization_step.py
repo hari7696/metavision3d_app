@@ -176,7 +176,7 @@ class NormalizationStep(ctk.CTkFrame):
         self.right_frame.rowconfigure(0, weight=1)
         self.vis_tabs = ctk.CTkTabview(self.right_frame)
         self.vis_tabs.grid(row=0, column=0, sticky="nsew", padx=5)
-        self.normalization = self.vis_tabs.add("Normalisation")
+        self.normalization = self.vis_tabs.add("Normalization")
         self.norm_plot = self.vis_tabs.add("Norm Plot") 
         self.norm_slides = self.vis_tabs.add("Normalised Slides")
         self.comparison = self.vis_tabs.add("Comparison")
