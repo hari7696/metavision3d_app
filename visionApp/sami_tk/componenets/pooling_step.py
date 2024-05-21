@@ -1,25 +1,16 @@
 import logging
-import tkinter as tk
 import customtkinter as ctk
-import pandas as pd
 import os
-from .compound_matrix import create_compound_matrix
-import math
-from pylab import Figure
-import numpy as np
-from waiting import wait
-from PIL import Image, ImageTk
-import io
-from functools import partial
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from multiprocessing import Process, Queue
-import time
-import threading
 from SAMI.preprocessing import pooldata, csv2h5ad
 from .timer import TimerApp
 logger = logging.getLogger(__name__)
 
 class PoolingStep(ctk.CTkFrame):
+
+    """
+    This class is used for the Pooling step of the SAMI app
+    """
 
     def __init__(self, master, file_handler):
         super().__init__(
@@ -40,8 +31,10 @@ class PoolingStep(ctk.CTkFrame):
         pass
 
     def prepare_visualization_dock_type2(self):
-        """This visualization is used for the tabs 1. Pooling, 2. Clustering, 3. Clusters Integration, 4. Markers, 5. Pathways
-        A separate tabview is created for this type of visualization, as it doesnt need left and right frames
+        """
+        This function is used to prepare the visualization dock for the app
+        This dock is different from the one used in earlier steps like visualization and normalization
+        There is no left and right frame, only one frame is used
         """
 
         for child in self.winfo_children():
@@ -64,6 +57,8 @@ class PoolingStep(ctk.CTkFrame):
 
     def creating_pooling_tab(self):
 
+        "This function is used to create the pooling tab in the app"
+
         self.pooling_tab = self.vis_tabs.add("Pooling")
         self.pooling_tab.columnconfigure(0, weight=1)
         self.pooling_tab.rowconfigure(0, weight=1)
@@ -72,21 +67,6 @@ class PoolingStep(ctk.CTkFrame):
         self.pooling_frame.columnconfigure(0, weight=10)
         self.pooling_frame.columnconfigure(1, weight=3)
         self.pooling_frame.columnconfigure(2, weight=10)
-        # self.pooling_frame.columnconfigure((0, 1), weight=1)
-        # self.pooling_frame.columnconfigure((0,1,2), weight=(1,1,1))
-        # self.pooling_frame.rowconfigure(0, weight=1)
-
-        # breaking own the pooling frame
-        # self.pooling_options_frame = ctk.CTkFrame(self.pooling_frame)
-        # self.pooling_options_frame.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
-        # self.pooling_options_frame.columnconfigure(0, weight=1)
-        # self.pooling_options_frame.rowconfigure((0,1,2, 3, 4) ,weight=1)
-
-        # display files
-        # display_file_frame = ctk.CTkFrame(self.pooling_frame) 
-        # display_file_frame.grid(row=0, column=1, sticky="nw", padx=5, pady=5)
-
-
 
         # writing a ahead label about functionalty
         self.head_label = ctk.CTkLabel(self.pooling_frame, text="Omics Pooling" , font=("Arial", 20))

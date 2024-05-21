@@ -1,44 +1,28 @@
-import tkinter as tk
 import customtkinter as ctk
 from CTkMessagebox import CTkMessagebox
-import pandas as pd
 import os
 import logging
-
-# from tkinter import filedialog, messagebox
-# import threading
-# from sami_tk_utilities import open_file, open_multiple_files
-# import glob
-# from .file_handler import FileOpenbutton
 from .compound_matrix import create_compound_matrix
 from multiprocessing import Process
-# from .process_steps import process_state
 import math
 from pylab import Figure
 import numpy as np
 from waiting import wait
 from PIL import Image, ImageTk
 import queue
-# from customtkinter import CTkImage
 from .colormap import *
 import io
 from functools import partial
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from tkinter import messagebox
-# from .visualization_step import VisualizationStep
-import matplotlib.animation as animation
-import time
 import threading
 import sys
 sys.path.append('../SAMI')
-# sys.path.append(r'C:\Users\ghari\Documents\OPS\UI\metavision3d_app\visionApp\SAMI')
-# rest of the code...
 from SAMI.norm import create_norm_dataset_gui
 from .timer import TimerApp
-
 logger = logging.getLogger(__name__)
 
 class NormalizationStep(ctk.CTkFrame):
+    """This class deals with the Normalization step"""
 
     def __init__(self, master, file_handler):
         super().__init__(
@@ -67,11 +51,16 @@ class NormalizationStep(ctk.CTkFrame):
         # threading.Thread(target=self.displaying_loading_on_main_thread, args= (),daemon=True).start()
 
     def refresh(self):
+        """
+        Between the tabs switches, some components needs to be refreshed, this function is used to refresh the components
+        before gridding the selected step into the main window, the refresh function is called from the SAMIApp class
+        """
         pass
 
     def create_visualization_dock_type1(self):
-        """Under the visualization tab, we have two frames, left and right frame
-        Left frame is for displaying the files and color maps and right frame is for displaying the results
+        """
+        Under the normilization tab, we have two frames, left and right frame
+        Left frame is for displaying the files, color maps and right frame is for displaying the results
         """
 
         for widget in self.winfo_children():
@@ -313,7 +302,12 @@ class NormalizationStep(ctk.CTkFrame):
             self.check_for_normalization_thread_signal()
     
     def check_for_normalization_thread_signal(self):
-        
+        """
+        This function checks for the signal from the normalization thread,
+        On trigger, it updates the norm_plot tab 
+        Also, spins a separate process to save the normalized data in csv
+
+        """
 
         if not self.queue.empty():
             message = self.queue.get()
@@ -344,6 +338,11 @@ class NormalizationStep(ctk.CTkFrame):
 
 
     def update_frame_with_file(self, choice):
+
+        """
+        This function is called when the user selects a file from the dropdown
+        It updates the molecule dropdown with the molecules in the selected file
+        """
 
         self.loading_label.configure(text="Loading...", text_color="yellow")
         self.update()

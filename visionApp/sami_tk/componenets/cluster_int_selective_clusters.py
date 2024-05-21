@@ -5,7 +5,12 @@ from multiprocessing import Queue, Process
 import io
 class ClusterIntSelectiveClusters(ctk.CTkFrame):
 
-    
+    """
+    This class is used to display the selective clusters for a given region
+
+    Its a part of of the cluster Intergration tab (selective clusters) in the SAMI app
+    """
+
     def __init__(self, master, cluster_int, n_clusters, region1, region2):
         super().__init__(
             master,

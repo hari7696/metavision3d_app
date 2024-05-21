@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import logging
-from tkinter import filedialog, messagebox
+from tkinter import filedialog
 import threading
 import os
 import pandas as pd

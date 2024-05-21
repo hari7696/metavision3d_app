@@ -1,6 +1,6 @@
 import customtkinter as ctk
 from PIL import Image, ImageTk
-from tkinter import Tk, Canvas
+from tkinter import Canvas
 from multiprocessing import Process, Queue
 import io
 import time
