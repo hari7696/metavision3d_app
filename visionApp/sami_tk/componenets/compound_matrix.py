@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import pickle
 from skimage.transform import resize
-
+import logging
 logger = logging.getLogger(__name__)
 
 

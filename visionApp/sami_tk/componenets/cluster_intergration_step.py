@@ -29,9 +29,6 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         self.prepare_visualization_dock_type2()
         self.prep_cluster_int_options_tab()
 
-
-
-
     def prepare_visualization_dock_type2(self):
         """
         This function prepares the visualization dock for the cluster integration tab
@@ -87,14 +84,19 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         self.umap_overlay_frame.columnconfigure(0, weight=1)
         self.umap_overlay_frame.rowconfigure(0, weight=1)
 
+        logger.info("Prepared Visualization Dock")
+
     def refresh(self):
         "whenever the tab swtich happens this function updates the files available in dropdowns"
+
+
         files = os.listdir(self.working_folder)
         #files = [file for file in files if ('_pool') in file and ('h5ad' in file)]
         files = [file for file in files if 'h5ad' in file]
 
         self.region1_selection.configure(values=files)
         self.region2_selection.configure(values=files)
+        logger.info("refreshed the dropdowns")  
 
 
     def prep_cluster_int_options_tab(self):
@@ -150,6 +152,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         self.time_constraint_label = ctk.CTkLabel(self.cluster_int_options, text="Note : cluster Integration takes roughly 10 minutes", text_color="yellow", width=300)
         self.time_constraint_label.grid(row=0,column=6,padx=(10,0),pady=8,sticky="e")
 
+        logger.info("Prepared Cluster Integration Options Tab")
 
     def prep_specific_cluster_tab(self):
         # For the selective cluster tab
@@ -158,6 +161,8 @@ class ClusterIntergrationStep(ctk.CTkFrame):
                                                               self.region1, self.region2)
         
         self.specific_cluster.grid(row=0, column=0, sticky="nsew", padx=(3,3), pady=(3,3))
+
+        logger.info("Prepared Specific Cluster Tab")    
 
         
 
@@ -178,6 +183,8 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         return region, modality, resolution
     
     def prepare_cluster_module(self, ):
+
+        """This function prepares the cluster integration module"""
 
         region1, modality1, res1 = self.splitname(self.region1_selection.get())
         region2, modality2, res2 = self.splitname(self.region2_selection.get())
@@ -226,7 +233,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
 
         # image_location1, self.n_clusters = self.cluster_int.plot_umap_cluster(region ,size=50,show=False)
         # image_location2, self.n_clusters = self.cluster_int.plot_umap_cluster(region ,size=50,show=False)
-
+        logger.info("started the clustering process")
         self.clustering_process = Process(target=self.clusterintegration, args=(self.queue, self.cluster_int, 
                                                                    self.integrated_file1, self.integrated_file2,self.region1, self.region2))
         self.clustering_process.start()
@@ -236,7 +243,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
     def trigger_visz_functions_on_thread_run(self):
 
         if not self.queue.empty():
-            logger.info("thread trigger received")
+            logger.info("clustering interation compelete message received from process")
             message = self.queue.get()
             self.image_location1 = message['image_location1']
             self.image_location2 = message['image_location2']
@@ -246,6 +253,8 @@ class ClusterIntergrationStep(ctk.CTkFrame):
             self.prep_specific_cluster_tab()
             self.timer.stop_timer()
             self.time_constraint_label.configure(text="Clustering Intergration Completed", text_color="green")
+            logger.info("clustering interation compelete")
+
         if self.clustering_process.is_alive():
             self.after(100, self.trigger_visz_functions_on_thread_run)
         else:

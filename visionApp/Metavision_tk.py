@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class MetaVision3DApp(ctk.CTkFrame):
 
-    def __init__(self, master, nav_frame):
+    def __init__(self, master, nav_frame, algo_drop_down):
         super().__init__(master, )
         self.columnconfigure(0,weight=1)
         title = ctk.CTkLabel(nav_frame, text="MetaVision", fg_color="gray30", corner_radius=6)

@@ -151,7 +151,6 @@ class VisualizationStep(ctk.CTkFrame):
         This function deals with the right side of the visualization frame
         It consists of tabview for the visualization results
 
-
         """
         self.right_frame.columnconfigure(0, weight=1)
         self.right_frame.rowconfigure(0, weight=1)
@@ -169,6 +168,7 @@ class VisualizationStep(ctk.CTkFrame):
         self.create_visualization_dock_type1()
         self.create_left_visualization_dock_type1()
         self.create_right_visualization_dock_type1()
+        logger.info("Visualization dock type 1 created")
 
     def update_frame_with_file(self, choice):
         """
@@ -180,7 +180,8 @@ class VisualizationStep(ctk.CTkFrame):
         after the above operations, it calculates the high resolution compound matrix and displays the image grids in the left frame
 
         """
-
+        logger.info(f"file dropdown value: {self.file_dropdown.get()}")
+        logger.info("update_frame_with_file Triggered")
         self.loading_label.configure(text = "Loading...", text_color = "yellow")
         self.update()
 
@@ -213,7 +214,7 @@ class VisualizationStep(ctk.CTkFrame):
         This function is triggered when the user selects a color map from the dropdown
         It triggers the creation of the image grids in the left frame with the selected color map
         """
-
+        logger.info("update_frame_with_selected_color_map Triggered")
         self.loading_label.configure(text = "Loading...", text_color = "yellow")
         self.update()
     
@@ -226,7 +227,7 @@ class VisualizationStep(ctk.CTkFrame):
         This function is triggered when the user selects a molecule from the dropdown
         It calculates the compound matrix based on the selected molecule and displays the image grids in the left frame
         """
-
+        logger.info("update_frame_with_molecule Triggered")
         self.loading_label.configure(text = "Loading...", text_color = "yellow")
         self.update()
         
@@ -330,6 +331,8 @@ class VisualizationStep(ctk.CTkFrame):
         """
         This function is triggered when the user clicks on the image grid
         """
+
+        logger.info("on_label_click Triggered")
 
         matrix = self.compound_matrix_high_res[id]
         # print(matrix.shape)

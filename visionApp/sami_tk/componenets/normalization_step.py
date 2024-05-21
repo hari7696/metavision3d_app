@@ -191,6 +191,8 @@ class NormalizationStep(ctk.CTkFrame):
         self.create_left_visualization_dock_type1()
         self.create_right_visualization_dock_type1()
 
+        logger.info("Visualization dock type 1 is prepared")
+
 
     def create_normalization_tab(self):
         """This function deals with the Normalization tab
@@ -252,7 +254,9 @@ class NormalizationStep(ctk.CTkFrame):
         note.grid(row=5,column=0,padx=(0,0),pady=8,sticky="sw", )
 
         note.insert("0.0", "Notes:\n1. Make sure to run the normalization on all of your files \n2. Make sure, to run the omics pooling once you are done with Normalization\nOtherwise, the Next steps, will not use the latest normalized data")
-        note.configure(state="disabled")  
+        note.configure(state="disabled") 
+
+        logger.info("Normalization tab is created") 
 
     def run_normalization(self):
 
@@ -298,6 +302,7 @@ class NormalizationStep(ctk.CTkFrame):
             self.timer.reset_timer()
             self.timer.start_timer()
             #creating a thread to run the normalization
+            logger.info("Normalization is triggered")
             threading.Thread(target=self.run_normalization, args=(), daemon=True).start()
             self.check_for_normalization_thread_signal()
     
@@ -312,7 +317,7 @@ class NormalizationStep(ctk.CTkFrame):
         if not self.queue.empty():
             message = self.queue.get()
             if message == 'Normalization_done':
-                logger.info("Normaliztion done, trigger received")
+                logger.info("Normaliztion done, message received")
                 # print("HIT")
                 self.norm_done_label.configure(text="Normalization is completed", font = ("Arial", 14))
                 self.display_norm_plot(self.compound_matrix_high_res, self.normalised_compound_matrix_high_res )
@@ -320,11 +325,11 @@ class NormalizationStep(ctk.CTkFrame):
                 # Spinning a process to convert the normalized to csv
                 file_name = self.file_dropdown.get() + '_normalized.csv'
                 file_name = os.path.join(*[self.file_handler.working_folder, 'normalised_data', file_name])
+                logger.info(f"file name : {file_name}")
+                logger.info("separate python process is spinned to write the normalized data in csv")
                 csv_saving_process = Process(target=self.save_normalized_files_in_csv,
                                               args=(file_name,self.normalized_data[self.file_dropdown.get()] ), daemon=True)
                 csv_saving_process.start()
-
-
         else:
             # Schedule the next queue check
             self.after(1000, self.check_for_normalization_thread_signal)
@@ -335,14 +340,14 @@ class NormalizationStep(ctk.CTkFrame):
         logger.info(f"file saved in csv : {file_name}")
         return
 
-
-
     def update_frame_with_file(self, choice):
 
         """
         This function is called when the user selects a file from the dropdown
         It updates the molecule dropdown with the molecules in the selected file
         """
+
+        logger.info("update_frame_with_file function triggered")
 
         self.loading_label.configure(text="Loading...", text_color="yellow")
         self.update()
@@ -370,6 +375,7 @@ class NormalizationStep(ctk.CTkFrame):
 
     def update_frame_with_selected_color_map(self, choice):
 
+        logger.info("update_frame_with_selected_color_map function triggered")
 
         self.loading_label.configure(text="Loading...", text_color="yellow")
         self.update()
@@ -378,6 +384,8 @@ class NormalizationStep(ctk.CTkFrame):
         
 
     def update_frame_with_molecule(self, choice):
+
+        logger.info("update_frame_with_molecule Triggered")
         
         if self.file_dropdown.get() not in self.normalized_data.keys():
             CTkMessagebox(title="Info", message="Please run the normilsation to display normalized iamges")
@@ -488,7 +496,10 @@ class NormalizationStep(ctk.CTkFrame):
             self.on_label_click(event, id)
             self.on_label_click_pre_post_norm_comparison(event, id)
 
-    def on_label_click(self, event, id):
+    def on_label_click(self, event, id): 
+
+        logger.debug("onlabel click triggered")
+        logger.debug("id : {}".format(id))
 
         matrix = self.normalised_compound_matrix_high_res[id]
         # print(matrix.shape)
@@ -549,6 +560,9 @@ class NormalizationStep(ctk.CTkFrame):
 
     def on_label_click_pre_post_norm_comparison(self,  event, id):
         # print("comparison", id)
+
+        logger.debug("onlabel click triggered")
+        logger.debug("id : {}".format(id))
 
         #num children in comparison frame
         logger.info("num children in comparison frame : {}".format(len(self.comparison.winfo_children())))
@@ -686,7 +700,8 @@ class NormalizationStep(ctk.CTkFrame):
         labels = [label.set_fontweight('bold') for label in labels]
                 
     def display_norm_plot(self, matrix, norm_matrix):
-
+        
+        logger.info("display_norm_plot function triggered")
         for widget in self.norm_plot.winfo_children():
             widget.destroy()
 

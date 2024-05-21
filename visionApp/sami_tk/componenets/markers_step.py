@@ -5,7 +5,6 @@ import logging
 from multiprocessing import Process, Queue
 from CTkMessagebox import CTkMessagebox
 from .colormap import *
-import logging
 from .timer import TimerApp
 from SAMI.markers import Markers
 import scanpy as sc
@@ -34,9 +33,6 @@ class MarkerStep(ctk.CTkFrame):
 
         self.prepare_visualization_dock_type2()
         self.trigger_visz_functions_on_thread_run()
-        # self.prep_cluster_int_options_tab()
-
-
 
 
     def prepare_visualization_dock_type2(self):
@@ -84,6 +80,7 @@ class MarkerStep(ctk.CTkFrame):
 
         self.volcano_frame = ctk.CTkFrame(self.viz_frame, bg_color="transparent")
         self.volcano_frame.grid(row=0, column=1, sticky="new", padx=5, pady=5)
+        logger.info("Markers tab prepared") 
 
         self.prepare_options_panel()
     
@@ -97,8 +94,11 @@ class MarkerStep(ctk.CTkFrame):
         if self.sami_type == "multi":
             self.region2_selection.configure(values=files)
 
+        logger.info("Refreshing markers tab")
+
     def prepare_options_panel(self):
         
+
         for i in range(0,15):
             self.options_panel.columnconfigure(i, weight=1)
 
@@ -174,6 +174,8 @@ class MarkerStep(ctk.CTkFrame):
         self.time_constraint_label = ctk.CTkLabel(self.options_panel, text="", text_color="yellow")
         self.time_constraint_label.grid(row=0,column=14,padx=(2,0),pady=2,sticky="w")
 
+        logger.info("Options panel prepared")   
+
     def generate_markers(self):
         
         logger.info("Generating markers button hit")
@@ -191,7 +193,7 @@ class MarkerStep(ctk.CTkFrame):
         self.time_constraint_label.configure(text="Note : Markers generation takes roughly 3 minutes", text_color="yellow")
         
 
-        adata1_path = os.path.join(self.working_folder, region1)
+        adata1_path = os.path.join(self.working_folder, region1) 
         if self.sami_type == "multi":
             adata2_path = os.path.join(self.working_folder, region2)
             reference_name = '_'.join(region1.replace('.h5ad' , "").split('_')[:-1]) + '_with_' + '_'.join(region2.replace('.h5ad', "").split('_')[:-1])
@@ -202,6 +204,8 @@ class MarkerStep(ctk.CTkFrame):
         logger.info(f"adata2_path: {adata2_path}")
         logger.info(f"top_n_molecules: {top_n_molecules}")
         # creating a process to run the markers generation
+
+        logger.info("Starting markers process")
         maker_process = Process(target=self.markers_actual_run, args=(adata1_path, adata2_path, abundance,
                                                                        prevalence, adj_pval_cutoff, top_n_molecules, self.queue, reference_name,
                                                                        self.makers_working_folder))
@@ -236,7 +240,7 @@ class MarkerStep(ctk.CTkFrame):
 
             signal = self.queue.get_nowait()
             if signal == "markers_done":
-                logger.info("thread trigger received")
+                logger.info("Markers generation complete message received from process")
                 # self.prepare_cluster_visualization()
                 # self.dsplay_umpa_overlay()
                 self.timer.stop_timer()
@@ -246,12 +250,16 @@ class MarkerStep(ctk.CTkFrame):
                 self.prepare_volcano_plot()
                 self.after(500, self.display_circular_plot())
                 self.after(500, self.display_volcano_plot())
+
+                logger.info("Markers generation complete and visualizations prepared")
             # Schedule the next queue check
             
         logger.info("checking the queue")
         self.after(10000, self.trigger_visz_functions_on_thread_run)
 
     def prepare_circular_tree_plot(self):
+
+        logger.info("Preparing circular tree plot")
 
         for child in self.circular_tree_frame.winfo_children():
             child.destroy() 
@@ -296,6 +304,7 @@ class MarkerStep(ctk.CTkFrame):
 
     def display_circular_plot(self):
 
+        logger.info("Displaying circular plot")
         # self.status_label_circular_plot.configure(text="Loading...", text_color="yellow")
         # self.update()
         if self.circular_image_label is not None:
@@ -309,6 +318,7 @@ class MarkerStep(ctk.CTkFrame):
 
         try:
             image_location = self.markers.circular_tree(clusters=None,top=top, show=False, workdir= self.makers_working_folder)
+            logger.info(f"Circular plot Image location: {image_location}")
         except Exception as e:
             logger.error(f"Error in plot_dot: {e}")
             CTkMessagebox(title="Error", message="Something went wrong in Markers calculation", icon="cancel")
@@ -327,6 +337,8 @@ class MarkerStep(ctk.CTkFrame):
         # self.update()
     
     def prepare_volcano_plot(self):
+
+        logger.info("Preparing volcano plot frame")
 
         for child in self.volcano_frame.winfo_children():
             child.destroy()
@@ -372,6 +384,8 @@ class MarkerStep(ctk.CTkFrame):
         # self.status_label_circular_plot.configure(text="Loading...", text_color="yellow")
         # self.update()
 
+        logger.info("Displaying volcano plot")
+
         if self.volcano_image_label is not None:
             self.volcano_image_label.destroy()
 
@@ -379,6 +393,7 @@ class MarkerStep(ctk.CTkFrame):
         cluster = int(self.cluster_selection.get())
         try:
             image_location = self.markers.volcano_plot(cluster, show=False, work_dir= self.makers_working_folder)
+            logger.info(f"Volcano Image location: {image_location}")    
         except Exception as e:
             logger.error(f"Error in plot_dot: {e}")
             CTkMessagebox(title="Error", message="Something went wrong in Markers calculation", icon="cancel")

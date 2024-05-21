@@ -1,8 +1,11 @@
 import customtkinter as ctk
 import tkinter as tk
-from PIL import Image, ImageTk
+from PIL import Image
 from multiprocessing import Queue, Process
 import io
+import logging
+logger = logging.getLogger(__name__)
+
 class ClusterIntSelectiveClusters(ctk.CTkFrame):
 
     """
@@ -83,6 +86,8 @@ class ClusterIntSelectiveClusters(ctk.CTkFrame):
 
         specific_cluster3 = SpecificCluster(right_frame, self.cluster_int, self.n_clusters, region, 2)
         specific_cluster3.grid(row=0, column=2, sticky="nsew", padx=(3,3), pady=(3,3))
+
+        logger.info(f"Prepared specific cluster vis for {region}")
         
 class SpecificCluster(ctk.CTkFrame):
     def __init__(self, master, cluster, n_clusters, region, initial_choice=0):

@@ -6,7 +6,6 @@ import os
 import logging
 from multiprocessing import Process, Queue
 import numpy as np
-import logging
 from .timer import TimerApp
 from SAMI.pathway import Pathway
 from PIL import Image
@@ -78,13 +77,16 @@ class PathwaysStep(ctk.CTkFrame):
 
         self.network_frame = ctk.CTkFrame(self.viz_frame, bg_color="transparent")
         self.network_frame.grid(row=0, column=1, sticky="new", padx=5, pady=5)
+        logger.info("Pathways visualization dock prepared")
 
         self.prepare_options_panel()
 
     def refresh(self):
+    
         files = os.listdir(self.makers_folder)
         files = [file for file in files if ('_marker.csv') in file]
         self.file_selection.configure(values=files)
+        logger.info("refreshed the markers dropdowns")
 
     def prepare_options_panel(self):
 
@@ -151,9 +153,11 @@ class PathwaysStep(ctk.CTkFrame):
         self.time_constraint_label = ctk.CTkLabel(self.options_panel, text="", text_color="yellow", width = 300)
         self.time_constraint_label.grid(row=0,column=6,padx=(5,5),pady=2,sticky="w")
 
+        logger.info("options panel prepared")
+
     def generate_pathways(self):
         
-        logger.info("Generating markers button hit")
+        logger.info("Generating Pathways button hit")
         # this function run the command of generating markers button
         self.selected_file = self.file_selection.get()
         logger.info(f"selected file: {self.selected_file}")
@@ -175,6 +179,7 @@ class PathwaysStep(ctk.CTkFrame):
         self.pathway = Pathway(region, self.omics, region_specific_pathways_folder, self.makers_folder)
 
         # creating the pathway object inside the proces as well to avoid the pickling error/bottlenecks
+        logger.info("creating a separate process to run the pathways generation")
         maker_process = Process(target=self.pathways_actual_run, args=(region, self.omics, region_specific_pathways_folder, self.makers_folder,self.queue))
         maker_process.start()
         
@@ -195,7 +200,7 @@ class PathwaysStep(ctk.CTkFrame):
 
             signal = self.queue.get_nowait()
             if signal == "pathways_done":
-                logger.info("pathways thread trigger received")
+                logger.info("pathways compelete message received")
                 # self.prepare_cluster_visualization()
                 # self.dsplay_umpa_overlay()
                 self.timer.stop_timer()
@@ -205,12 +210,15 @@ class PathwaysStep(ctk.CTkFrame):
                 self.prepare_network_plot()
                 self.after(500, self.display_plot_plot())
                 self.after(500, self.display_network_plot())
+                logger.info("pathways visualizations done")
             # Schedule the next queue check
             
         logger.info("checking the queue")
         self.after(10000, self.trigger_visz_functions_on_thread_run)
 
     def prepare_plot_dot(self):
+
+        logger.info("preparing plot dot")
 
         for child in self.plot_dot_frame.winfo_children():
             child.destroy() 
@@ -263,14 +271,16 @@ class PathwaysStep(ctk.CTkFrame):
         self.top_n_entry.insert(0, "20")
 
         # button to run the function
-        self.run_button = ctk.CTkButton(self.plot_dot_options_panel, text="Run", command=self.display_plot_plot)
+        self.run_button = ctk.CTkButton(self.plot_dot_options_panel, text="Run", command=self.display_plot_dot)
         self.run_button.grid(row=0, column=4, sticky="w", padx=(20,0), pady=5)
 
         self.status_label_plot_dot = ctk.CTkLabel(self.plot_dot_options_panel, text="", text_color="yellow", width = 150)
         self.status_label_plot_dot.grid(row=0,column=5,padx=(5,5),pady=2,sticky="w")
 
         
-    def display_plot_plot(self):
+    def display_plot_dot(self):
+
+        logger.info("displaying plot dot image")
         
         if self.plot_dot_image_label is not None:
             self.plot_dot_image_label.destroy()
@@ -285,6 +295,7 @@ class PathwaysStep(ctk.CTkFrame):
 
         try:
             image_location = self.pathway.plot_dot(cluster=cluster,scale=30,height=10,top=top_n,show=False)
+            logger.info(f"plot dot image location: {image_location}")   
         except Exception as e:
             logger.error(f"Error in plot_dot: {e}")
             CTkMessagebox(title="Error", message="Something went wrong in pathway calculation", icon="cancel")
@@ -305,6 +316,8 @@ class PathwaysStep(ctk.CTkFrame):
         self.update()
     
     def prepare_network_plot(self):
+
+        logger.info("preparing network plot")
 
         for child in self.network_frame.winfo_children():
             child.destroy() 
@@ -366,6 +379,8 @@ class PathwaysStep(ctk.CTkFrame):
         
     def display_network_plot(self):
 
+        logger.info("displaying network plot image")
+
         self.status_label_network_plot.configure(text="Loading...", text_color="yellow")
         self.update()
         if self.network_image_label is not None:
@@ -377,6 +392,7 @@ class PathwaysStep(ctk.CTkFrame):
 
         try:
             image_location = self.pathway.pathway_network(cluster=cluster,top=top_n,show=False)
+            logger.info(f"network plot image location: {image_location}")
         except Exception as e:
             logger.error(f"Error in plot_dot: {e}")
             CTkMessagebox(title="Error", message="Something went wrong in pathway calculation", icon="cancel")
