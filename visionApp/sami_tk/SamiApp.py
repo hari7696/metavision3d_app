@@ -30,7 +30,7 @@ class SAMIApp(ctk.CTkFrame):
         self.algo_drop_down = algo_drop_down    
         logger.debug("SAMI class initialized")
         # this functions check for messages from file handler, whenever the use opens files, it will refreshes the visualization tab
-        self.check_for_file_load()
+        
 
         # for the SAMI UI, we need to choose whether the processing needs to be done on single file or multiple files
 
@@ -55,6 +55,7 @@ class SAMIApp(ctk.CTkFrame):
         self.create_parent_tab_switch()
         # self.create_visualization_dock()
         # self.create_left_visualization_dock()
+        self.check_for_file_load()
  
 
     def file_open(self, choice):
@@ -81,24 +82,27 @@ class SAMIApp(ctk.CTkFrame):
         This functions kinds of acts like a messaging service, the moment it recievies messages from
         the file handler, it destroys the old process steps and calls the visualization step
         """
-        
-        if not self.queue.empty():
-            message = self.queue.get()
-            logger.info("file load thread trigger received")
-            # print("HIT")
-            # when the file switch happens we need to reinitialize the process steps, the old views are not automatically destroyed,
-            # so we need to destroy them manually
-            for step in self.loaded_steps.values():
-                step.destroy()
-            self.file_loading_status = False
-            self.loaded_steps = {}
-            self.initialize_step_constructor()
-            self.file_loading_status = True
-            self.process_step.set("Visualization")
-            # self.after(100, self.process_step.invoke())
-            self.execute_selected_step("Visualization")
+        try:
+            if not self.queue.empty():
+                message = self.queue.get()
+                logger.info("file load thread trigger received")
+                # print("HIT")
+                # when the file switch happens we need to reinitialize the process steps, the old views are not automatically destroyed,
+                # so we need to destroy them manually
+                for step in self.loaded_steps.values():
+                    step.destroy()
+                self.file_loading_status = False
+                self.loaded_steps = {}
+                self.initialize_step_constructor()
+                self.file_loading_status = True
+                self.process_step.set("Visualization")
+                # self.after(100, self.process_step.invoke())
+                self.execute_selected_step("Visualization")
             # Schedule the next queue check
-        self.after(1000, self.check_for_file_load)
+        except Exception as e:
+            logger.error(f"Error in check_for_file_load: {e}")
+        finally:
+            self.after(1000, self.check_for_file_load)
 
         
     def create_process_bar(self):

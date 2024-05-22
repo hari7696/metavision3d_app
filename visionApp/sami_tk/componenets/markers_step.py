@@ -235,27 +235,28 @@ class MarkerStep(ctk.CTkFrame):
 
     
     def trigger_visz_functions_on_thread_run(self):
-
-        if self.queue.qsize() > 0:
-
-            signal = self.queue.get_nowait()
-            if signal == "markers_done":
-                logger.info("Markers generation complete message received from process")
-                # self.prepare_cluster_visualization()
-                # self.dsplay_umpa_overlay()
-                self.timer.stop_timer()
-                self.timer.reset_timer()
-                self.time_constraint_label.configure(text="Note : Markers generation completed", text_color="green")
-                self.prepare_circular_tree_plot()
-                self.prepare_volcano_plot()
-                self.after(500, self.display_circular_plot())
-                self.after(500, self.display_volcano_plot())
-
-                logger.info("Markers generation complete and visualizations prepared")
-            # Schedule the next queue check
-            
+                    
         logger.info("checking the queue")
-        self.after(10000, self.trigger_visz_functions_on_thread_run)
+        try:
+            if self.queue.qsize() > 0:
+                signal = self.queue.get_nowait()
+                if signal == "markers_done":
+                    logger.info("Markers generation complete message received from process")
+                    # self.prepare_cluster_visualization()
+                    # self.dsplay_umpa_overlay()
+                    self.timer.stop_timer()
+                    self.timer.reset_timer()
+                    self.time_constraint_label.configure(text="Note : Markers generation completed", text_color="green")
+                    self.prepare_circular_tree_plot()
+                    self.prepare_volcano_plot()
+                    self.after(500, self.display_circular_plot())
+                    self.after(500, self.display_volcano_plot())
+                    logger.info("Markers generation complete and visualizations prepared")
+            # Schedule the next queue check
+        except Exception as e:
+            logger.error(f"Error: {e}")
+        finally:
+            self.after(10000, self.trigger_visz_functions_on_thread_run)
 
     def prepare_circular_tree_plot(self):
 

@@ -241,22 +241,27 @@ class ClusterIntergrationStep(ctk.CTkFrame):
 
 
     def trigger_visz_functions_on_thread_run(self):
-
+        
         if not self.queue.empty():
-            logger.info("clustering interation compelete message received from process")
-            message = self.queue.get()
-            self.image_location1 = message['image_location1']
-            self.image_location2 = message['image_location2']
-            self.n_clusters = message['n_clusters']
-            self.prepare_cluster_visualization()
-            self.dsplay_umpa_overlay()
-            self.prep_specific_cluster_tab()
-            self.timer.stop_timer()
-            self.time_constraint_label.configure(text="Clustering Intergration Completed", text_color="green")
-            logger.info("clustering interation compelete")
+            try:
+                logger.info("clustering interation compelete message received from process")
+                message = self.queue.get()
+                self.image_location1 = message['image_location1']
+                self.image_location2 = message['image_location2']
+                self.n_clusters = message['n_clusters']
+                self.prepare_cluster_visualization()
+                self.dsplay_umpa_overlay()
+                self.prep_specific_cluster_tab()
+                self.timer.stop_timer()
+                self.time_constraint_label.configure(text="Clustering Intergration Completed", text_color="green")
+                logger.info("clustering interation compelete")
+            except Exception as e:
+                logger.error(f"error in getting the message from the queue : {e}")
+            finally:
+                self.after(10000, self.trigger_visz_functions_on_thread_run)
 
         if self.clustering_process.is_alive():
-            self.after(100, self.trigger_visz_functions_on_thread_run)
+            self.after(10000, self.trigger_visz_functions_on_thread_run)
         else:
             self.clustering_process.join()
 

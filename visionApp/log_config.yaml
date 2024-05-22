@@ -22,7 +22,7 @@ handlers:
 
 loggers:
     development:
-        level: DEBUG
+        level: INFO
         handlers: [console]
         propagate: no
 
@@ -32,10 +32,10 @@ loggers:
         propagate: no
 
     production:
-        level: WARNING
+        level: INFO
         handlers: [file]
         propagate: no
 
 root:
-    level: DEBUG
+    level: INFO
     handlers: [console]

@@ -47,7 +47,7 @@ class ImageDisaplay(ctk.CTkFrame):
             self.original_image = Image.open(io.BytesIO(image_data))
             self.prepare_visualization()
         if self.process.is_alive():
-            self.master.after(100, self.check_queue)
+            self.master.after(1000, self.check_queue)
         else:
             self.process.join()
 

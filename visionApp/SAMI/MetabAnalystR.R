@@ -492,10 +492,10 @@ fast.write.csv <- function(dat, file, row.names=TRUE){
 
 
 
-    
+
     
 PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folder){
-
+  sink(file =  paste(results_folder, 'R_output.txt', sep = '/'), append = FALSE)
   ora <- NULL
   nonmatch_list <- NULL
 
@@ -638,4 +638,7 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folde
       write.csv(nonmatch,csv_file3,row.names = FALSE)
     }
   }
+
+sink(file = NULL)
 }
+

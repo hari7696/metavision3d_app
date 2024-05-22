@@ -108,7 +108,7 @@ class PoolingStep(ctk.CTkFrame):
             self.files_label.configure(text= messgae)
             self.timer.stop_timer()
         if self.process.is_alive():
-            self.master.after(500, self.check_queue)
+            self.master.after(5000, self.check_queue)
         else:
             self.process.join()
 

@@ -58,6 +58,7 @@ class PathwaysStep(ctk.CTkFrame):
         self.markers_root_tab.columnconfigure(0, weight=1)
         self.markers_root_tab.rowconfigure(0, weight = 1)
         self.markers_root_tab.rowconfigure(1, weight = 20)
+        self.markers_root_tab.rowconfigure(1, weight = 5)
 
         #options panel
         self.options_panel = ctk.CTkFrame(self.markers_root_tab, bg_color="transparent")
@@ -65,11 +66,16 @@ class PathwaysStep(ctk.CTkFrame):
         self.prepare_options_panel()
 
         # viz_frame
-
         self.viz_frame = ctk.CTkFrame(self.markers_root_tab, bg_color="transparent")
         self.viz_frame.grid(row=1, column=0, sticky="new", padx=5, pady=5)
         self.viz_frame.columnconfigure(0, weight=2)
         self.viz_frame.columnconfigure(1, weight=1)
+
+        # scrollable frame for R output
+        self.scrollable_frame = ctk.CTkFrame(self.markers_root_tab,bg_color="transparent", height=150)
+        self.scrollable_frame.grid(row=2, column=0, sticky="nsew", padx=5, pady=5)
+        self.scrollable_frame.columnconfigure(0, weight=1)
+        self.scrollable_frame.rowconfigure(0, weight=1)
 
         # breaking down the viz_frame into 2 frames
         self.plot_dot_frame = ctk.CTkFrame(self.viz_frame, bg_color="transparent")
@@ -169,52 +175,62 @@ class PathwaysStep(ctk.CTkFrame):
         # creating a process to run the markers generation
         logger.info("creating a process to run the markers generation")
         region = self.selected_file.replace('_marker.csv', '')
-        region_specific_pathways_folder = os.path.join(self.pathways_folder, region)
+        self.region_specific_pathways_folder = os.path.join(self.pathways_folder, region)
         print("region: ", region)
         # checking the number of clusters in the selected file, need this number for the visualization prep
         temp_df = os.path.join(self.makers_folder, self.selected_file)
         self.num_clusters = pd.read_csv(temp_df)['cluster'].nunique()
 
         # for class referece
-        self.pathway = Pathway(region, self.omics, region_specific_pathways_folder, self.makers_folder)
+        self.pathway = Pathway(region, self.omics, self.region_specific_pathways_folder, self.makers_folder)
 
         # creating the pathway object inside the proces as well to avoid the pickling error/bottlenecks
         logger.info("creating a separate process to run the pathways generation")
-        maker_process = Process(target=self.pathways_actual_run, args=(region, self.omics, region_specific_pathways_folder, self.makers_folder,self.queue))
+        maker_process = Process(target=self.pathways_actual_run, args=(region, self.omics, self.region_specific_pathways_folder, self.makers_folder,self.queue))
         maker_process.start()
         
         #self.pathways_actual_run(region, self.omics, region_specific_pathways_folder, self.makers_folder,self.queue)
     @staticmethod
     def pathways_actual_run(selected_file,omics, pathways_folder, makers_folder, queue):
-        pathway = Pathway(selected_file, omics, pathways_folder, makers_folder)
-        pathway.findpathway()
-        
-        queue.put("pathways_done")
-        logger.info("pathways done")
+
+        try:
+            pathway = Pathway(selected_file, omics, pathways_folder, makers_folder)
+            pathway.findpathway()
+        except:
+            logger.error("Error in pathway generation")
+        finally:
+            queue.put("pathways_done")
+            logger.info("pathways done")
 
 
     
     def trigger_visz_functions_on_thread_run(self):
-
-        if self.queue.qsize() > 0:
-
-            signal = self.queue.get_nowait()
-            if signal == "pathways_done":
-                logger.info("pathways compelete message received")
-                # self.prepare_cluster_visualization()
-                # self.dsplay_umpa_overlay()
-                self.timer.stop_timer()
-                self.timer.reset_timer()
-                self.time_constraint_label.configure(text="Note : Pathway generation completed", text_color="green")
-                self.prepare_plot_dot()
-                self.prepare_network_plot()
-                self.after(500, self.display_plot_plot())
-                self.after(500, self.display_network_plot())
-                logger.info("pathways visualizations done")
-            # Schedule the next queue check
-            
+        
         logger.info("checking the queue")
-        self.after(10000, self.trigger_visz_functions_on_thread_run)
+       
+        try:
+            if self.queue.qsize() > 0:
+                signal = self.queue.get()
+                if signal == "pathways_done":
+                    logger.info("pathways compelete message received")
+                    # self.prepare_cluster_visualization()
+                    # self.dsplay_umpa_overlay()
+                    self.timer.stop_timer()
+                    self.timer.reset_timer()
+                    self.time_constraint_label.configure(text="Note : Pathway generation completed", text_color="green")
+                    self.after(500, self.display_r_output())
+                    self.update()
+                    self.prepare_plot_dot()
+                    self.prepare_network_plot()
+                    self.after(500, self.display_plot_dot())
+                    self.after(500, self.display_network_plot())
+                    self.after(1000, CTkMessagebox(title="Info", message="Pathways are generated, Please check the R output tab at the bottom for more details"))
+                    logger.info("pathways visualizations done")
+        except Exception as e:
+            logger.error(f"Error: {e}")
+        # Schedule the next queue check
+        finally:
+            self.after(10000, self.trigger_visz_functions_on_thread_run)
 
     def prepare_plot_dot(self):
 
@@ -270,12 +286,19 @@ class PathwaysStep(ctk.CTkFrame):
         self.top_n_entry.grid(row=0, column=3, sticky="w", padx=5, pady=5)
         self.top_n_entry.insert(0, "20")
 
+        # entry box to take size
+        self.size_label = ctk.CTkLabel(self.plot_dot_options_panel, text="Dot size ")
+        self.size_label.grid(row=0, column=4, sticky="w", padx=5, pady=5)
+        self.size_entry_dot = ctk.CTkEntry(self.plot_dot_options_panel, width=50, placeholder_text= "5",)
+        self.size_entry_dot.grid(row=0, column=5, sticky="w", padx=5, pady=5)
+        self.size_entry_dot.insert(0, "30")
+
         # button to run the function
         self.run_button = ctk.CTkButton(self.plot_dot_options_panel, text="Run", command=self.display_plot_dot)
-        self.run_button.grid(row=0, column=4, sticky="w", padx=(20,0), pady=5)
+        self.run_button.grid(row=0, column=6, sticky="w", padx=(20,0), pady=5)
 
         self.status_label_plot_dot = ctk.CTkLabel(self.plot_dot_options_panel, text="", text_color="yellow", width = 150)
-        self.status_label_plot_dot.grid(row=0,column=5,padx=(5,5),pady=2,sticky="w")
+        self.status_label_plot_dot.grid(row=0,column=7,padx=(5,5),pady=2,sticky="w")
 
         
     def display_plot_dot(self):
@@ -292,13 +315,13 @@ class PathwaysStep(ctk.CTkFrame):
         # get the value from top N entry
         cluster = int(self.cluster_entry.get())
         top_n = int(self.top_n_entry.get())
-
+        scale = int(self.size_entry_dot.get())
         try:
-            image_location = self.pathway.plot_dot(cluster=cluster,scale=30,height=10,top=top_n,show=False)
+            image_location = self.pathway.plot_dot(cluster=cluster,scale=scale,height=10,top=top_n,show=False)
             logger.info(f"plot dot image location: {image_location}")   
         except Exception as e:
             logger.error(f"Error in plot_dot: {e}")
-            CTkMessagebox(title="Error", message="Something went wrong in pathway calculation", icon="cancel")
+            CTkMessagebox(title="Error", message="Something went wrong in pathway calculation, Please check the R output tab at the bottom for more details", icon="cancel")
             self.status_label_plot_dot.configure(text="", text_color="yellow")
             self.update()
     
@@ -368,13 +391,22 @@ class PathwaysStep(ctk.CTkFrame):
         self.network_top_n_entry.grid(row=0, column=3, sticky="w", padx=5, pady=5)
         self.network_top_n_entry.insert(0, "10")
 
+        # entry box to take size
+        self.size_label = ctk.CTkLabel(self.network_options_panel, text="Dot size ")
+        self.size_label.grid(row=0, column=4, sticky="w", padx=5, pady=5)
+
+        self.size_entry = ctk.CTkEntry(self.network_options_panel, width=50, placeholder_text= "5",)
+        self.size_entry.grid(row=0, column=5, sticky="w", padx=5, pady=5)
+        self.size_entry.insert(0, "8")
+
+
         # button to run the function
         self.run_button_network = ctk.CTkButton(self.network_options_panel, text="Run", command=self.display_network_plot)
-        self.run_button_network.grid(row=0, column=4, sticky="w", padx=(20,0), pady=5)
+        self.run_button_network.grid(row=0, column=6, sticky="w", padx=(20,0), pady=5)
 
         # adding a status label
         self.status_label_network_plot = ctk.CTkLabel(self.network_options_panel, text="", text_color="yellow", width = 150)
-        self.status_label_network_plot.grid(row=0,column=5,padx=(5,5),pady=2,sticky="w")
+        self.status_label_network_plot.grid(row=0,column=7,padx=(5,5),pady=2,sticky="w")
 
         
     def display_network_plot(self):
@@ -389,9 +421,10 @@ class PathwaysStep(ctk.CTkFrame):
         # get the value from top N entry
         cluster = int(self.network_cluster_entry.get())
         top_n = int(self.network_top_n_entry.get())
+        size = int(self.size_entry.get())*100
 
         try:
-            image_location = self.pathway.pathway_network(cluster=cluster,top=top_n,show=False)
+            image_location = self.pathway.pathway_network(cluster=cluster,top=top_n,size = size, show=False)
             logger.info(f"network plot image location: {image_location}")
         except Exception as e:
             logger.error(f"Error in plot_dot: {e}")
@@ -408,6 +441,37 @@ class PathwaysStep(ctk.CTkFrame):
         self.network_image_label.image = ctk_image2
         self.status_label_network_plot.configure(text="", text_color="yellow")
         self.update()
+
+    def display_r_output(self):
+
+        logger.info("displaying R output")
+
+        for child in self.scrollable_frame.winfo_children():
+            child.destroy()
+        """This function displays the R output in the scrollable frame"""
+        path = os.path.join(self.region_specific_pathways_folder, 'R_output.txt')
+        # reading the text file and holding the whole text in a variable with line breakers
+        try:
+            with open(path) as f:
+                lines = f.readlines()
+            text = '\n'.join(lines)
+        except Exception as e:
+            logger.error(f"Error in reading R output file: {e}")
+            text = "No R output found"
+
+        # adding a text box in the scrollable frame
+        self.r_output_box = ctk.CTkTextbox(self.scrollable_frame, font = ("Arial", 14) , height = 150)
+        self.r_output_box.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        self.r_output_box.rowconfigure(0, weight=1)
+        self.r_output_box.columnconfigure(0, weight=1)
+        self.r_output_box.insert("0.0", text)
+        self.r_output_box.configure(state="disabled") 
+
+        logger.info("R output displayed")
+    
+
+        
+        
 
 
     
