@@ -152,7 +152,7 @@ class Pathway:
             return None
     
     
-    def pathway_network(self,cluster,top=None,show=False):
+    def pathway_network(self,cluster,top=None,size =800, show=False):
         ora_data = pd.read_csv(os.path.join(self.pathways_folder ,f'ora_{self.modality}.csv'))
         ora_data['enrichment_ratio'] = ora_data['hits']/ora_data['expected']
         
@@ -216,7 +216,7 @@ class Pathway:
             node_color = []
             labels = {}
             for node in G.nodes():
-                node_size.append(data.loc[data['pathway']==node,'enrichment_ratio']*800)
+                node_size.append(data.loc[data['pathway']==node,'enrichment_ratio']*size)
                 node_color.append(data.loc[data['pathway']==node,'Raw.p'])
                 if node in label_pathways:
                     labels[node] = node

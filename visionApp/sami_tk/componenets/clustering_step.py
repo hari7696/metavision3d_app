@@ -210,21 +210,26 @@ class ClusteringStep(ctk.CTkFrame):
         """
 
         if not self.queue.empty():
-            logger.info("clustering complete message received")
-            message = self.queue.get()
-            self.image_location = message['image_location']
-            logger.info(f"saved cluster Image location is {self.image_location}")
-            
-            self.n_clusters = message['n_clusters']
-            self.cluster, _ = self.prepare_cluster_module()
-            self.prepare_cluster_visualization()
-            self.prepare_specific_cluster_vis()
-            logger.info("visualization prepared")
-            
-            self.timer.stop_timer()
-            self.time_constraint_label.configure(text="Clustering Done", text_color="green")    
+            try:
+                logger.info("clustering complete message received")
+                message = self.queue.get()
+                self.image_location = message['image_location']
+                logger.info(f"saved cluster Image location is {self.image_location}")
+                
+                self.n_clusters = message['n_clusters']
+                self.cluster, _ = self.prepare_cluster_module()
+                self.prepare_cluster_visualization()
+                self.prepare_specific_cluster_vis()
+                logger.info("visualization prepared")
+                
+                self.timer.stop_timer()
+                self.time_constraint_label.configure(text="Clustering Done", text_color="green")
+            except Exception as e:
+                logger.error(f"Error in getting the message from the queue {e}")
+            finally:
+                self.after(10000, self.trigger_visz_functions_on_thread_run)
         if self.clustering_process.is_alive():
-            self.after(100, self.trigger_visz_functions_on_thread_run)
+            self.after(10000, self.trigger_visz_functions_on_thread_run)
         else:
             self.clustering_process.join()
 

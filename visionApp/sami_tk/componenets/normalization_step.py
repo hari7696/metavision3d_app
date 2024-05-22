@@ -298,7 +298,7 @@ class NormalizationStep(ctk.CTkFrame):
         if self.file_dropdown.get() == "Select Dataset":
             CTkMessagebox(title="Info", message="Please select a dataset on the left panel")
         else:
-            self.norm_done_label.configure(text="Normalization is running")
+            self.norm_done_label.configure(text="Normalization is running", text_color="yellow")
             self.timer.reset_timer()
             self.timer.start_timer()
             #creating a thread to run the normalization
@@ -315,21 +315,26 @@ class NormalizationStep(ctk.CTkFrame):
         """
 
         if not self.queue.empty():
-            message = self.queue.get()
-            if message == 'Normalization_done':
-                logger.info("Normaliztion done, message received")
-                # print("HIT")
-                self.norm_done_label.configure(text="Normalization is completed", font = ("Arial", 14))
-                self.display_norm_plot(self.compound_matrix_high_res, self.normalised_compound_matrix_high_res )
-                self.timer.stop_timer() 
-                # Spinning a process to convert the normalized to csv
-                file_name = self.file_dropdown.get() + '_normalized.csv'
-                file_name = os.path.join(*[self.file_handler.working_folder, 'normalised_data', file_name])
-                logger.info(f"file name : {file_name}")
-                logger.info("separate python process is spinned to write the normalized data in csv")
-                csv_saving_process = Process(target=self.save_normalized_files_in_csv,
-                                              args=(file_name,self.normalized_data[self.file_dropdown.get()] ), daemon=True)
-                csv_saving_process.start()
+            try:
+                message = self.queue.get()
+                if message == 'Normalization_done':
+                    logger.info("Normaliztion done, message received")
+                    self.norm_done_label.configure(text="Normalization is completed", font = ("Arial", 14), text_color = "green")
+                    self.display_norm_plot(self.compound_matrix_high_res, self.normalised_compound_matrix_high_res )
+                    self.timer.stop_timer() 
+                    # Spinning a process to convert the normalized to csv
+                    file_name = self.file_dropdown.get() + '_normalized.csv'
+                    file_name = os.path.join(*[self.file_handler.working_folder, 'normalised_data', file_name])
+                    logger.info(f"file name : {file_name}")
+                    logger.info("separate python process is spinned to write the normalized data in csv")
+                    csv_saving_process = Process(target=self.save_normalized_files_in_csv,
+                                                args=(file_name,self.normalized_data[self.file_dropdown.get()] ), daemon=True)
+                    csv_saving_process.start()
+            except:
+                pass
+                logger.error("Error in the normalization thread signal")
+            finally:
+                self.after(1000, self.check_for_normalization_thread_signal)
         else:
             # Schedule the next queue check
             self.after(1000, self.check_for_normalization_thread_signal)
