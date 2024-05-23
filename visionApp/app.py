@@ -34,7 +34,7 @@ class VisionApp(ctk.CTk):
 
     def __init__(self):
         super().__init__()
-        self.title("MetaVision3D")
+        self.title("Vision")
         self.geometry("1350x710")
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -108,7 +108,7 @@ class VisionApp(ctk.CTk):
         Switching to respective UI based on the choice
         """
 
-        if choice == "3D file":
+        if choice == "MetaVision3D":
             # Destroy all widgets in the parent frame except nav_frame
 
             self.destroy_children()
