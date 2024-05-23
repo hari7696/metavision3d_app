@@ -29,10 +29,6 @@ class SAMIApp(ctk.CTkFrame):
         self.file_loading_status = False
         self.algo_drop_down = algo_drop_down    
         logger.debug("SAMI class initialized")
-        # this functions check for messages from file handler, whenever the use opens files, it will refreshes the visualization tab
-        
-
-        # for the SAMI UI, we need to choose whether the processing needs to be done on single file or multiple files
 
         file_type_variable = ctk.StringVar(value="Single/Multi file?")
         self.dropdown_file_type_single_multi = ctk.CTkOptionMenu(
@@ -102,7 +98,7 @@ class SAMIApp(ctk.CTkFrame):
         except Exception as e:
             logger.error(f"Error in check_for_file_load: {e}")
         finally:
-            self.after(1000, self.check_for_file_load)
+            self.after(100, self.check_for_file_load)
 
         
     def create_process_bar(self):

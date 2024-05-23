@@ -314,19 +314,17 @@ class MarkerStep(ctk.CTkFrame):
         logger.info("displaying circular plot")
 
         # get the value from top N entry
-        top = int(self.top_n_entry.get())
         
-
         try:
-            image_location = self.markers.circular_tree(clusters=None,top=top, show=False, workdir= self.makers_working_folder)
+            image_location = self.markers.circular_tree(clusters=None,top_n=int(self.top_n_entry.get()), show=False, workdir= self.makers_working_folder)
             logger.info(f"Circular plot Image location: {image_location}")
         except Exception as e:
-            logger.error(f"Error in plot_dot: {e}")
+            logger.error(f"Error in circular plot: {e}")
             CTkMessagebox(title="Error", message="Something went wrong in Markers calculation", icon="cancel")
 
 
         # creating a label to display the image
-        self.circular_image_label = ctk.CTkLabel(self.circular_image_frame , width=800, height=800)
+        self.circular_image_label = ctk.CTkLabel(self.circular_image_frame , text = "", width=800, height=800)
         self.circular_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)
 
         ctk_image1 = ctk.CTkImage(light_image=Image.open(image_location),
@@ -401,7 +399,7 @@ class MarkerStep(ctk.CTkFrame):
 
 
         # creating a label to display the image
-        self.volcano_image_label = ctk.CTkLabel(self.volcano_image_frame , width=400, height=400)
+        self.volcano_image_label = ctk.CTkLabel(self.volcano_image_frame , text = "", width=400, height=400)
         self.volcano_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)
 
         ctk_image2 = ctk.CTkImage(light_image=Image.open(image_location),

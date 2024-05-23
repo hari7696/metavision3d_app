@@ -180,8 +180,8 @@ class NormalizationStep(ctk.CTkFrame):
         self.norm_plot.columnconfigure(0, weight=1)
         self.norm_plot.rowconfigure(0, weight=1)
 
-        self.normalization.columnconfigure(0, weight=1)
-        self.normalization.rowconfigure(0, weight=1)
+        # self.normalization.columnconfigure(0, weight=1)
+        # self.normalization.rowconfigure(0, weight=1)
 
     def prepare_visualization_dock_type1(self):
         """This visualization is used for the tabs 1. Visualization and 2. Normalization
@@ -207,23 +207,30 @@ class NormalizationStep(ctk.CTkFrame):
         # self.normalization.rowconfigure(0, weight=1)
 
         self.norm_frame = ctk.CTkFrame(self.normalization)
-        self.norm_frame.grid(row=0, column=0, sticky="nsew")
+        self.norm_frame.grid(row=0, column=0, sticky="w")
+        self.norm_frame.columnconfigure(0, weight=1)
+        self.norm_frame.columnconfigure(1, weight=1)
+        self.norm_frame.columnconfigure(2, weight=10)
         # self.norm_frame.columnconfigure((0,1,2), weight=1)
         # self.norm_frame.rowconfigure(0, weight=1)
         # self.norm_frame.columnconfigure(0, weight=1)
         # self.norm_frame.rowconfigure(0, weight=1)
-
+        # label_unused = ctk.CTkLabel(self.norm_frame, text="", font = ("Arial", 24), width= 500, height= 500)
+        # label_unused.grid(row=0,column=2,padx=(5,0),pady=8,sticky="w")
         # two drop downs, and a run button
         #creating a dropwodn from rownorm
         label1 = ctk.CTkLabel(self.norm_frame, text="RowNorm :" )
         label1.grid(row=0,column=0,padx=(5,0),pady=8,sticky="w")
 
-        norm_default_value = ctk.StringVar(value="SumNorm :")
+        norm_default_value = ctk.StringVar(value="SumNorm")
         self.algo_selection_dropdown = ctk.CTkComboBox(master= self.norm_frame,
                                             values=['SumNorm'],
                                             variable=norm_default_value,button_color="#b5b8b0"
                                             )
         self.algo_selection_dropdown.grid(row=0,column=1,padx=(0,0),pady=8,sticky="w")
+        self.algo_selection_dropdown.set("SumNorm")
+        # dummy_label1 = ctk.CTkLabel(self.norm_frame, text="", font = ("Arial", 14), width= 1000)
+        # dummy_label1.grid(row=0,column=2,padx=(5,0),pady=8,sticky="w")
         
 
         # creating a dropdown for transnorm
@@ -235,7 +242,11 @@ class NormalizationStep(ctk.CTkFrame):
                                             values=['LogTrans2'],  
                                             variable=norm_default_value2, button_color="#b5b8b0"
                                             )
+        self.algo_selection_dropdown2.set("LogTrans2")
         self.algo_selection_dropdown2.grid(row=1,column=1,padx=(0,0),pady=8,sticky="w")
+
+        # dummy_label2 = ctk.CTkLabel(self.norm_frame, text="", font = ("Arial", 14), width= 1000)
+        # dummy_label2.grid(row=1,column=2,padx=(5,0),pady=8,sticky="w")
 
         # creating a run button
         self.run_button = ctk.CTkButton(master=self.norm_frame, text="Run Normalization", command=self.onlick_run_normalization, width=70)
@@ -251,7 +262,7 @@ class NormalizationStep(ctk.CTkFrame):
 
 
         note = ctk.CTkTextbox(self.norm_frame, font = ("Arial", 14) , width= 700, height= 100)
-        note.grid(row=5,column=0,padx=(0,0),pady=8,sticky="sw", )
+        note.grid(row=5,column=0,padx=(0,0),pady=8,sticky="sw", rowspan= 2, columnspan= 2)
 
         note.insert("0.0", "Notes:\n1. Make sure to run the normalization on all of your files \n2. Make sure, to run the omics pooling once you are done with Normalization\nOtherwise, the Next steps, will not use the latest normalized data")
         note.configure(state="disabled") 
@@ -351,7 +362,7 @@ class NormalizationStep(ctk.CTkFrame):
         This function is called when the user selects a file from the dropdown
         It updates the molecule dropdown with the molecules in the selected file
         """
-
+        self.norm_done_label.configure(text="")
         logger.info("update_frame_with_file function triggered")
 
         self.loading_label.configure(text="Loading...", text_color="yellow")
@@ -501,35 +512,42 @@ class NormalizationStep(ctk.CTkFrame):
             self.on_label_click(event, id)
             self.on_label_click_pre_post_norm_comparison(event, id)
 
-    def on_label_click(self, event, id): 
+    def on_label_click(self, event, id):
 
-        logger.debug("onlabel click triggered")
-        logger.debug("id : {}".format(id))
+        """
+        This function is triggered when the user clicks on the image grid
+        """
 
-        matrix = self.normalised_compound_matrix_high_res[id]
+        logger.info("on_label_click Triggered")
+
+        matrix = self.compound_matrix_high_res[id]
         # print(matrix.shape)
         scale_factor = 0.42  # Adjust this factor to scale the image size up
         dpi = 300  # Increasing the DPI for better resolution and larger image
+
         # Calculate the figure size based on the image dimensions and scaling factor
         height, width = matrix.shape
         figsize = (width / float(dpi) * scale_factor, height / float(dpi) * scale_factor)
+
         # Create the figure with the adjusted size and dpi
         fig = Figure(figsize=figsize, dpi=dpi)
         ax = fig.add_subplot(111)
         # ax = fig.add_subplot(111)
         # ax.set_facecolor('white')
 
-        # 
-
         # Clear existing widgets in the container
+
         for widget in self.norm_slides.winfo_children():
             widget.destroy()
+
+        logger.info("num childer in tissues tab : %s", len(self.norm_slides.winfo_children()))
 
         # Create a frame to hold the canvas
         self.slide_tab_frame = ctk.CTkFrame(self.norm_slides)
         self.slide_tab_frame.grid(row=0, column=0, sticky="nsew")
         self.slide_tab_frame.columnconfigure(0, weight=1)
         self.slide_tab_frame.rowconfigure(0, weight=1)
+
 
         # Add the canvas to the frame
         canvas = FigureCanvasTkAgg(fig, master=self.slide_tab_frame)
@@ -559,7 +577,7 @@ class NormalizationStep(ctk.CTkFrame):
         # Draw the canvas
         canvas.draw()
 
-        image_label = ctk.CTkLabel(self.norm_slides, text= "Tissue : "+str(self.dict_id_to_tissue_name[id]), font=("Arial", 16))
+        image_label = ctk.CTkLabel(self.norm_slides, text= "Tissue : " +str(self.dict_id_to_tissue_name[id]), font=("Arial", 16))
         image_label.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
     
 

@@ -26,13 +26,19 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
     # #print(nslice)
     # matrix = np.zeros((nslice, 200, 350))
     # for ii in range(matrix.shape[0]):
+    highest_x = 0
+    highest_y = 0
     for ii, slice in enumerate(data["region"].unique()):
         data_temp = create_slice_sami(data, slice, col=col, roi=roi, reverse=reverse)
         matrix[ii] = data_temp
+        if data_temp.shape[0] > highest_x:
+            highest_x = data_temp.shape[0]
+        if data_temp.shape[1] > highest_y:
+            highest_y = data_temp.shape[1]
         id_to_name[ii] = slice
 
-    zarray = np.zeros((nslice, 200, 350))
-    zarray_high_res = np.zeros((nslice, 2000, 2000))
+    zarray = np.zeros((nslice, 1500, 1500))
+    zarray_high_res = np.zeros((nslice, max(2000, highest_x), max(2000, highest_y)))
 
     for key in matrix:
 
@@ -71,6 +77,7 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
         # print(scale_factor  )
         # print(matrix[key].shape)
         # Resize the image array
+        resized_image = matrix[key]
         resized_image = resize(
             matrix[key],
             (
