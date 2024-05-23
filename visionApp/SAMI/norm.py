@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 import re
+import os
+import logging
+logger = logging.getLogger(__name__)
 
 def SumNorm(x, c=1): 
     if np.any(np.nansum(x, axis=1, keepdims=True)==0):
@@ -249,3 +252,27 @@ def Normalization(df, first_compound_idx, rowNorm=None, transNorm=None, scaleNor
     
     return new_df
 
+def create_norm_dataset(data_path,pattern):
+    for file in os.listdir(data_path):
+        name, ext = os.path.splitext(file)
+        if re.match(pattern,file):
+            print('-----------------------------')
+            df = pd.read_csv(os.path.join(data_path,f"{file}"))
+            df_norm = Normalization(df, first_compound_idx=3, rowNorm='SumNorm', transNorm='LogTrans2', c=1, log_base=2)
+            name = f"{name}_norm"
+            df_norm.to_csv(os.path.join(data_path,f"{name}{ext}"),index=False)
+            print(f'{name}{ext} is created.')
+
+def create_norm_dataset_gui(df, working_dir, key, rowNorm, transNorm):
+
+    df_norm = Normalization(df, first_compound_idx=3, rowNorm='SumNorm', transNorm='LogTrans2', c=1, log_base=2)
+    name = key + "_norm" + ".pq"
+    df_norm.to_parquet(os.path.join(*[working_dir,'normalised_data', name]), index = False)
+    logger.info(f'{name} is created.')
+    # norm_dict[key] = df_norm
+    logger.info("Normalization is done.")
+    return df_norm
+        
+
+        
+    

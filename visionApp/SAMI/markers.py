@@ -15,7 +15,7 @@ class Markers:
     def __init__(self, region):
         self.region = region
     
-    def findmarkers(self,adata,adj_pval_cutoff,top,adata2=None):
+    def findmarkers(self,adata,adj_pval_cutoff,top,adata2=None, workdir=None):  
 
         cluster_param='leiden'
 
@@ -24,7 +24,7 @@ class Markers:
         cluster_list=adata.obs[cluster_param].cat.categories.tolist()
         cluster_list = sorted([int(s) for s in cluster_list])
         for i in range(len(cluster_list)):
-            pvalue_temp=pd.DataFrame(columns=['feature','pvalue','avg_log2FC','abs_avg_log2FC','pct1','pct2','adj_pvalue','cluster','rank'])
+            pvalue_temp=pd.DataFrame(columns=['feature','omics','pvalue','avg_log2FC','abs_avg_log2FC','pct1','pct2','adj_pvalue','cluster','rank'])
             for feature in adata.var.index:
                 if adata2 is not None and feature in adata2.var.index:
                     a=adata[adata.obs[cluster_param]==str(cluster_list[i])][:,feature].X.copy()
@@ -42,7 +42,8 @@ class Markers:
                         mean_b=np.mean(b)
                         avg_log2FC=np.log2(mean_a/mean_b)
                         abs_avg_log2FC=abs(avg_log2FC)
-                        pvalue_feature=pd.DataFrame({'feature':feature,'pvalue':[pvalue],'avg_log2FC':avg_log2FC,'abs_avg_log2FC':abs_avg_log2FC,'pct1':pct1,'pct2':pct2,'cluster':cluster_list[i]})
+                        omics = adata.var.loc[feature,'omics']
+                        pvalue_feature=pd.DataFrame({'feature':feature,'omics':omics,'pvalue':[pvalue],'avg_log2FC':avg_log2FC,'abs_avg_log2FC':abs_avg_log2FC,'pct1':pct1,'pct2':pct2,'cluster':cluster_list[i]})
                         pvalue_temp=pd.concat([pvalue_temp,pvalue_feature],ignore_index=True)
                     else:
                         continue
@@ -59,20 +60,26 @@ class Markers:
         pvalue_result=pvalue_result.drop(columns=['rank','pct1','pct2','adj_pvalue'])
         marker_result=marker_result.drop(columns=['rank'])
 
+        if not os.path.exists(workdir):
+            os.mkdir(workdir)
 
-        file_path = '../results/markers/'
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        pvalue_result.to_csv(os.path.join(file_path,f'{self.region}_pvalue.csv'),index=False)
-        marker_result.to_csv(os.path.join(file_path,f'{self.region}_marker.csv'),index=False)
+        # crude updates
+        marker_result['omics'] = marker_result['omics'].replace({'lip':'lipidomics','sm':'metabolomics'})
+        marker_result['omics'] = marker_result['omics'].apply(lambda x: 'lipidomics' if x.startswith('lip') else x)
+        marker_result['omics'] = marker_result['omics'].apply(lambda x: 'glycomics' if x.startswith('gly') else x)
+        marker_result['omics'] = marker_result['omics'].apply(lambda x: 'metabolomics' if x.startswith('met') else x)
         
-    def circular_tree(self,clusters=None,top=5, show=True):
-        markers = pd.read_csv(os.path.join('../results/markers/',f'{self.region}_marker.csv'))
+        pvalue_result.to_csv(os.path.join(workdir,f'{self.region}_pvalue.csv'),index=False)
+        marker_result.to_csv(os.path.join(workdir,f'{self.region}_marker.csv'),index=False)
+        
+    def circular_tree(self,clusters=None,top_n=5, show=True, workdir=None):
+        markers = pd.read_csv(os.path.join(workdir,f'{self.region}_marker.csv'))
         if clusters != None:
             markers = markers.loc[markers['cluster'].isin(clusters)]
         else:
             clusters = 'all'
         
-        top = markers.groupby(['cluster'],as_index=False).head(top)
+        top = markers.groupby(['cluster'],as_index=False).head(top_n)
 
         top['c|f'] = top['cluster'].astype(str)+'|'+top['feature']
         top['center'] = 'center'
@@ -157,14 +164,15 @@ class Markers:
         plt.ylim(y_min - y_margin, y_max + y_margin)
 
         cluster_str = str(clusters).replace("'","")
-        plt.savefig(os.path.join('../results/markers/',f'circulartree_{self.region}_{cluster_str}.png'))
+        plt.savefig(os.path.join(workdir,f'circulartree_{self.region}_{cluster_str}_top_{top_n}.png'))
         if show==False:
             plt.close()
         else:
             plt.show()
+        return os.path.join(workdir,f'circulartree_{self.region}_{cluster_str}_top_{top_n}.png')
             
-    def volcano_plot(self,cluster,show=True):
-        pvalues = pd.read_csv(os.path.join('../results/markers/',f'{self.region}_pvalue.csv'))
+    def volcano_plot(self,cluster,show=True, work_dir=None):
+        pvalues = pd.read_csv(os.path.join(work_dir,f'{self.region}_pvalue.csv'))
 
         pval = pvalues.loc[pvalues['pvalue']>0]
         pval = pval.loc[(pval['cluster']==cluster)&(pval['pvalue']>=np.percentile(pval['pvalue'],5))&(pval['abs_avg_log2FC']<=np.percentile(pval['abs_avg_log2FC'],95))]
@@ -210,11 +218,13 @@ class Markers:
         plt.ylabel('-log10(pvalue)',fontsize=40,fontweight='bold')
 
         cluster = str(cluster).replace("'","")
-        plt.savefig(os.path.join('../results/markers/',f'vol_{self.region}_{cluster}.png'))
+        plt.savefig(os.path.join(work_dir,f'vol_{self.region}_{cluster}.png'))
         if show == False:
             plt.close()
         else:
             plt.show()
+
+        return os.path.join(work_dir,f'vol_{self.region}_{cluster}.png')
             
     def density_plot(self,adata,cluster,marker,show=False):
         adata= adata[:,marker]

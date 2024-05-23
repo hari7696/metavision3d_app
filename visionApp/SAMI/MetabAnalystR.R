@@ -142,11 +142,11 @@ MetaboliteMappingExact <- function(mSetObj=NA, q.type, lipid = F){
   match.state <- vector(mode='numeric', length=length(qvec));  # match status - 0, no match; 1, exact match; initial 0 
   
   if(anal.type %in% c("msetora", "msetssp", "msetqea") & lipid){
-    cmpd.db <- qs::qread("../lib/lipid_compound_db.qs");
+    cmpd.db <- qs::qread("visionApp/lib/lipid_compound_db.qs");
   }else if(anal.type == "utils"){
-    cmpd.db <- qs::qread("../lib/master_compound_db.qs");
+    cmpd.db <- qs::qread("visionApp/lib/master_compound_db.qs");
   }else{
-    cmpd.db <- qs::qread("../lib/compound_db.qs");
+    cmpd.db <- qs::qread("visionApp/lib/compound_db.qs");
   }
   
   if(q.type == "hmdb"){
@@ -188,11 +188,11 @@ MetaboliteMappingExact <- function(mSetObj=NA, q.type, lipid = F){
     
     # then try to find exact match to synonyms for the remaining unmatched query names one by one
     if(anal.type %in% c("msetora", "msetssp", "msetqea") & lipid){
-      syn.db <- qs::qread("../lib/lipid_syn_nms.qs")
+      syn.db <- qs::qread("visionApp/lib/lipid_syn_nms.qs")
     }else if(anal.type == "utils"){
-      syn.db <- qs::qread("../lib/master_syn_nms.qs")
+      syn.db <- qs::qread("visionApp/lib/master_syn_nms.qs")
     }else{
-      syn.db <- qs::qread("../lib/syn_nms.qs")
+      syn.db <- qs::qread("visionApp/lib/syn_nms.qs")
     }
     
     syns.list <-  syn.db$syns.list;
@@ -279,7 +279,7 @@ SetCurrentMsetLib <- function(mSetObj=NA, libname, excludeNum=0){
     
     # feature enhancement https://omicsforum.ca/t/error-in-setcurrentmsetlib-function-in-r/2058
     if(!exists("current.msetlib") || is.null(mSetObj$analSet$msetlibname) || mSetObj$analSet$msetlibname != libname) {
-      destfile <- paste('../lib/',libname, ".qs", sep = "");
+      destfile <- paste('visionApp/lib/',libname, ".qs", sep = "");
       my.qs <- paste("https://www.metaboanalyst.ca/resources/libs/msets/", destfile, sep="");
       if(!file.exists(destfile)){
         download.file(my.qs, destfile, method = "curl");
@@ -448,11 +448,11 @@ GetFinalNameMap <- function(mSetObj=NA, lipid = FALSE){
   colnames(nm.mat) <- c("query", "hmdb",  "kegg", "hmdbid");
   
   if(anal.type %in% c("msetora", "msetssp", "msetqea") & lipid){
-    cmpd.db <- qs::qread("../lib/lipid_compound_db.qs");
+    cmpd.db <- qs::qread("visionApp/lib/lipid_compound_db.qs");
   }else if(anal.type == "utils"){
-    cmpd.db <- qs::qread("../lib/master_compound_db.qs");
+    cmpd.db <- qs::qread("visionApp/lib/master_compound_db.qs");
   }else{
-    cmpd.db <- qs::qread("../lib/compound_db.qs");
+    cmpd.db <- qs::qread("visionApp/lib/compound_db.qs");
   }
   
   for (i in 1:length(qvec)){
@@ -492,10 +492,10 @@ fast.write.csv <- function(dat, file, row.names=TRUE){
 
 
 
-    
-    
-PathwayEnrichment <- function(region,markers,clusters,lipid,merge){
 
+    
+PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folder){
+  sink(file =  paste(results_folder, 'R_output.txt', sep = '/'), append = FALSE)
   ora <- NULL
   nonmatch_list <- NULL
 
@@ -536,36 +536,41 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge){
       )
     }
     if (merge==TRUE){
-      csv_file <- '../results/pathway/ora_metgly_merge.csv'
-      if (file.exists(csv_file)){
+
+      csv_file <- paste(results_folder, 'ora_metgly_merge.csv', sep = '/')
+      # if (file.exists(csv_file)){
+      if (FALSE){
         existing <- read.csv(csv_file)
         combined <- rbind(existing,ora)
-        write.csv(combined,'../results/pathway/ora_metgly_merge.csv',row.names=FALSE)
+        write.csv(combined, csv_file ,row.names=FALSE)
       } else{
-        write.csv(ora,'../results/pathway/ora_metgly_merge.csv',row.names=FALSE)
+        write.csv(ora,csv_file ,row.names=FALSE)
       }
     }else{
-      csv_file <- '../results/pathway/ora_metabolomics_glycomics.csv'
-      if (file.exists(csv_file)){
-        existing <- read.csv(csv_file)
+      csv_file2 <- paste(results_folder, 'ora_metabolomics_glycomics.csv', sep = '/')
+      # if (file.exists(csv_file2)){
+      if (FALSE){
+        existing <- read.csv(csv_file2)
         combined <- rbind(existing,ora)
-        write.csv(combined,'../results/pathway/ora_metabolomics_glycomics.csv',row.names=FALSE)
+        write.csv(combined, csv_file2 ,row.names=FALSE)
       } else{
-        write.csv(ora,'../results/pathway/ora_metabolomics_glycomics.csv',row.names=FALSE)
+        write.csv(ora, csv_file2,row.names=FALSE)
       }
     }
     nonmatch_list <- unique(nonmatch_list)
     nonmatch <- data.frame(nonmatch=unlist(nonmatch_list))
-    csv_file <- '../results/pathway/nonmatch_metabolomics_glycomics.csv'
-    if (file.exists(csv_file)){
-      existing <- read.csv(csv_file)
+    csv_file3 <- paste(results_folder, 'nonmatch_metabolomics_glycomics.csv', sep = '/')
+    # if (file.exists(csv_file3)){
+    if (FALSE){
+      existing <- read.csv(csv_file3)
       combined <- rbind(existing,nonmatch)
-      write.csv(combined,'../results/pathway/nonmatch_metabolomics_glycomics.csv',row.names=FALSE)
+      write.csv(combined,csv_file3,row.names=FALSE)
     } else{
-      write.csv(nonmatch,'../results/pathway/nonmatch_metabolomics_glycomics.csv',row.names = FALSE)
+      write.csv(nonmatch,csv_file3,row.names = FALSE)
   }
   } else {
     for (i in 1:length(clusters)){
+      cat('cluster:',clusters[i],';\n')        
       tryCatch(
         {input_list <- markers[markers$cluster==clusters[i],]$feature
         if (length(input_list)==0){
@@ -600,34 +605,40 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge){
       )
     } 
     if (merge==TRUE){
-      csv_file <- '../results/pathway/ora_lipid_merge.csv'
-      if (file.exists(csv_file)){
+      
+      csv_file <- paste(results_folder, 'ora_lipid_merge.csv', sep = '/')
+      # if (file.exists(csv_file)){
+      if (FALSE){
         existing <- read.csv(csv_file)
         combined <- rbind(existing,ora)
-        write.csv(combined,'../results/pathway/ora_lipid_merge.csv',row.names = FALSE)
+        write.csv(combined,csv_file,row.names = FALSE)
       } else{
-        write.csv(ora,'../results/pathway/ora_lipid_merge.csv',row.names = FALSE)
+        write.csv(ora,csv_file,row.names = FALSE)
       }
     }else{
-      csv_file <- '../results/pathway/ora_lipidomics.csv'
-      if (file.exists(csv_file)){
-        existing <- read.csv(csv_file)
+      csv_file2 <- paste(results_folder, 'ora_lipidomics.csv', sep = '/')
+      # if (file.exists(csv_file)){
+        if (FALSE){
+        existing <- read.csv(csv_file2)
         combined <- rbind(existing,ora)
-        write.csv(combined,'../results/pathway/ora_lipidomics.csv',row.names = FALSE)
+        write.csv(combined,csv_file2,row.names = FALSE)
       } else{
-        write.csv(ora,'../results/pathway/ora_lipidomics.csv',row.names = FALSE)
+        write.csv(ora,csv_file2,row.names = FALSE)
       }
     }
     nonmatch_list <- unique(nonmatch_list)
     nonmatch <- data.frame(nonmatch=unlist(nonmatch_list))
-    csv_file <- '../results/pathway/nonmatch_lipidomics.csv'
-    if (file.exists(csv_file)){
+    csv_file3 <- paste(results_folder, 'nonmatch_lipidomics.csv', sep = '/')
+    # if (file.exists(csv_file)){
+    if (FALSE){
       existing <- read.csv(csv_file)
       combined <- rbind(existing,nonmatch)
-      write.csv(combined,'../results/pathway/nonmatch_lipidomics.csv',row.names = FALSE)
+      write.csv(combined,csv_file3,row.names = FALSE)
     } else{
-      write.csv(nonmatch,'../results/pathway/nonmatch_lipidomics.csv',row.names = FALSE)
+      write.csv(nonmatch,csv_file3,row.names = FALSE)
     }
   }
+
+sink(file = NULL)
 }
 

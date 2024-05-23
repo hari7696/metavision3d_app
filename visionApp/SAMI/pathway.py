@@ -3,16 +3,21 @@ import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 import networkx as nx
-os.environ['R_HOME'] = "/blue/li.chen1/xin.ma/conda/envs/maldi/lib/R"
+os.environ["R_HOME"] = r"C:\Program Files\R\R-4.3.3" 
+os.environ["PATH"] += r"C:\Program Files\R\R-4.3.3\bin\x64" + ";" + os.environ["R_HOME"] 
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
-
+import logging
+logger = logging.getLogger(__name__)
 class Pathway:
-    def __init__(self,region,modality):
-        if not os.path.exists('../results/pathway'):
-            os.makedirs('../results/pathway')
+    def __init__(self,region,modality, pathways_folder, makers_folder=None):
+        self.pathways_folder = pathways_folder
+        self.markers_folder = makers_folder
+        if not os.path.exists(pathways_folder):
+            os.mkdir(pathways_folder)
             
         self.region = region
         if modality=='metabolomics' or modality=='glycomics':
@@ -23,16 +28,16 @@ class Pathway:
             
     def findpathway(self):
         r_source = ro.r['source']
-        r_source('../SAMI/MetabAnalystR.R')  
+        logger.info("current working directory: %s", os.getcwd())
+        r_source(os.path.join( *[os.getcwd(), 'visionApp', 'SAMI' , 'MetabAnalystR.R']) ) 
         
-        ann_dict = self.anndict()
-        markers = pd.read_csv(os.path.join('../results/markers/',f'{self.region}_marker.csv'))
+        markers = pd.read_csv(os.path.join(self.markers_folder,f'{self.region}_marker.csv'))
         clusters = markers['cluster'].unique().tolist()
         
         if self.modality=='metabolomics_glycomics':
-            markers = markers.loc[markers['feature'].isin(ann_dict['metabolomics']+ann_dict['glycomics'])]
+            markers = markers.loc[markers['omics'].isin(['metabolomics','glycomics'])]
         else:
-            markers = markers.loc[markers['feature'].isin(ann_dict['lipidomics'])]
+            markers = markers.loc[markers['omics']=='lipidomics']
         
         logical_arg = ro.BoolVector([True,False])
         clustersR = ro.vectors.IntVector(clusters)
@@ -43,23 +48,24 @@ class Pathway:
         PathwayEnrichment = ro.r['PathwayEnrichment']
         
         if self.modality=='metabolomics_glycomics':
-            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[1],merge=logical_arg[1])
+            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[1],merge=logical_arg[1], results_folder=self.pathways_folder)
         else:
-            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[0],merge=logical_arg[1])
+            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[0],merge=logical_arg[1], results_folder=self.pathways_folder)
         
     def anndict(self):
         anndict = {}
-        for file in os.listdir('../annotation'):
+        annoations_directory = os.path.join(*[ os.getcwd(), 'visionApp', 'annotation'])
+        for file in os.listdir(annoations_directory):
             if re.match(r'^\w+annotation\.csv',file):
                 modality = file.split('_')[0]
-                data_temp = pd.read_csv(os.path.join('../annotation', file),delimiter=',')
+                data_temp = pd.read_csv(os.path.join(annoations_directory, file),delimiter=',')
                 feat_cols = data_temp['Name'].tolist()
                 anndict[modality] = feat_cols
         return anndict
     
 
     def plot_dot(self,cluster,scale,height,top=None,show=False):
-        ora_data = pd.read_csv(f'../results/pathway/ora_{self.modality}.csv')
+        ora_data = pd.read_csv(os.path.join(self.pathways_folder ,f'ora_{self.modality}.csv'))
         ora_data['enrichment_ratio'] = ora_data['hits']/ora_data['expected']
         
         if top is None:
@@ -136,16 +142,18 @@ class Pathway:
             cbar.ax.set_position(new_loc)
             fig.set_size_inches(20,height)
 
-            plt.savefig(os.path.join('../results/pathway/',f'{self.region}_{self.modality}_{cluster}.png'))
+            plt.savefig(os.path.join(self.pathways_folder,f'{self.region}_{self.modality}_{cluster}.png'))
             if show == False:
                 plt.close()
             else:
                 plt.show()
-
+            return os.path.join(self.pathways_folder,f'{self.region}_{self.modality}_{cluster}.png')
+        else:
+            return None
     
     
-    def pathway_network(self,cluster,top=None,show=False):
-        ora_data = pd.read_csv(f'../results/pathway/ora_{self.modality}.csv')
+    def pathway_network(self,cluster,top=None,size =800, show=False):
+        ora_data = pd.read_csv(os.path.join(self.pathways_folder ,f'ora_{self.modality}.csv'))
         ora_data['enrichment_ratio'] = ora_data['hits']/ora_data['expected']
         
         if self.modality=='metabolomics_glycomics':
@@ -159,8 +167,10 @@ class Pathway:
             data = ora_data.loc[(ora_data['modality']==self.modality)&(ora_data['cluster']==cluster)&(ora_data['region']==self.region)].head(top)
 
         if data.shape[0]!=0:
+            
+            lib_folder = os.path.join(*[ os.getcwd(), 'visionApp', 'lib'])
 
-            lib = pd.read_csv(f'../lib/{libname}.csv',index_col=0)
+            lib = pd.read_csv( os.path.join(lib_folder, f'{libname}.csv'),index_col=0)
             lib['member']=lib['member'].str.split(';')
             lib = lib.explode('member').reset_index(drop=True)
 
@@ -206,7 +216,7 @@ class Pathway:
             node_color = []
             labels = {}
             for node in G.nodes():
-                node_size.append(data.loc[data['pathway']==node,'enrichment_ratio']*800)
+                node_size.append(data.loc[data['pathway']==node,'enrichment_ratio']*size)
                 node_color.append(data.loc[data['pathway']==node,'Raw.p'])
                 if node in label_pathways:
                     labels[node] = node
@@ -221,8 +231,10 @@ class Pathway:
             nx.draw_networkx_labels(G, label_pos,labels, font_size=45,font_weight='bold', verticalalignment='top')
             nx.draw(G, pos, node_size=node_size, node_color=node_color,cmap='PuRd_r',edge_color='lightblue',width=weights,edgecolors='black',linewidths=5)
 
-            plt.savefig(os.path.join('../results/pathway/',f'network_{self.region}_{self.modality}_{cluster}.png'))
+            plt.savefig(os.path.join(self.pathways_folder,f'network_{self.region}_{self.modality}_{cluster}.png'))
             if show == False:
                 plt.close()
             else:
                 plt.show()
+
+            return os.path.join(self.pathways_folder,f'network_{self.region}_{self.modality}_{cluster}.png')
