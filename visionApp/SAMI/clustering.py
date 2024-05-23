@@ -1,48 +1,42 @@
 import os
 import scanpy as sc
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 import string
 import pandas as pd
 import numpy as np
+import logging
+logger = logging.getLogger(__name__)
 
 class Clusters:
-    def __init__(self, region, modality, resolution,data_folder):
+    def __init__(self, region, modality, resolution, pooled_data_folder, working_folder):
         self.region = region
         self.modality = modality
         self.resolution = round(resolution,1)
-        self.parent_folder = data_folder
-        self.data_folder = os.path.join(data_folder,"h5ad")
-        os.makedirs(os.path.join(self.parent_folder,'clustering'),exist_ok=True)
-        os.makedirs(os.path.join(self.parent_folder,"plots"),exist_ok=True)
-        
+        self.pooled_data_folder = pooled_data_folder
+        self.working_folder = working_folder
+        self.file_path = os.path.join(*[self.working_folder, 'results', 'clustering'])
 
     def clustering(self):
-        # adata=sc.read(os.path.join('../datasets/',f'{self.region}_{self.modality}.h5ad'))
-        # print(self.filepath)
-        print(os.path.join(self.data_folder,f'{self.region}_{self.modality}.h5ad'))
-        adata=sc.read(os.path.join(self.data_folder,f'{self.region}_{self.modality}.h5ad'))
-        sc.pp.pca(adata)
-        sc.pp.neighbors(adata,n_pcs=20)
-        sc.tl.umap(adata)
-        sc.tl.leiden(adata,resolution=self.resolution)
+        adata=sc.read(os.path.join(self.pooled_data_folder,f'{self.region}_{self.modality}.h5ad'))
+        sc.pp.pca(adata, random_state = 7)
+        sc.pp.neighbors(adata,n_pcs=20, random_state = 7)
+        sc.tl.umap(adata, random_state = 7)
+        sc.tl.leiden(adata,resolution=self.resolution, random_state = 7)
 
-        # file_path = '../results/clustering'
-        file_path = os.path.join(self.parent_folder,"clustering") #r'C:\Users\dprav\OneDrive\Desktop\MetaAPP\MetaVision3D\modules\test\clustering'
-        if not os.path.exists(file_path):
-            os.makedirs(file_path)
-        adata.write(os.path.join(file_path,f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
+        if not os.path.exists(self.file_path):
+            os.makedirs(self.file_path)
+        adata.write(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
     
     
     def plot_umap_cluster(self,size=50,show=False):
-        # adata = sc.read(os.path.join('../results/clustering',f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
-        adata = sc.read(os.path.join(os.path.join(self.parent_folder,"clustering"),f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
-
+        adata = sc.read(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
         color='leiden'
         clusters_colors = dict(zip([str(i) for i in range(102)], sc.pl.palettes.default_102))
         colorlist=adata.obs[color].cat.categories.tolist()
         n_cluster=str(len(colorlist))
 
-        fig, axs = plt.subplots(1, 2, figsize=(15, 5))
+        fig, axs = plt.subplots(1, 2, figsize=(30, 10))
 
         sc.pl.umap(
             adata, 
@@ -66,18 +60,17 @@ class Clusters:
             show=False
         )
         
-        # plt.savefig(os.path.join('../results/clustering',f'{self.region}_{self.modality}_{self.resolution}_umap_{n_cluster}.png'),dpi=400)
-        print(os.path.join(os.path.join(self.parent_folder,"plots"),f'{self.region}_{self.modality}_{self.resolution}_umap_{n_cluster}.png'))
-        plt.savefig(os.path.join(os.path.join(self.parent_folder,"plots"),f'{self.region}_{self.modality}_{self.resolution}_umap_{n_cluster}.png'),dpi=400)
-        # if show==False:
-        #     plt.close()
-        # else:
-        #     plt.show()
-        return fig
-    
+        plt.savefig(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_umap_{n_cluster}.png'),dpi=400)
+        
+        if show==False:
+            plt.close()
+        else:
+            plt.show()
+
+        return os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_umap_{n_cluster}.png'), len(colorlist)
     
     def plot_cluster(self,size=50,show=False):
-        adata = sc.read(os.path.join(os.path.join(self.parent_folder,"clustering"),f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
+        adata = sc.read(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
         color='leiden'
         clusters_colors = dict(zip([str(i) for i in range(102)], sc.pl.palettes.default_102))
         colorlist=adata.obs[color].cat.categories.tolist()
@@ -95,18 +88,22 @@ class Clusters:
             show=False
         )
 
-        plt.savefig(os.path.join(os.path.join(self.parent_folder,"plots"),f'{self.region}_{self.modality}_{self.resolution}_{n_cluster}.png'),dpi=400)
-        # if show==False:
-        #     plt.close()
-        # else:
-        #     plt.show()
-        return plt.gcf()
+        plt.savefig(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_{n_cluster}.png'),dpi=400)
+        if show==False:
+            plt.close()
+        else:
+            plt.show()
+        return os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_{n_cluster}.png')
     
     def plot_select_cluster(self,cluster,size=50,show=False):
-        adata = sc.read(os.path.join(os.path.join(self.data_folder,"clustering"),f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
+        adata = sc.read(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
         clusters_colors = dict(zip([str(i) for i in range(102)], sc.pl.palettes.default_102))
+        
+        if isinstance(cluster, int):
+            cluster = [cluster]
+            
         colorlist=adata.obs['leiden'].cat.categories.tolist()
-        palette=[v if k==str(cluster) else '#A0A0A0' for k, v in clusters_colors.items()]
+        palette=[v if k in map(str,cluster) else '#A0A0A0' for k, v in clusters_colors.items()]
         sc.pl.spatial(
             adata,
             img_key=None,
@@ -119,43 +116,52 @@ class Clusters:
             palette=palette,
             show=False
         )
-        plt.savefig(os.path.join(os.path.join(self.data_folder,"plots"),f'{self.region}_{self.modality}_{self.resolution}_{cluster}.png'),dpi=400) 
-        # if show==False:
-        #     plt.close()
-        # else:
-        #     plt.show()
-        return plt.gcf()
+        plt.savefig(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_{cluster}.png'),dpi=400) 
+        if show==False:
+            plt.close()
+        else:
+            plt.show()
+
+        return os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_{cluster}.png')
     
 class Cluster_Integration:
-    def __init__(self,adata,adata_ref):
+    def __init__(self,adata,adata_ref, working_folder):
         self.adata = adata
         self.adata_ref = adata_ref
+        self.working_folder = working_folder
         self.region1, self.modality1, self.resolution1 =self.splitname(adata)
         self.region2, self.modality2, self.resolution2 =self.splitname(adata_ref)
         
     def integrate(self):
-        adata1 = sc.read(f'../results/clustering/{self.adata}')
-        adata2 = sc.read(f'../results/clustering/{self.adata_ref}')
+        adata1 = sc.read(os.path.join(self.working_folder , self.adata))
+        adata2 = sc.read(os.path.join(self.working_folder , self.adata_ref))
         var_names = adata1.var_names.intersection(adata2.var_names)
         adata1.obs['sample'] = self.region1
         adata2.obs['sample'] = self.region2
         sc.tl.ingest(adata1,adata2,obs='leiden')
         
-        adata1.write(f'../results/clustering/{self.region1}_integrated.h5ad')
-        adata2.write(f'../results/clustering/{self.region2}_integrated.h5ad')
+        adata1.write(os.path.join(self.working_folder, f'{self.region1}_integrated.h5ad'))
+        adata2.write(os.path.join(self.working_folder, f'{self.region2}_integrated.h5ad'))
         
     def splitname(self,adata):
-        name,_ = os.path.splitext(adata)
-        region, modality, resolution = name.split('_')
+        # name,_ = os.path.splitext(adata)
+        # region, modality, resolution = name.split('_')
+        # return region, modality, resolution
+        # changed for GUI braoder handling
+        name = adata.replace('.h5ad', "")
+        #region, modality, resolution = name.split('_')
+        resolution = name.split('_')[-1]
+        modality = name.split('_')[-2]
+        region = '_'.join(name.split('_')[:-1])
+
         return region, modality, resolution
     
-    def plot_umap_cluster(self,region,size=50,show=False):
-        adata = sc.read(os.path.join('../results/clustering',f'{region}_integrated.h5ad'))
+    def plot_umap_cluster(self,region, size=50,show=False):
+        adata = sc.read(os.path.join(self.working_folder,f'{region}_integrated.h5ad'))
         color='leiden'
         clusters_colors = dict(zip([str(i) for i in range(102)], sc.pl.palettes.default_102))
         colorlist=adata.obs[color].cat.categories.tolist()
         n_cluster=str(len(colorlist))
-
         fig, axs = plt.subplots(1, 2, figsize=(30, 10))
 
         sc.pl.umap(
@@ -181,33 +187,40 @@ class Cluster_Integration:
             show=False
         )
 
-        plt.savefig(os.path.join('../results/clustering',f'{region}_umap_integrated.png'),dpi=400)
+        plt.savefig(os.path.join(self.working_folder,f'{region}_umap_integrated.png'),dpi=400)
 
         if show==False:
             plt.close()
         else:
             plt.show()
+
+        return os.path.join(self.working_folder,f'{region}_umap_integrated.png'), len(colorlist)
             
     def plot_overlap_umap(self,show=False):
-        adata1 = sc.read(os.path.join('../results/clustering',f'{self.region1}_integrated.h5ad'))
-        adata2 = sc.read(os.path.join('../results/clustering',f'{self.region2}_integrated.h5ad'))
+        adata1 = sc.read(os.path.join(self.working_folder,f'{self.region1}_integrated.h5ad'))
+        adata2 = sc.read(os.path.join(self.working_folder,f'{self.region2}_integrated.h5ad'))
         adata_concat = adata2.concatenate(adata1, batch_categories=[self.region2,self.region1])
         fig,ax = plt.subplots(figsize=(10,8))
         plt.subplots_adjust(left=0.1,right=0.7)
         sc.pl.umap(adata_concat,color='batch',title=f'{self.region1} vs {self.region2}',size=5,legend_fontsize=20,ax=ax,show=False)
         
-        plt.savefig(f'../results/clustering/{self.region1}_{self.region2}_umap_overlap.png',dpi=200)
+        plt.savefig( os.path.join(self.working_folder , f'{self.region1}_{self.region2}_umap_overlap.png'),dpi=200)
         if show==False:
             plt.close()
         else:
             plt.show()
+        return os.path.join(self.working_folder , f'{self.region1}_{self.region2}_umap_overlap.png')
             
             
     def plot_select_cluster(self,region,cluster,size=50,show=False):
-        adata = sc.read(os.path.join('../results/clustering',f'{region}_integrated.h5ad'))
+        adata = sc.read(os.path.join(self.working_folder,f'{region}_integrated.h5ad'))
         clusters_colors = dict(zip([str(i) for i in range(102)], sc.pl.palettes.default_102))
+        
+        if isinstance(cluster, int):
+            cluster = [cluster]
+            
         colorlist=adata.obs['leiden'].cat.categories.tolist()
-        palette=[v if k==str(cluster) else '#A0A0A0' for k, v in clusters_colors.items()]
+        palette=[v if k in map(str,cluster) else '#A0A0A0' for k, v in clusters_colors.items()]
         sc.pl.spatial(
             adata,
             img_key=None,
@@ -220,8 +233,11 @@ class Cluster_Integration:
             palette=palette,
             show=False
         )
-        plt.savefig(os.path.join('../results/clustering/',f'{region}_{cluster}.png'),dpi=400) 
+        plt.savefig(os.path.join(self.working_folder,f'{region}_{cluster}.png'),dpi=400) 
         if show==False:
             plt.close()
         else:
             plt.show()
+
+
+        return os.path.join(self.working_folder,f'{region}_{cluster}.png')
