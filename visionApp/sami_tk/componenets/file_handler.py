@@ -114,7 +114,7 @@ class FileOpenbutton(ctk.CTkFrame):
             self.input_data_raw[base_filename] = self.preprocess(temp_df, base_filename)
         self.is_files_read = True
         self.queue.put("loaded_files")
-        self.after(500, self.loading_label.configure(text=""))
+        self.after(50, self.loading_label.configure(text=""))
 
     def preprocess(self, df, base_filename):
         """
@@ -144,4 +144,4 @@ class FileOpenbutton(ctk.CTkFrame):
         # Displying the loading label
         logger.debug("displaying the loading label")
         # self.loading_label = ctk.CTkLabel(self, text="Loading...")
-        self.loading_label.configure(text="Loading...")
+        self.loading_label.configure(text="Loading...", text_color="yellow")

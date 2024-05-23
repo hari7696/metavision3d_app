@@ -72,14 +72,14 @@ class Markers:
         pvalue_result.to_csv(os.path.join(workdir,f'{self.region}_pvalue.csv'),index=False)
         marker_result.to_csv(os.path.join(workdir,f'{self.region}_marker.csv'),index=False)
         
-    def circular_tree(self,clusters=None,top=5, show=True, workdir=None):
+    def circular_tree(self,clusters=None,top_n=5, show=True, workdir=None):
         markers = pd.read_csv(os.path.join(workdir,f'{self.region}_marker.csv'))
         if clusters != None:
             markers = markers.loc[markers['cluster'].isin(clusters)]
         else:
             clusters = 'all'
         
-        top = markers.groupby(['cluster'],as_index=False).head(top)
+        top = markers.groupby(['cluster'],as_index=False).head(top_n)
 
         top['c|f'] = top['cluster'].astype(str)+'|'+top['feature']
         top['center'] = 'center'
@@ -164,12 +164,12 @@ class Markers:
         plt.ylim(y_min - y_margin, y_max + y_margin)
 
         cluster_str = str(clusters).replace("'","")
-        plt.savefig(os.path.join(workdir,f'circulartree_{self.region}_{cluster_str}.png'))
+        plt.savefig(os.path.join(workdir,f'circulartree_{self.region}_{cluster_str}_top_{top_n}.png'))
         if show==False:
             plt.close()
         else:
             plt.show()
-        return os.path.join(workdir,f'circulartree_{self.region}_{cluster_str}.png')
+        return os.path.join(workdir,f'circulartree_{self.region}_{cluster_str}_top_{top_n}.png')
             
     def volcano_plot(self,cluster,show=True, work_dir=None):
         pvalues = pd.read_csv(os.path.join(work_dir,f'{self.region}_pvalue.csv'))

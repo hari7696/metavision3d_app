@@ -54,7 +54,7 @@ class VisualizationStep(ctk.CTkFrame):
 
         self.root_visualization_frame = ctk.CTkFrame(self, bg_color="transparent")
         self.root_visualization_frame.columnconfigure(0, weight=1)
-        self.root_visualization_frame.columnconfigure(1, weight=2)
+        self.root_visualization_frame.columnconfigure(1, weight=3)
         self.root_visualization_frame.rowconfigure(0, weight=1)
 
         # splitting the visaulization frame into two parts, left and right side
@@ -237,6 +237,7 @@ class VisualizationStep(ctk.CTkFrame):
             roi=False,
             reverse=True,
         )
+        # print(self.compound_matrix)
         self.create_frames_in_slides_display_frame(self.compound_matrix_high_res)
         self.loading_label.configure(text = "")
 
@@ -251,7 +252,7 @@ class VisualizationStep(ctk.CTkFrame):
         # self.display_montage(data)
 
         logger.info("Num children in visualization left pane: %s", len(self.slides_display_frame.winfo_children()))
-
+        # print(data)
         slices, rows, cols = data.shape
         N = round(math.sqrt(slices))
 

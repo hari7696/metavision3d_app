@@ -92,7 +92,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
 
         files = os.listdir(self.working_folder)
         #files = [file for file in files if ('_pool') in file and ('h5ad' in file)]
-        files = [file for file in files if 'h5ad' in file]
+        files = [file for file in files if (('h5ad' in file) and ('integrated' not in file))]
 
         self.region1_selection.configure(values=files)
         self.region2_selection.configure(values=files)
@@ -113,7 +113,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         # getting the clustered files
         files = os.listdir(self.working_folder)
         #files = [file for file in files if ('_pool') in file and ('h5ad' in file)]
-        files = [file for file in files if 'h5ad' in file]
+        files = [file for file in files if (('h5ad' in file) and ('integrated' not in file))]
 
         # region selection 1
         region1_label = ctk.CTkLabel(self.cluster_int_options, text="Select Region1 :" )
@@ -156,6 +156,8 @@ class ClusterIntergrationStep(ctk.CTkFrame):
 
     def prep_specific_cluster_tab(self):
         # For the selective cluster tab
+        for child in self.specific_cluster_tab.winfo_children():
+            child.destroy()
         self.specific_cluster = ClusterIntSelectiveClusters(self.specific_cluster_tab, 
                                                             self.cluster_int, self.n_clusters,
                                                               self.region1, self.region2)
@@ -242,6 +244,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
 
     def trigger_visz_functions_on_thread_run(self):
         
+        logger.info("checking the queue")
         if not self.queue.empty():
             try:
                 logger.info("clustering interation compelete message received from process")

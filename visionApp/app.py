@@ -61,7 +61,7 @@ class VisionApp(ctk.CTk):
         # self.nav_frame.columnconfigure(5,weight=1)
         
         # self.nav_frame.rowconfigure(0,weight=1)
-
+        logging.info("application started")
         algo_default_value = ctk.StringVar(value="Select the ALgorithm")
         self.algo_selection_dropdown = ctk.CTkOptionMenu(master= self.nav_frame,
                                             values=["3D file","SAMI"],
@@ -70,7 +70,7 @@ class VisionApp(ctk.CTk):
                                             )
         self.algo_selection_dropdown.grid(row=0,column=0,padx=(5,5),pady=10, sticky="w")
 
-        #self.write_num_children_to_logs()
+        self.write_num_children_to_logs()
 
     def write_num_children_to_logs(self):
 
@@ -87,7 +87,7 @@ class VisionApp(ctk.CTk):
         total_children = count_all_children(self.parent_frame)
 
         logging.info("Frequent_checker :: Total children {}".format(str(total_children)))
-        self.after(10000, self.write_num_children_to_logs)
+        self.after(1000, self.write_num_children_to_logs)
         
 
     def destroy_children(self):

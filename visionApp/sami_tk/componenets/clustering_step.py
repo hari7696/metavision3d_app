@@ -196,7 +196,7 @@ class ClusteringStep(ctk.CTkFrame):
         self.timer.reset_timer()
         self.timer.start_timer()
         cluster, clustered_file = self.prepare_cluster_module()
-        self.time_constraint_label.configure(text="Note : clustering usally takes roughly 10 minutes")
+        self.time_constraint_label.configure(text="Note : clustering usally takes roughly 10 minutes", text_color="yellow")
         self.clustering_process = Process(target=self.clustering, args=(self.queue, cluster,clustered_file ))
         self.clustering_process.start()
         self.trigger_visz_functions_on_thread_run()
