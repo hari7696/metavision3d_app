@@ -9,6 +9,7 @@ import numpy as np
 from .timer import TimerApp
 from SAMI.pathway import Pathway
 from PIL import Image
+import sys
 logger = logging.getLogger(__name__)
 
 class PathwaysStep(ctk.CTkFrame):
@@ -193,11 +194,12 @@ class PathwaysStep(ctk.CTkFrame):
     @staticmethod
     def pathways_actual_run(selected_file,omics, pathways_folder, makers_folder, queue):
 
+
         try:
             pathway = Pathway(selected_file, omics, pathways_folder, makers_folder)
             pathway.findpathway()
-        except:
-            logger.error("Error in pathway generation")
+        except Exception as e:
+            logger.error("Error in pathway generation:{}".format(e))
         finally:
             queue.put("pathways_done")
             logger.info("pathways done")

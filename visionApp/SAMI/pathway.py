@@ -1,19 +1,34 @@
 import os
+import sys
 import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import networkx as nx
+
+# try:
+# # PyInstaller creates a temp folder and stores path in _MEIPASS
+#     R_HOME = os.path.join(sys._MEIPASS , r'R\R-4.3.3')
+#     path = os.path.join(sys._MEIPASS , r'R\R-4.3.3\bin\x64')
+#     os.environ["R_HOME"] = R_HOME
+#     os.environ["PATH"] += path + ";" + os.environ["R_HOME"]
+# except Exception as e:
 os.environ["R_HOME"] = r"C:\Program Files\R\R-4.3.3" 
 os.environ["PATH"] += r"C:\Program Files\R\R-4.3.3\bin\x64" + ";" + os.environ["R_HOME"] 
+    # print(e)
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
 import logging
 logger = logging.getLogger(__name__)
+from .utils import resource_path
+import logging 
+logger = logging.getLogger(__name__)
+
 class Pathway:
     def __init__(self,region,modality, pathways_folder, makers_folder=None):
+        
         self.pathways_folder = pathways_folder
         self.markers_folder = makers_folder
         if not os.path.exists(pathways_folder):
@@ -25,11 +40,22 @@ class Pathway:
             self.modality = 'metabolomics_glycomics'
         else:
             self.modality = 'lipidomics'
-            
+
+       
     def findpathway(self):
         r_source = ro.r['source']
         logger.info("current working directory: %s", os.getcwd())
-        r_source(os.path.join( *[os.getcwd(), 'visionApp', 'SAMI' , 'MetabAnalystR.R']) ) 
+
+        try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = os.path.join(sys._MEIPASS , 'config')
+        except Exception:
+            base_path = os.path.join(*[os.getcwd(), 'visionApp', 'SAMI'])
+
+        logger.info("base path of R file: %s", base_path)
+
+        r_file =  os.path.join(base_path, 'MetabAnalystR.R')
+        r_source(r_file) 
         
         markers = pd.read_csv(os.path.join(self.markers_folder,f'{self.region}_marker.csv'))
         clusters = markers['cluster'].unique().tolist()
@@ -47,10 +73,21 @@ class Pathway:
             
         PathwayEnrichment = ro.r['PathwayEnrichment']
         
+        # finding lib folder
+        try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+            lib_folder = os.path.join(sys._MEIPASS , 'lib')
+        except Exception as e:
+            lib_folder = os.path.join(*[os.getcwd(), 'visionApp', 'lib'])
+        finally:
+            print(lib_folder)
+
         if self.modality=='metabolomics_glycomics':
-            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[1],merge=logical_arg[1], results_folder=self.pathways_folder)
+            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[1],merge=logical_arg[1],
+                               results_folder=self.pathways_folder , lib_folder = lib_folder)
         else:
-            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[0],merge=logical_arg[1], results_folder=self.pathways_folder)
+            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[0],merge=logical_arg[1], 
+                              results_folder=self.pathways_folder, lib_folder = lib_folder)
         
     def anndict(self):
         anndict = {}
@@ -168,7 +205,14 @@ class Pathway:
 
         if data.shape[0]!=0:
             
-            lib_folder = os.path.join(*[ os.getcwd(), 'visionApp', 'lib'])
+            # lib_folder = os.path.join(*[ os.getcwd(), 'visionApp', 'lib'])
+
+            #handling lib folder basing on whether its running in pyinstaller or developement environment
+            try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+                lib_folder = os.path.join(sys._MEIPASS , 'lib')
+            except Exception as e:
+                lib_folder = os.path.join(*[os.getcwd(), 'visionApp', 'lib'])
 
             lib = pd.read_csv( os.path.join(lib_folder, f'{libname}.csv'),index_col=0)
             lib['member']=lib['member'].str.split(';')
