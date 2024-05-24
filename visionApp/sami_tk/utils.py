@@ -2,6 +2,8 @@ import os
 import scanpy as sc
 import pandas as pd
 import numpy as np
+import subprocess
+import sys
 
 def list_files(directory, substring, extension):
     files = sorted([file for file in os.listdir(directory) if substring in file and file.endswith(extension)])
@@ -33,3 +35,5 @@ def adj_pvalue(sort):
     sort['rank']=sort.index+1
     sort['adj_pvalue']=sort['pvalue']*n/sort['rank']
     return sort
+
+

@@ -3,12 +3,13 @@ import tkinter as tk
 import customtkinter as ctk
 import pandas as pd
 import os
-from Metavision_tk import MetaVision3DApp
+# from meta_vision_tk.Metavision_tk import MetaVision3DApp
 from sami_tk.SamiApp import SAMIApp
 import logging
 import sys
 import logging
 import re
+import multiprocessing
 sys.path.append('SAMI')
 # Set up logging configuration
 # from multiprocessing_logging import install_mp_handler
@@ -23,11 +24,6 @@ sys.path.append('SAMI')
 #                     level=logging.INFO, format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', filemode='w')
 # logging.getLogger().addFilter(FilteredLogs())
 # install_mp_handler()
-from logger_tt import setup_logging    
-
-setup_logging(full_context=1, log_path = 'file.log' , 
-              config_path = r'C:\Users\ghari\Documents\OPS\UI\metavision3d_app\visionApp\log_config.yaml', use_multiprocessing = True)
-
 class VisionApp(ctk.CTk):
 
     """DO NOT CHNAGE THIS TEMPLATE, you may update change_to_algo_ui() if new algorithm is added"""
@@ -87,7 +83,7 @@ class VisionApp(ctk.CTk):
         total_children = count_all_children(self.parent_frame)
 
         logging.info("Frequent_checker :: Total children {}".format(str(total_children)))
-        self.after(1000, self.write_num_children_to_logs)
+        self.after(10000, self.write_num_children_to_logs)
         
 
     def destroy_children(self):
@@ -112,9 +108,9 @@ class VisionApp(ctk.CTk):
             # Destroy all widgets in the parent frame except nav_frame
 
             self.destroy_children()
-            logging.info("num children in parent_frame {}".format(str(len(self.parent_frame.winfo_children()))))
-            self.meta_app = MetaVision3DApp(self.parent_frame, self.nav_frame, self.algo_selection_dropdown)
-            self.meta_app.grid(row=1, column=0, sticky="nsew")
+            # logging.info("num children in parent_frame {}".format(str(len(self.parent_frame.winfo_children()))))
+            # self.meta_app = MetaVision3DApp(self.parent_frame, self.nav_frame, self.algo_selection_dropdown)
+            # self.meta_app.grid(row=1, column=0, sticky="nsew")
 
         elif choice == "SAMI":
             # Destroy all widgets in the parent frame except nav_frame and dropdown bar in it
@@ -125,6 +121,20 @@ class VisionApp(ctk.CTk):
 
 
 if __name__ == "__main__":
+    from logger_tt import setup_logging   
+    multiprocessing.set_start_method('spawn')
+    multiprocessing.freeze_support()
+
+    try:
+    # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = os.path.join(sys._MEIPASS , 'config')
+    except Exception:
+        base_path = r'C:\Users\ghari\Documents\OPS\UI\metavision3d_app\visionApp\config'
+
+    setup_logging(full_context=1, log_path = 'file.log' , 
+              config_path =  os.path.join(base_path,'log_config.yaml'), use_multiprocessing = True)
     app = VisionApp()
     app.mainloop()
+
+    # (r'c:\Users\ghari\Pictures\R', 'R')
 

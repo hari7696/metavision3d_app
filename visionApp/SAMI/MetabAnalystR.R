@@ -80,7 +80,7 @@ Setup.MapData <- function(mSetObj=NA, qvec){
 }
 
 CrossReferencing <- function(mSetObj=NA, q.type, hmdb=T, pubchem=T, 
-                             chebi=F, kegg=T, metlin=F, lipid=F){
+                             chebi=F, kegg=T, metlin=F, lipid=F , lib_folder = NA){
   
   mSetObj <- .get.mSet(mSetObj);
   
@@ -96,7 +96,7 @@ CrossReferencing <- function(mSetObj=NA, q.type, hmdb=T, pubchem=T,
   # distribute job
   mSetObj$dataSet$q.type <- q.type;
   
-  mSetObj <- MetaboliteMappingExact(mSetObj, q.type, lipid);
+  mSetObj <- MetaboliteMappingExact(mSetObj, q.type, lipid, lib_folder =  lib_folder);
 
   # do some sanity check
   todo.inx <- which(is.na(mSetObj$name.map$hit.inx));
@@ -125,7 +125,7 @@ CrossReferencing <- function(mSetObj=NA, q.type, hmdb=T, pubchem=T,
 
 
 
-MetaboliteMappingExact <- function(mSetObj=NA, q.type, lipid = F){
+MetaboliteMappingExact <- function(mSetObj=NA, q.type, lipid = F, lib_folder = NA){
   
   mSetObj <- .get.mSet(mSetObj);
   
@@ -142,11 +142,11 @@ MetaboliteMappingExact <- function(mSetObj=NA, q.type, lipid = F){
   match.state <- vector(mode='numeric', length=length(qvec));  # match status - 0, no match; 1, exact match; initial 0 
   
   if(anal.type %in% c("msetora", "msetssp", "msetqea") & lipid){
-    cmpd.db <- qs::qread("visionApp/lib/lipid_compound_db.qs");
+    cmpd.db <- qs::qread(paste(lib_folder, 'lipid_compound_db.qs', sep = '/'));
   }else if(anal.type == "utils"){
-    cmpd.db <- qs::qread("visionApp/lib/master_compound_db.qs");
+    cmpd.db <- qs::qread(paste(lib_folder, 'master_compound_db.qs', sep = '/'));
   }else{
-    cmpd.db <- qs::qread("visionApp/lib/compound_db.qs");
+    cmpd.db <- qs::qread(paste(lib_folder, 'compound_db.qs', sep = '/'));
   }
   
   if(q.type == "hmdb"){
@@ -188,11 +188,11 @@ MetaboliteMappingExact <- function(mSetObj=NA, q.type, lipid = F){
     
     # then try to find exact match to synonyms for the remaining unmatched query names one by one
     if(anal.type %in% c("msetora", "msetssp", "msetqea") & lipid){
-      syn.db <- qs::qread("visionApp/lib/lipid_syn_nms.qs")
+      syn.db <- qs::qread(paste(lib_folder, 'lipid_syn_nms.qs', sep = '/'))
     }else if(anal.type == "utils"){
-      syn.db <- qs::qread("visionApp/lib/master_syn_nms.qs")
+      syn.db <- qs::qread(paste(lib_folder, "master_syn_nms.qs", sep = '/'))
     }else{
-      syn.db <- qs::qread("visionApp/lib/syn_nms.qs")
+      syn.db <- qs::qread(paste(lib_folder, 'syn_nms.qs', sep = '/'))
     }
     
     syns.list <-  syn.db$syns.list;
@@ -259,7 +259,7 @@ SetMetabolomeFilter<-function(mSetObj=NA, TorF){
 }
 
 
-SetCurrentMsetLib <- function(mSetObj=NA, libname, excludeNum=0){
+SetCurrentMsetLib <- function(mSetObj=NA, libname, excludeNum=0, lib_folder = NA){
   
   mSetObj <- .get.mSet(mSetObj);
   
@@ -279,7 +279,8 @@ SetCurrentMsetLib <- function(mSetObj=NA, libname, excludeNum=0){
     
     # feature enhancement https://omicsforum.ca/t/error-in-setcurrentmsetlib-function-in-r/2058
     if(!exists("current.msetlib") || is.null(mSetObj$analSet$msetlibname) || mSetObj$analSet$msetlibname != libname) {
-      destfile <- paste('visionApp/lib/',libname, ".qs", sep = "");
+      temp <- paste(lib_folder, libname, sep = '/');
+      destfile <- paste(temp, ".qs", sep = "");
       my.qs <- paste("https://www.metaboanalyst.ca/resources/libs/msets/", destfile, sep="");
       if(!file.exists(destfile)){
         download.file(my.qs, destfile, method = "curl");
@@ -319,13 +320,13 @@ SetCurrentMsetLib <- function(mSetObj=NA, libname, excludeNum=0){
   return(.set.mSet(mSetObj));
 }
 
-CalculateHyperScore <- function(mSetObj=NA){
+CalculateHyperScore <- function(mSetObj=NA, lib_folder = NA){
   
   mSetObj <- .get.mSet(mSetObj);
   
   # make a clean dataSet$cmpd data based on name mapping
   # only valid hmdb name will be used
-  nm.map <- GetFinalNameMap(mSetObj);
+  nm.map <- GetFinalNameMap(mSetObj, lib_folder = lib_folder);
   valid.inx <- !(is.na(nm.map$hmdb)| duplicated(nm.map$hmdb));
   ora.vec <- nm.map$hmdb[valid.inx];
   
@@ -429,7 +430,7 @@ CalculateHyperScore <- function(mSetObj=NA){
   return(.set.mSet(mSetObj));
 }
 
-GetFinalNameMap <- function(mSetObj=NA, lipid = FALSE){
+GetFinalNameMap <- function(mSetObj=NA, lib_folder = NA, lipid = FALSE ){
   
   mSetObj <- .get.mSet(mSetObj);
   
@@ -448,11 +449,11 @@ GetFinalNameMap <- function(mSetObj=NA, lipid = FALSE){
   colnames(nm.mat) <- c("query", "hmdb",  "kegg", "hmdbid");
   
   if(anal.type %in% c("msetora", "msetssp", "msetqea") & lipid){
-    cmpd.db <- qs::qread("visionApp/lib/lipid_compound_db.qs");
+    cmpd.db <- qs::qread(paste(lib_folder, 'lipid_compound_db.qs', sep = '/'));
   }else if(anal.type == "utils"){
-    cmpd.db <- qs::qread("visionApp/lib/master_compound_db.qs");
+    cmpd.db <- qs::qread(paste(lib_folder, 'master_compound_db.qs', sep = '/'));
   }else{
-    cmpd.db <- qs::qread("visionApp/lib/compound_db.qs");
+    cmpd.db <- qs::qread(paste(lib_folder, 'compound_db.qs', sep = '/'));
   }
   
   for (i in 1:length(qvec)){
@@ -491,10 +492,7 @@ fast.write.csv <- function(dat, file, row.names=TRUE){
 }
 
 
-
-
-    
-PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folder){
+PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folder, lib_folder){
   sink(file =  paste(results_folder, 'R_output.txt', sep = '/'), append = FALSE)
   ora <- NULL
   nonmatch_list <- NULL
@@ -510,12 +508,12 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folde
         rm(mSet,current.msetlib)
         mSet <- InitDataObjects("list","msetora",FALSE)
         mSet <- Setup.MapData(mSet,input_list)
-        mSet <- CrossReferencing(mSet,"name")
+        mSet <- CrossReferencing(mSet,"name", lib_folder = lib_folder)
         nonmatch <- mSet$name.map$query.vec[mSet$name.map$match.state==0]
         nonmatch_list <- c(nonmatch_list,nonmatch)
         mSet <- SetMetabolomeFilter(mSet,F)
-        mSet <- SetCurrentMsetLib(mSet, "smpdb_pathway",2)
-        mSet <- CalculateHyperScore(mSet)
+        mSet <- SetCurrentMsetLib(mSet, "smpdb_pathway",2, lib_folder = lib_folder)
+        mSet <- CalculateHyperScore(mSet, lib_folder = lib_folder)
         metab_ora <- as.data.frame(mSet$analSet$ora.mat)
         metab_ora['cluster'] <- clusters[i]
         metab_ora['modality'] <- 'metabolomics_glycomics'
@@ -579,12 +577,12 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folde
         rm(mSet,current.msetlib)
         mSet <- InitDataObjects("list","msetora",FALSE)
         mSet <- Setup.MapData(mSet,input_list)
-        mSet <- CrossReferencing(mSet,"name", lipid=TRUE)
+        mSet <- CrossReferencing(mSet,"name", lipid=TRUE, lib_folder = lib_folder)
         nonmatch <- mSet$name.map$query.vec[mSet$name.map$match.state==0]
         nonmatch_list <- c(nonmatch_list,nonmatch)
         mSet <- SetMetabolomeFilter(mSet,F)
-        mSet <- SetCurrentMsetLib(mSet, "sub_class",2)
-        mSet <- CalculateHyperScore(mSet)
+        mSet <- SetCurrentMsetLib(mSet, "sub_class",2, lib_folder = lib_folder)
+        mSet <- CalculateHyperScore(mSet, lib_folder)
         lipid_ora <- as.data.frame(mSet$analSet$ora.mat)
         lipid_ora['cluster'] <- clusters[i]
         lipid_ora['modality'] <- 'lipidomics'

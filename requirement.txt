@@ -1,0 +1,14 @@
+scanpy
+matplotlib
+pandas
+numpy
+networkx
+scipy
+adjusttext
+rpy2
+anndata
+r-base
+python-igraph
+leidenalg
+pygraphviz
+r-qs
