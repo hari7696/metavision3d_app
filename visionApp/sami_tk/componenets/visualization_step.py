@@ -6,7 +6,7 @@ from pylab import Figure
 import numpy as np
 from waiting import wait
 from PIL import Image, ImageTk
-from .colormap import *
+from sami_tk.colormap import *
 import io
 from functools import partial
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg

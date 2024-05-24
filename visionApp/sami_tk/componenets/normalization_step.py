@@ -10,7 +10,7 @@ import numpy as np
 from waiting import wait
 from PIL import Image, ImageTk
 import queue
-from .colormap import *
+from sami_tk.colormap import *
 import io
 from functools import partial
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -330,9 +330,8 @@ class NormalizationStep(ctk.CTkFrame):
                 message = self.queue.get()
                 if message == 'Normalization_done':
                     logger.info("Normaliztion done, message received")
-                    self.norm_done_label.configure(text="Normalization is completed", font = ("Arial", 14), text_color = "green")
+                    
                     self.display_norm_plot(self.compound_matrix_high_res, self.normalised_compound_matrix_high_res )
-                    self.timer.stop_timer() 
                     # Spinning a process to convert the normalized to csv
                     file_name = self.file_dropdown.get() + '_normalized.csv'
                     file_name = os.path.join(*[self.file_handler.working_folder, 'normalised_data', file_name])
@@ -341,6 +340,8 @@ class NormalizationStep(ctk.CTkFrame):
                     csv_saving_process = Process(target=self.save_normalized_files_in_csv,
                                                 args=(file_name,self.normalized_data[self.file_dropdown.get()] ), daemon=True)
                     csv_saving_process.start()
+                    self.norm_done_label.configure(text="Normalization is completed", font = ("Arial", 14), text_color = "green")
+                    self.timer.stop_timer() 
             except:
                 pass
                 logger.error("Error in the normalization thread signal")

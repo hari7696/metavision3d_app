@@ -4,7 +4,7 @@ import os
 import logging
 from multiprocessing import Process, Queue
 from PIL import Image
-from .colormap import *
+from sami_tk.colormap import *
 import io
 import logging
 from .timer import TimerApp
