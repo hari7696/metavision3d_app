@@ -4,7 +4,7 @@ import os
 import logging
 from multiprocessing import Process, Queue
 from CTkMessagebox import CTkMessagebox
-from .colormap import *
+from sami_tk.colormap import *
 from .timer import TimerApp
 from SAMI.markers import Markers
 import scanpy as sc

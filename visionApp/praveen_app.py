@@ -18,7 +18,7 @@ from vedo import Volume,show,Plotter
 # from vtkmodules.tk.vtkTkRenderWindowInteractor import vtkTkRenderWindowInteractor
 import io
 
-from colormap import new_cmap1,new_cmap2
+from visionApp.sami_tk.colormap import new_cmap1,new_cmap2
 import MetaVision3D.utils as algo_meta3d_utils
 import MetaVision3D.MetaNorm3D as algo_meta3d_norm
 import MetaVision3D.MetaAlign3D as algo_meta3d_align

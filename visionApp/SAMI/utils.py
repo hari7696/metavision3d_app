@@ -2,7 +2,7 @@ import os
 import scanpy as sc
 import pandas as pd
 import numpy as np
-
+import sys
 def list_files(directory, substring, extension):
     files = sorted([file for file in os.listdir(directory) if substring in file and file.endswith(extension)])
     return files
@@ -33,3 +33,15 @@ def adj_pvalue(sort):
     sort['rank']=sort.index+1
     sort['adj_pvalue']=sort['pvalue']*n/sort['rank']
     return sort
+
+def resource_path(relative_path):
+    
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+#r_binary_path = resource_path('bin/R-binary')
