@@ -4,7 +4,7 @@ import os
 
 
 logging.basicConfig(filename='../app.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-from logger_tt import logger
+logger = logging.getLogger(__name__)
 
 def test_pathway():
 

@@ -10,7 +10,7 @@ import logging
 from .timer import TimerApp
 from SAMI.clustering import Clusters
 from .display_image import ImageDisaplay
-from logger_tt import logger
+logger = logging.getLogger(__name__)
 
 class ClusteringStep(ctk.CTkFrame):
 

@@ -11,7 +11,7 @@ import io
 from functools import partial
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import logging
-from logger_tt import logger    
+logger = logging.getLogger(__name__)    
 
 class VisualizationStep(ctk.CTkFrame):
 

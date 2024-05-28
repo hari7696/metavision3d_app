@@ -19,7 +19,7 @@ import sys
 sys.path.append('../SAMI')
 from SAMI.norm import create_norm_dataset_gui
 from .timer import TimerApp
-from logger_tt import logger
+logger = logging.getLogger(__name__)
 
 class NormalizationStep(ctk.CTkFrame):
     """This class deals with the Normalization step"""

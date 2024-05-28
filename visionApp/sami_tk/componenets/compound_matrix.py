@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 from skimage.transform import resize
 import logging
-from logger_tt import logger
+logger = logging.getLogger(__name__)
 
 
 def create_compound_matrix(data, col="result", roi=False, reverse=False):

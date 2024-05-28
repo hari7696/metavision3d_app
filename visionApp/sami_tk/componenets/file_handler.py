@@ -4,7 +4,7 @@ from tkinter import filedialog
 import threading
 import os
 import pandas as pd
-from logger_tt import logger
+logger = logging.getLogger(__name__)
 
 class FileOpenbutton(ctk.CTkFrame):
 

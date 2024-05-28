@@ -12,7 +12,7 @@ from .componenets.pathways_step import PathwaysStep
 import sys
 import queue
 sys.path.append('../SAMI')
-from logger_tt import logger
+logger = logging.getLogger(__name__)
 
 
 class SAMIApp(ctk.CTkFrame):

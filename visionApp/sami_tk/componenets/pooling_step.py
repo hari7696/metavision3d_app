@@ -4,7 +4,7 @@ import os
 from multiprocessing import Process, Queue
 from SAMI.preprocessing import pooldata, csv2h5ad
 from .timer import TimerApp
-from logger_tt import logger
+logger = logging.getLogger(__name__)
 
 class PoolingStep(ctk.CTkFrame):
 

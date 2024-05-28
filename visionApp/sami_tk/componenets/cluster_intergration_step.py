@@ -11,7 +11,7 @@ from .cluster_int_selective_clusters import ClusterIntSelectiveClusters
 from PIL import Image
 import scanpy as sc
 import anndata
-from logger_tt import logger
+logger = logging.getLogger(__name__)
 
 class ClusterIntergrationStep(ctk.CTkFrame):
 

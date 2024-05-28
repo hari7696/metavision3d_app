@@ -10,7 +10,7 @@ from SAMI.markers import Markers
 import scanpy as sc
 from PIL import Image
 from ..utils import adata_filter
-from logger_tt import logger
+logger = logging.getLogger(__name__)
 
 class MarkerStep(ctk.CTkFrame):
 
