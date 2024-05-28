@@ -9,6 +9,8 @@ from SAMI.clustering import Cluster_Integration
 from .display_image import ImageDisaplay
 from .cluster_int_selective_clusters import ClusterIntSelectiveClusters
 from PIL import Image
+import scanpy as sc
+import anndata
 logger = logging.getLogger(__name__)
 
 class ClusterIntergrationStep(ctk.CTkFrame):
@@ -198,6 +200,24 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         logger.info(f"path Integrated file 2 : {self.integrated_file2}")
         
         cluster_int = Cluster_Integration(self.region1_selection.get(), self.region2_selection.get(), self.working_folder)
+
+        # try:    
+        #     adata1 = sc.read(r"C:\Users\ghari\Documents\OPS\Test_folders\original_data_test\AD_WT\results\clustering\brain1wt_pool_1.0.h5ad")
+        #     adata2 = sc.read(r"C:\Users\ghari\Documents\OPS\Test_folders\original_data_test\AD_WT\results\clustering\brain1ad_pool_1.0.h5ad")
+        #     var_names = adata1.var_names.intersection(adata2.var_names)
+        #     adata1.obs['sample'] = "brain1wt"
+        #     adata2.obs['sample'] = "brain1ad"
+        #     logger.info("adata1 {}".format(str(adata1)))
+        #     logger.info("adata2 {}".format(str(adata2)))
+
+        #     logger.info("integrating outside process started")
+        #     sc.tl.ingest(adata1,adata2,obs='leiden')
+        #     logger.info("integration outside process ended")
+
+        #     logger.info("adata1 {}".format(str(adata1)))
+        #     logger.info("adata2 {}".format(str(adata2)))
+        # except Exception as e:
+        #     logger.error(f"error in reading the files : {e}")
         
         return cluster_int
     

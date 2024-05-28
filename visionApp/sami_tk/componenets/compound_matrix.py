@@ -38,7 +38,7 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
         id_to_name[ii] = slice
 
     zarray = np.zeros((nslice, 1500, 1500))
-    zarray_high_res = np.zeros((nslice, max(2000, highest_x), max(2000, highest_y)))
+    zarray_high_res = np.zeros((nslice, max(1900, highest_x)+100, max(1900, highest_y)+100))
 
     for key in matrix:
 

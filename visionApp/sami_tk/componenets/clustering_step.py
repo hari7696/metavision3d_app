@@ -208,7 +208,7 @@ class ClusteringStep(ctk.CTkFrame):
         If the message is received, it triggers the visualization functions
 
         """
-
+        logger.info("checking clustering queue")
         if not self.queue.empty():
             try:
                 logger.info("clustering complete message received")
