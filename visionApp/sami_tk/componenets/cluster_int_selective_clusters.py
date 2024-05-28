@@ -4,7 +4,7 @@ from PIL import Image
 from multiprocessing import Queue, Process
 import io
 import logging
-logger = logging.getLogger(__name__)
+from logger_tt import logger
 
 class ClusterIntSelectiveClusters(ctk.CTkFrame):
 

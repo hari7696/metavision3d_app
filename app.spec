@@ -1,7 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import copy_metadata
 
-datas = [('C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/lib', 'lib'), ('C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/config', 'config')]
+datas = [('C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/lib', 'lib'), ('C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/config', 'config'), \
+(r'C:\Program Files\R', 'R'), (r'C:\Users\ghari\Documents\OPS\UI\metavision3d_app\visionApp\SAMI\MetabAnalystR.R', 'config')]
 datas += copy_metadata('anndata')
 
 
@@ -19,12 +20,23 @@ a = Analysis(
     optimize=0,
 )
 pyz = PYZ(a.pure)
+splash = Splash(
+    'app_load.jpg',
+    binaries=a.binaries,
+    datas=a.datas,
+    text_pos=None,
+    text_size=12,
+    minify_script=True,
+    always_on_top=False,
+)
 
 exe = EXE(
     pyz,
     a.scripts,
     a.binaries,
     a.datas,
+    splash,
+    splash.binaries,
     [],
     name='app',
     debug=False,
