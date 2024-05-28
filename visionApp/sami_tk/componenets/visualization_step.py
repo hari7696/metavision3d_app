@@ -342,6 +342,8 @@ class VisualizationStep(ctk.CTkFrame):
 
         # Calculate the figure size based on the image dimensions and scaling factor
         height, width = matrix.shape
+        height =height +100
+        width = width + 100
         figsize = (width / float(dpi) * scale_factor, height / float(dpi) * scale_factor)
 
         # Create the figure with the adjusted size and dpi
