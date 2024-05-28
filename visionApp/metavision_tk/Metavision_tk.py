@@ -4,7 +4,7 @@ import customtkinter as ctk
 import pandas as pd
 import os
 import logging
-logger = logging.getLogger(__name__)
+from logger_tt import logger
 
 class MetaVision3DApp(ctk.CTkFrame):
 

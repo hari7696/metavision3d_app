@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 from skimage.transform import resize
 import logging
-logger = logging.getLogger(__name__)
+from logger_tt import logger
 
 
 def create_compound_matrix(data, col="result", roi=False, reverse=False):
@@ -89,7 +89,6 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
         # Calculate padding
         pad_row = (zarray_high_res.shape[1] - resized_image.shape[0]) // 2
         pad_col = (zarray_high_res.shape[2] - resized_image.shape[1]) // 2
-
         # Place the resized image into the center of the zero array with padding
         zarray_high_res[
             key,

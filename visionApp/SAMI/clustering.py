@@ -6,7 +6,7 @@ import string
 import pandas as pd
 import numpy as np
 import logging
-logger = logging.getLogger(__name__)
+from logger_tt import logger
 
 class Clusters:
     def __init__(self, region, modality, resolution, pooled_data_folder, working_folder):
