@@ -6,7 +6,7 @@ import anndata as ad
 from .utils import *
 import re
 import logging
-from logger_tt import logger
+logger = logging.getLogger(__name__)
 
 #load .csv data and return .h5ad files
 def csv2h5ad(data_path,pattern,data_saving_path, split=False):

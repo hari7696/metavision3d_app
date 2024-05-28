@@ -11,15 +11,7 @@ import logging
 import re
 import multiprocessing
 sys.path.append('SAMI')
-from logger_tt import setup_logging   
-try:
-# PyInstaller creates a temp folder and stores path in _MEIPASS
-    base_path = os.path.join(sys._MEIPASS , 'config')
-except Exception:
-    base_path = r'C:\Users\ghari\Documents\OPS\UI\metavision3d_app\visionApp\config'
 
-setup_logging(full_context=1, log_path = 'file.log' , 
-            config_path =  os.path.join(base_path,'log_config.yaml'), use_multiprocessing = True)
 # Set up logging configuration
 # from multiprocessing_logging import install_mp_handler
 
@@ -130,12 +122,20 @@ class VisionApp(ctk.CTk):
 
 
 if __name__ == "__main__":
-
-    
+    import multiprocessing
     multiprocessing.set_start_method('spawn')
     multiprocessing.freeze_support()
+    from logger_tt import setup_logging   
     try:
-        import pyi_splash
+    # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = os.path.join(sys._MEIPASS , 'config')
+    except Exception:
+        base_path = r'C:\Users\ghari\Documents\OPS\UI\metavision3d_app\visionApp\config'
+
+    setup_logging(full_context=1, log_path = 'file.log' , 
+                config_path =  os.path.join(base_path,'log_config.yaml'), use_multiprocessing = True)
+    try:
+        import pyi_splash # type: ignore
         pyi_splash.close()
     except Exception as e:
         logging.error("error in closing splash screen {}".format(str(e)))

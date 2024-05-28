@@ -3,7 +3,7 @@ import pandas as pd
 import re
 import os
 import logging
-from logger_tt import logger
+logger = logging.getLogger(__name__)
 
 def SumNorm(x, c=1): 
     if np.any(np.nansum(x, axis=1, keepdims=True)==0):

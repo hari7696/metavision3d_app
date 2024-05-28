@@ -25,8 +25,6 @@ from rpy2.robjects.conversion import localconverter
 import logging
 logger = logging.getLogger(__name__)
 from .utils import resource_path
-import logging 
-logger = logging.getLogger(__name__)
 
 class Pathway:
     def __init__(self,region,modality, pathways_folder, makers_folder=None):
