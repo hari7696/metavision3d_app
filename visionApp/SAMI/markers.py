@@ -10,13 +10,15 @@ from adjustText import adjust_text
 from matplotlib.ticker import MaxNLocator
 import matplotlib.ticker as ticker
 import seaborn as sns
-    
+import logging
+logger = logging.getLogger(__name__)
 class Markers:
     def __init__(self, region):
         self.region = region
     
     def findmarkers(self,adata,adj_pval_cutoff,top,adata2=None, workdir=None):  
-
+        
+        logger.info(f'Finding markers for {self.region}')
         cluster_param='leiden'
 
         pvalue_result=pd.DataFrame()
