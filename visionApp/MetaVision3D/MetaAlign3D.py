@@ -372,10 +372,10 @@ class MetaAlign3D:
     def __init__(self,data):
         self.data = data
         self.matrix=None
-        # if os.path.exists('./warpmatrix/warp_matrix_all.npy'):
-        #     self.warp_matrix_all = np.load('./warpmatrix/warp_matrix_all.npy')
-        if os.path.exists(r'C:\Users\dprav\OneDrive\Desktop\MetaAPP\MetaVision3D\warpmatrix\warp_matrix_all.npy'):
-            self.warp_matrix_all = np.load(r'C:\Users\dprav\OneDrive\Desktop\MetaAPP\MetaVision3D\warpmatrix\warp_matrix_all.npy')
+        if os.path.exists('./warpmatrix/warp_matrix_all.npy'):
+            self.warp_matrix_all = np.load('./warpmatrix/warp_matrix_all.npy')
+        # if os.path.exists(r'C:\Users\dprav\OneDrive\Desktop\MetaAPP\MetaVision3D\warpmatrix\warp_matrix_all.npy'):
+        #     self.warp_matrix_all = np.load(r'C:\Users\dprav\OneDrive\Desktop\MetaAPP\MetaVision3D\warpmatrix\warp_matrix_all.npy')
         else:
              raise ValueError("Warp matrix is not available. Please run get_warp_matrix() with reference compound first.")
     def create_compound_matrix(self,col='result',reverse=False):
