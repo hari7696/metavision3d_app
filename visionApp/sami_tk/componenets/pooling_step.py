@@ -96,6 +96,7 @@ class PoolingStep(ctk.CTkFrame):
         self.timer.reset_timer()
         self.timer.start_timer()
         self.status_label.configure(text= "Omics Pooling started")    
+        logger.info("Pooling started in separate process")
         self.process = Process(target=self.start_pooling, args=(self.file_handler.working_folder, self.queue))
         self.process.start()
         self.check_queue()
