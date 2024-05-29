@@ -3,7 +3,7 @@ import tkinter as tk
 import customtkinter as ctk
 import pandas as pd
 import os
-from Metavision_tk import MetaVision3DApp
+from Metavision_tk.MetavisionApp import MetaVision3DApp
 from sami_tk.SamiApp import SAMIApp
 import logging
 # Set up logging configuration
@@ -66,8 +66,8 @@ class VisionApp(ctk.CTk):
 
             self.destroy_children()
             logging.info("num children {}".format(str(len(self.parent_frame.winfo_children()))))
-            self.parent_frame = MetaVision3DApp(self.parent_frame, self.nav_frame)
-            # self.parent_frame.grid(row=0, column=0, sticky="nsew")
+            self.meta_frame = MetaVision3DApp(self.parent_frame, self.nav_frame)
+            self.meta_frame.grid(row=1, column=0, sticky="nsew",pady=(5,0), padx=(0,0))
 
         elif choice == "SAMI":
             # Destroy all widgets in the parent frame except nav_frame and dropdown bar in it
