@@ -7,15 +7,17 @@ import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import networkx as nx
 
-# try:
-# # PyInstaller creates a temp folder and stores path in _MEIPASS
-#     R_HOME = os.path.join(sys._MEIPASS , r'R\R-4.3.3')
-#     path = os.path.join(sys._MEIPASS , r'R\R-4.3.3\bin\x64')
-#     os.environ["R_HOME"] = R_HOME
-#     os.environ["PATH"] += path + ";" + os.environ["R_HOME"]
-# except Exception as e:
-os.environ["R_HOME"] = r"C:\Program Files\R\R-4.3.3" 
-os.environ["PATH"] += r"C:\Program Files\R\R-4.3.3\bin\x64" + ";" + os.environ["R_HOME"] 
+try:
+# PyInstaller creates a temp folder and stores path in _MEIPASS
+    R_HOME = os.path.join(sys._MEIPASS , r'R\R-4.3.3')
+    path = os.path.join(sys._MEIPASS , r'R\R-4.3.3\bin\x64')
+    os.environ["R_HOME"] = R_HOME
+    os.environ["PATH"] += path + ";" + os.environ["R_HOME"]
+    R_location = "in_executable"
+except Exception as e:
+    os.environ["R_HOME"] = r"C:\Program Files\R\R-4.3.3" 
+    os.environ["PATH"] += r"C:\Program Files\R\R-4.3.3\bin\x64" + ";" + os.environ["R_HOME"] 
+    R_location = "in_local"
     # print(e)
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
@@ -23,8 +25,6 @@ from rpy2.robjects.conversion import localconverter
 import logging
 logger = logging.getLogger(__name__)
 from .utils import resource_path
-import logging 
-logger = logging.getLogger(__name__)
 
 class Pathway:
     def __init__(self,region,modality, pathways_folder, makers_folder=None):
@@ -41,10 +41,17 @@ class Pathway:
         else:
             self.modality = 'lipidomics'
 
+    @staticmethod
+    def wrtite_text(text):
+        with open('pathway_log.txt','a') as f:
+            f.write(text)
+            f.write('\n')
+
        
     def findpathway(self):
         r_source = ro.r['source']
-        logger.info("current working directory: %s", os.getcwd())
+        self.wrtite_text("current working directory: {}".format(os.getcwd()))
+        self.wrtite_text("Rlocation: {}".format(R_location))
 
         try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
@@ -52,7 +59,7 @@ class Pathway:
         except Exception:
             base_path = os.path.join(*[os.getcwd(), 'visionApp', 'SAMI'])
 
-        logger.info("base path of R file: %s", base_path)
+        self.wrtite_text("base path of R file: {}".format(base_path))
 
         r_file =  os.path.join(base_path, 'MetabAnalystR.R')
         r_source(r_file) 
@@ -82,12 +89,15 @@ class Pathway:
         finally:
             print(lib_folder)
 
-        if self.modality=='metabolomics_glycomics':
-            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[1],merge=logical_arg[1],
-                               results_folder=self.pathways_folder , lib_folder = lib_folder)
-        else:
-            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[0],merge=logical_arg[1], 
-                              results_folder=self.pathways_folder, lib_folder = lib_folder)
+        try:
+            if self.modality=='metabolomics_glycomics':
+                PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[1],merge=logical_arg[1],
+                                results_folder=self.pathways_folder , lib_folder = lib_folder)
+            else:
+                PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[0],merge=logical_arg[1], 
+                                results_folder=self.pathways_folder, lib_folder = lib_folder)
+        except Exception as e:
+            self.wrtite_text(f'Error in pathway enrichment: {e}')
         
     def anndict(self):
         anndict = {}
