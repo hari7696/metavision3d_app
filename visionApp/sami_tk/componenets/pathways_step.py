@@ -10,14 +10,16 @@ from .timer import TimerApp
 from SAMI.pathway import Pathway
 from PIL import Image
 import sys
+from log_listener import worker_configurer
 logger = logging.getLogger(__name__)
-
+# logger.setLevel(logging.INFO)
 class PathwaysStep(ctk.CTkFrame):
 
-    def __init__(self, master, file_handler):
+    def __init__(self, master, file_handler, log_queue):
         super().__init__(
             master,
         )
+        self.log_queue = log_queue
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.makers_folder = os.path.join(*[file_handler.working_folder, 'results', 'markers'])
@@ -187,14 +189,13 @@ class PathwaysStep(ctk.CTkFrame):
 
         # creating the pathway object inside the proces as well to avoid the pickling error/bottlenecks
         logger.info("creating a separate process to run the pathways generation")
-        maker_process = Process(target=self.pathways_actual_run, args=(region, self.omics, self.region_specific_pathways_folder, self.makers_folder,self.queue))
+        maker_process = Process(target=self.pathways_actual_run, args=(region, self.omics, self.region_specific_pathways_folder, self.makers_folder,self.queue, self.log_queue))
         maker_process.start()
         
         #self.pathways_actual_run(region, self.omics, region_specific_pathways_folder, self.makers_folder,self.queue)
     @staticmethod
-    def pathways_actual_run(selected_file,omics, pathways_folder, makers_folder, queue):
-
-
+    def pathways_actual_run(selected_file,omics, pathways_folder, makers_folder, queue, log_queue):
+        worker_configurer(log_queue)
         try:
             pathway = Pathway(selected_file, omics, pathways_folder, makers_folder)
             pathway.findpathway()
