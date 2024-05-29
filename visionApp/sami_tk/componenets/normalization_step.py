@@ -19,15 +19,17 @@ import sys
 sys.path.append('../SAMI')
 from SAMI.norm import create_norm_dataset_gui
 from .timer import TimerApp
+from log_listener import worker_configurer
 logger = logging.getLogger(__name__)
 
 class NormalizationStep(ctk.CTkFrame):
     """This class deals with the Normalization step"""
 
-    def __init__(self, master, file_handler):
+    def __init__(self, master, file_handler,log_queue = None):
         super().__init__(
             master,
         )
+        self.log_queue = log_queue
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.right_frame = None
@@ -224,8 +226,9 @@ class NormalizationStep(ctk.CTkFrame):
 
         norm_default_value = ctk.StringVar(value="SumNorm")
         self.algo_selection_dropdown = ctk.CTkComboBox(master= self.norm_frame,
-                                            values=['SumNorm'],
-                                            variable=norm_default_value,button_color="#b5b8b0"
+                                            values=['SumNorm', 'CompNorm'],
+                                            variable=norm_default_value,button_color="#b5b8b0",
+                                            command= self.update_normalize_with_dropdown
                                             )
         self.algo_selection_dropdown.grid(row=0,column=1,padx=(0,0),pady=8,sticky="w")
         self.algo_selection_dropdown.set("SumNorm")
@@ -248,26 +251,48 @@ class NormalizationStep(ctk.CTkFrame):
         # dummy_label2 = ctk.CTkLabel(self.norm_frame, text="", font = ("Arial", 14), width= 1000)
         # dummy_label2.grid(row=1,column=2,padx=(5,0),pady=8,sticky="w")
 
+        label3 = ctk.CTkLabel(self.norm_frame, text="Normalize with :")
+        label3.grid(row=2,column=0,padx=(5,0),pady=8,sticky="w")
+        norm_default_value3 = ctk.StringVar(value="None")
+        self.algo_selection_dropdown3 = ctk.CTkComboBox(master= self.norm_frame,
+                                            values=['None'],  
+                                            variable=norm_default_value3, button_color="#b5b8b0"
+                                            )
+        self.algo_selection_dropdown3.set("None")
+        self.algo_selection_dropdown3.grid(row=2,column=1,padx=(0,0),pady=8,sticky="w")
+
         # creating a run button
         self.run_button = ctk.CTkButton(master=self.norm_frame, text="Run Normalization", command=self.onlick_run_normalization, width=70)
-        self.run_button.grid(row=2,column=0,padx=(60,0),pady=8,sticky="w")
+        self.run_button.grid(row=3,column=0,padx=(60,0),pady=8,sticky="w")
 
         # creating a label to show the timer
         self.timer = TimerApp(self.norm_frame)
-        self.timer.grid(row=3,column=0,padx=(60,0),pady=8,sticky="w")
+        self.timer.grid(row=4,column=0,padx=(60,0),pady=8,sticky="w")
 
         # creating a label to show the normalization is in processing
         self.norm_done_label = ctk.CTkLabel(self.norm_frame, text="", font = ("Arial", 14) , width= 300)
-        self.norm_done_label.grid(row=4,column=0,padx=(0,0),pady=8,sticky="w")
+        self.norm_done_label.grid(row=5,column=0,padx=(0,0),pady=8,sticky="w")
 
 
         note = ctk.CTkTextbox(self.norm_frame, font = ("Arial", 14) , width= 700, height= 100)
-        note.grid(row=5,column=0,padx=(0,0),pady=8,sticky="sw", rowspan= 2, columnspan= 2)
+        note.grid(row=6,column=0,padx=(0,0),pady=8,sticky="sw", rowspan= 2, columnspan= 2)
 
         note.insert("0.0", "Notes:\n1. Make sure to run the normalization on all of your files \n2. Make sure, to run the omics pooling once you are done with Normalization\nOtherwise, the Next steps, will not use the latest normalized data")
         note.configure(state="disabled") 
 
         logger.info("Normalization tab is created") 
+
+    def update_normalize_with_dropdown(self, choice):
+        values= self.file_handler.molecule_name[self.file_dropdown.get()]
+        if self.algo_selection_dropdown.get() == 'CompNorm':
+            self.algo_selection_dropdown3.configure(values=values)
+            self.algo_selection_dropdown3.set(values[0])
+        
+        if self.algo_selection_dropdown.get() == 'SumNorm':
+            self.algo_selection_dropdown3.set("None")
+            self.algo_selection_dropdown3.configure(values=['None'])
+
+        
 
     def run_normalization(self):
 
@@ -278,24 +303,38 @@ class NormalizationStep(ctk.CTkFrame):
             waiting_for="File reading",
         )
 
+        ref_compound = None
+        if self.algo_selection_dropdown.get() == "CompNorm":
+            if self.algo_selection_dropdown3.get() == "None":
+                CTkMessagebox(title="Info", message="Please select a compound to normalize with")
+                return
+            ref_compound = self.algo_selection_dropdown3.get()
+
         # running normalization
         self.normalized_data[self.file_dropdown.get()] = create_norm_dataset_gui(self.file_handler.input_data_raw[self.file_dropdown.get()],
                                                                self.file_handler.working_folder,
                                                                self.file_dropdown.get(),
                                                                 rowNorm = self.algo_selection_dropdown.get(),
-                                                                transNorm = self.algo_selection_dropdown2.get()
+                                                                transNorm = self.algo_selection_dropdown2.get(),
+                                                                first_compound= self.file_handler.molecule_name[self.file_dropdown.get()][0],
+                                                                ref_compound = ref_compound
                                                                )
 
         self.compound_matrix, self.compound_matrix_high_res, self.dict_id_to_tissue_name = create_compound_matrix(
             self.file_handler.input_data_raw[self.file_dropdown.get()],
-            self.file_handler.molecule_name[self.file_dropdown.get()][0],
+            self.normalized_data[self.file_dropdown.get()].columns[3],
             roi=False,
             reverse=True,
         )
-        
+
+        # updating the molecule dropdown with the normalized data columns. if the compnorm is selected, in that case, the dropdown will be updated with the molecules,
+        #because in the compnorm, we drop the reference compound
+        self.molecule_dropdown.configure(values= self.normalized_data[self.file_dropdown.get()].columns[3:])
+        self.molecule_dropdown.set(self.normalized_data[self.file_dropdown.get()].columns[3])
+
         self.norm_compound_matrix, self.normalised_compound_matrix_high_res, _ = create_compound_matrix( 
                                                             self.normalized_data[self.file_dropdown.get()],
-                                                            self.file_handler.molecule_name[self.file_dropdown.get()][0],
+                                                            self.normalized_data[self.file_dropdown.get()].columns[3],
                                                             roi=False,
                                                             reverse=True,
                                                             )
@@ -338,7 +377,7 @@ class NormalizationStep(ctk.CTkFrame):
                     logger.info(f"file name : {file_name}")
                     logger.info("separate python process is spinned to write the normalized data in csv")
                     csv_saving_process = Process(target=self.save_normalized_files_in_csv,
-                                                args=(file_name,self.normalized_data[self.file_dropdown.get()] ), daemon=True)
+                                                args=(file_name,self.normalized_data[self.file_dropdown.get()], self.log_queue ), daemon=True)
                     csv_saving_process.start()
                     self.norm_done_label.configure(text="Normalization is completed", font = ("Arial", 14), text_color = "green")
                     self.timer.stop_timer() 
@@ -352,7 +391,8 @@ class NormalizationStep(ctk.CTkFrame):
             self.after(1000, self.check_for_normalization_thread_signal)
 
     @staticmethod
-    def save_normalized_files_in_csv(file_name, df):
+    def save_normalized_files_in_csv(file_name, df, log_queue):
+        worker_configurer(log_queue)
         df.to_csv(file_name, index=False)
         logger.info(f"file saved in csv : {file_name}")
         return
@@ -368,6 +408,8 @@ class NormalizationStep(ctk.CTkFrame):
 
         self.loading_label.configure(text="Loading...", text_color="yellow")
         self.update()
+        self.algo_selection_dropdown3.set("None")
+        self.algo_selection_dropdown3.configure(values=['None'])
     
 
         # time.sleep(3)

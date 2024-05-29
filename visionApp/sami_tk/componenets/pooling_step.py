@@ -4,7 +4,9 @@ import os
 from multiprocessing import Process, Queue
 from SAMI.preprocessing import pooldata, csv2h5ad
 from .timer import TimerApp
+from log_listener import worker_configurer
 logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 class PoolingStep(ctk.CTkFrame):
 
@@ -12,10 +14,11 @@ class PoolingStep(ctk.CTkFrame):
     This class is used for the Pooling step of the SAMI app
     """
 
-    def __init__(self, master, file_handler):
+    def __init__(self, master, file_handler, log_queue):
         super().__init__(
             master,
         )
+        self.log_queue = log_queue
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.isrendering = False
@@ -97,7 +100,7 @@ class PoolingStep(ctk.CTkFrame):
         self.timer.start_timer()
         self.status_label.configure(text= "Omics Pooling started")    
         logger.info("Pooling started in separate process")
-        self.process = Process(target=self.start_pooling, args=(self.file_handler.working_folder, self.queue))
+        self.process = Process(target=self.start_pooling, args=(self.file_handler.working_folder, self.queue, self.log_queue))
         self.process.start()
         self.check_queue()
 
@@ -116,7 +119,9 @@ class PoolingStep(ctk.CTkFrame):
         # print("checking")
         
     @staticmethod   
-    def start_pooling(working_dir, queue):
+    def start_pooling(working_dir, queue, log_queue):
+
+        worker_configurer(log_queue)
         
         logger.info("Pooling started")  
         data_reading_path = os.path.join(working_dir, 'normalised_data')

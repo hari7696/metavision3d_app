@@ -19,10 +19,11 @@ class VisualizationStep(ctk.CTkFrame):
     This class is used to display the visualization tab in the main window
     """
 
-    def __init__(self, master, file_handler):
+    def __init__(self, master, file_handler, log_queue=None):
         super().__init__(
             master,
         )
+        self.log_queue = log_queue
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.right_frame = None

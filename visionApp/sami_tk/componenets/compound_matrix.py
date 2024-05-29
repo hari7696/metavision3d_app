@@ -38,7 +38,7 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
         id_to_name[ii] = slice
 
     zarray = np.zeros((nslice, 1500, 1500))
-    zarray_high_res = np.zeros((nslice, max(1900, highest_x)+100, max(1900, highest_y)+100))
+    zarray_high_res = np.zeros((nslice, max(2000, highest_x), max(2000, highest_y)))
 
     for key in matrix:
 
@@ -46,6 +46,7 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
             zarray.shape[1] / matrix[key].shape[0],
             zarray.shape[2] / matrix[key].shape[1],
         )
+        # scale_factor = scale_factor * 0.8
         # print(scale_factor  )
         # print(matrix[key].shape)
         # Resize the image array
@@ -81,8 +82,8 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
         resized_image = resize(
             matrix[key],
             (
-                int(matrix[key].shape[0] * scale_factor),
-                int(matrix[key].shape[1] * scale_factor),
+                int(matrix[key].shape[0] * scale_factor*0.9),
+                int(matrix[key].shape[1] * scale_factor*0.9),
             ),
             anti_aliasing=False,
         )

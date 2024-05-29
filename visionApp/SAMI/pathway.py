@@ -24,6 +24,7 @@ from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
 import logging
 logger = logging.getLogger(__name__)
+# logger.setLevel(logging.INFO)
 from .utils import resource_path
 
 class Pathway:
@@ -41,25 +42,19 @@ class Pathway:
         else:
             self.modality = 'lipidomics'
 
-    @staticmethod
-    def wrtite_text(text):
-        with open('pathway_log.txt','a') as f:
-            f.write(text)
-            f.write('\n')
-
        
     def findpathway(self):
         r_source = ro.r['source']
-        self.wrtite_text("current working directory: {}".format(os.getcwd()))
-        self.wrtite_text("Rlocation: {}".format(R_location))
-
+        logger.info("current working directory: {}".format(os.getcwd()))
+        logger.info("Rlocation: {}".format(R_location))
+        logger.info("Pathway enrichment started")
         try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
             base_path = os.path.join(sys._MEIPASS , 'config')
         except Exception:
             base_path = os.path.join(*[os.getcwd(), 'visionApp', 'SAMI'])
 
-        self.wrtite_text("base path of R file: {}".format(base_path))
+        logger.info("base path of R file: {}".format(base_path))
 
         r_file =  os.path.join(base_path, 'MetabAnalystR.R')
         r_source(r_file) 
@@ -97,7 +92,7 @@ class Pathway:
                 PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[0],merge=logical_arg[1], 
                                 results_folder=self.pathways_folder, lib_folder = lib_folder)
         except Exception as e:
-            self.wrtite_text(f'Error in pathway enrichment: {e}')
+            logger.info(f'Error in pathway enrichment: {e}')
         
     def anndict(self):
         anndict = {}
