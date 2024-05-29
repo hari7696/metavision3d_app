@@ -10,14 +10,17 @@ from SAMI.markers import Markers
 import scanpy as sc
 from PIL import Image
 from ..utils import adata_filter
+from log_listener import worker_configurer
 logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 class MarkerStep(ctk.CTkFrame):
 
-    def __init__(self, master, file_handler):
+    def __init__(self, master, file_handler, queue):
         super().__init__(
             master,
         )
+        self.log_queue = queue
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.isrendering = False
@@ -208,14 +211,14 @@ class MarkerStep(ctk.CTkFrame):
         logger.info("Starting markers process")
         maker_process = Process(target=self.markers_actual_run, args=(adata1_path, adata2_path, abundance,
                                                                        prevalence, adj_pval_cutoff, top_n_molecules, self.queue, reference_name,
-                                                                       self.makers_working_folder))
+                                                                       self.makers_working_folder, self.log_queue))
         maker_process.start()
         self.markers = Markers(reference_name)
 
     @staticmethod
-    def markers_actual_run(adata1_path, adata2_path, abundance, prevalence, adj_pval_cutoff, top_n_molecules, queue, reference_name, makers_working_folder):
+    def markers_actual_run(adata1_path, adata2_path, abundance, prevalence, adj_pval_cutoff, top_n_molecules, queue, reference_name, makers_working_folder, log_queue):
 
-           
+        worker_configurer(log_queue)
         adata1 = sc.read(adata1_path) # case 
         adata_filtered1 = adata_filter(adata1, abundance,prevalence)
         logger.info(f"adata1 shape: {adata_filtered1.shape}")

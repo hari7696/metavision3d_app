@@ -129,6 +129,7 @@ def MeanCenter(x):
 def Normalization(df, first_compound_idx, rowNorm=None, transNorm=None, scaleNorm=None, ref_sample_idx=None, ref_compound=None, norm_vec=None, group_column=None, c=1, log_base=2):
     #first_compound_idx = df.columns.get_loc(first_compound)
     df = df[df.iloc[:,first_compound_idx:].sum(axis=1)!=0].reset_index(drop=True)
+    # print("###########",df.columns)
     data = df.iloc[:,first_compound_idx:].values.astype(float)
     
     ### sampel-wise normalization
@@ -246,7 +247,8 @@ def Normalization(df, first_compound_idx, rowNorm=None, transNorm=None, scaleNor
     new_df = df.copy()
     
     if rowNorm == 'CompNorm' and ref_compound is not None:
-        new_df = new_df.drop(columns = ref_compound)
+        if ref_compound in new_df.columns:
+            new_df = new_df.drop(columns = ref_compound)
         
     new_df.iloc[:,first_compound_idx:] = data
     
@@ -263,9 +265,15 @@ def create_norm_dataset(data_path,pattern):
             df_norm.to_csv(os.path.join(data_path,f"{name}{ext}"),index=False)
             print(f'{name}{ext} is created.')
 
-def create_norm_dataset_gui(df, working_dir, key, rowNorm, transNorm):
+def create_norm_dataset_gui(df, working_dir, key, rowNorm, transNorm, first_compound, ref_compound = None):
 
-    df_norm = Normalization(df, first_compound_idx=3, rowNorm='SumNorm', transNorm='LogTrans2', c=1, log_base=2)
+    first_compound_idx = df.columns.get_loc(first_compound)
+    # print("################", first_compound_idx)
+    try:
+        df_norm = Normalization(df, first_compound_idx= first_compound_idx, rowNorm=rowNorm, transNorm=transNorm, c=1, log_base=2, ref_compound = ref_compound)
+    except Exception as e:
+        logger.error(f"Error in Normalization: {e}")
+        print(e)
     name = key + "_norm" + ".pq"
     df_norm.to_parquet(os.path.join(*[working_dir,'normalised_data', name]), index = False)
     logger.info(f'{name} is created.')

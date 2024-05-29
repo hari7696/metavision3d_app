@@ -15,10 +15,11 @@ logger = logging.getLogger(__name__)
 
 class ClusterIntergrationStep(ctk.CTkFrame):
 
-    def __init__(self, master, file_handler):
+    def __init__(self, master, file_handler, log_queue):
         super().__init__(
             master,
         )
+        self.log_queue = log_queue
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.isrendering = False
