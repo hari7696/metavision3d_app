@@ -115,7 +115,6 @@ class NormalizationStep(ctk.CTkFrame):
             values=self.file_handler.base_files,
             command=self.update_frame_with_file,
             variable=default_value,
-            width= 180
         )
         self.file_dropdown.grid(row=0, column=1, padx=(5, 5), pady=10, sticky="e")
 
