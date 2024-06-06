@@ -15,7 +15,7 @@ def root_configurer(queue):
     root = logging.getLogger()
     root.addHandler(h)
     root.setLevel(logging.INFO)
-
+    
 class VisionApp(ctk.CTk):
 
     """DO NOT CHNAGE THIS TEMPLATE, you may update change_to_algo_ui() if new algorithm is added"""
@@ -50,7 +50,7 @@ class VisionApp(ctk.CTk):
         # self.nav_frame.columnconfigure(5,weight=1)
         
         # self.nav_frame.rowconfigure(0,weight=1)
-        logging.info("application started")
+        logger.info("application started")
         algo_default_value = ctk.StringVar(value="Select the ALgorithm")
         self.algo_selection_dropdown = ctk.CTkOptionMenu(master= self.nav_frame,
                                             values=["3D file","SAMI"],
@@ -75,7 +75,7 @@ class VisionApp(ctk.CTk):
         # Assuming self.parent_frame is your root widget from which you want to start counting
         total_children = count_all_children(self.parent_frame)
 
-        logging.info("Frequent_checker :: Total children {}".format(str(total_children)))
+        logger.info("Frequent_checker :: Total children {}".format(str(total_children)))
         self.after(10000, self.write_num_children_to_logs)
         
 
@@ -108,18 +108,30 @@ class VisionApp(ctk.CTk):
         elif choice == "SAMI":
             # Destroy all widgets in the parent frame except nav_frame and dropdown bar in it
             self.destroy_children()
-            logging.info("num children in parent_frame {}".format(str(len(self.parent_frame.winfo_children()))))
+            logger.info("num children in parent_frame {}".format(str(len(self.parent_frame.winfo_children()))))
             self.sami_ap = SAMIApp(self.parent_frame, self.nav_frame, self.algo_selection_dropdown, self.log_queue)
             self.sami_ap.grid(row=1, column=0, sticky="nsew", pady=(5,0), padx=(0,0),)
 
 
 if __name__ == "__main__":
 
+    ENVIRONMENT = "NONE"
+    try :
+        base_path = sys._MEIPASS
+        log_directory= os.path.join(base_path, "logs")
+        ENVIRONMENT = "EXE"
+    except Exception as e:
+        log_directory = os.path.abspath(r"C:\Users\ghari\Documents\OPS\UI\metavision3d_app\logs")
+        ENVIRONMENT = "DEV"
+
+    if not os.path.exists(log_directory):
+        os.makedirs(log_directory)
+        
+
     multiprocessing.set_start_method('spawn')
     multiprocessing.freeze_support()
     log_queue = multiprocessing.Queue(-1)
-    listener = multiprocessing.Process(
-        target=listener_process, args=(log_queue,))
+    listener = multiprocessing.Process(target=listener_process, args=(log_queue, log_directory))
     listener.start()
     root_configurer(log_queue)
 
@@ -131,6 +143,10 @@ if __name__ == "__main__":
         logger.error("error in closing splash screen {}".format(str(e)))
     app = VisionApp(log_queue)
     app.mainloop()
+    logger.info("teminating log listener process")
+    listener.terminate()
+    
+
 
     # (r'c:\Users\ghari\Pictures\R', 'R')
 

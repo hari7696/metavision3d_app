@@ -189,15 +189,15 @@ class PathwaysStep(ctk.CTkFrame):
 
         # creating the pathway object inside the proces as well to avoid the pickling error/bottlenecks
         logger.info("creating a separate process to run the pathways generation")
-        maker_process = Process(target=self.pathways_actual_run, args=(region, self.omics, self.region_specific_pathways_folder, self.makers_folder,self.queue, self.log_queue))
+        maker_process = Process(target=self.pathways_actual_run, args=(region, self.omics, self.region_specific_pathways_folder, self.makers_folder,self.queue, self.log_queue),  name = "SAMI:Pathways_step")
         maker_process.start()
         
         #self.pathways_actual_run(region, self.omics, region_specific_pathways_folder, self.makers_folder,self.queue)
     @staticmethod
     def pathways_actual_run(selected_file,omics, pathways_folder, makers_folder, queue, log_queue):
-        worker_configurer(log_queue)
+        # worker_configurer(log_queue)
         try:
-            pathway = Pathway(selected_file, omics, pathways_folder, makers_folder)
+            pathway = Pathway(selected_file, omics, pathways_folder, makers_folder, log_queue)
             pathway.findpathway()
         except Exception as e:
             logger.error("Error in pathway generation:{}".format(e))
