@@ -6,7 +6,7 @@ import io
 import time
 class ImageDisaplay(ctk.CTkFrame):
 
-    def __init__(self, master, image_location="cerebellumWT_umap_integrated.png", width = 1400, height = 400, zoom_factor = 1.2):
+    def __init__(self, master, image_location="cerebellumWT_umap_integrated.png", width = 1400, height = 400, zoom_factor = 0.2):
         super().__init__( master)
 
         self.frame_width = width
@@ -68,7 +68,7 @@ class ImageDisaplay(ctk.CTkFrame):
 
         current_time = time.time()
         # print(current_time - self.last_event_time)
-        if current_time - self.last_event_time < 1:  # Adjust this value as needed
+        if current_time - self.last_event_time < 0.5:  # Adjust this value as needed
             # print("Hit")
             return  # Skip this update
         self.last_event_time = current_time
