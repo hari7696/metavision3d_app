@@ -163,7 +163,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
             child.destroy()
         self.specific_cluster = ClusterIntSelectiveClusters(self.specific_cluster_tab, 
                                                             self.cluster_int, self.n_clusters,
-                                                              self.region1, self.region2)
+                                                              self.region1, self.region2, self.log_queue)
         
         self.specific_cluster.grid(row=0, column=0, sticky="nsew", padx=(3,3), pady=(3,3))
 
@@ -200,7 +200,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         logger.info(f"path Integrated file 1 : {self.integrated_file1}")
         logger.info(f"path Integrated file 2 : {self.integrated_file2}")
         
-        cluster_int = Cluster_Integration(self.region1_selection.get(), self.region2_selection.get(), self.working_folder)
+        cluster_int = Cluster_Integration(self.region1_selection.get(), self.region2_selection.get(), self.working_folder, self.log_queue)
 
         # try:    
         #     adata1 = sc.read(r"C:\Users\ghari\Documents\OPS\Test_folders\original_data_test\AD_WT\results\clustering\brain1wt_pool_1.0.h5ad")
@@ -258,7 +258,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         # image_location2, self.n_clusters = self.cluster_int.plot_umap_cluster(region ,size=50,show=False)
         logger.info("started the clustering process")
         self.clustering_process = Process(target=self.clusterintegration, args=(self.queue, self.cluster_int, 
-                                                                   self.integrated_file1, self.integrated_file2,self.region1, self.region2))
+                                                                   self.integrated_file1, self.integrated_file2,self.region1, self.region2), name = "SAMI:cluster_integration")
         self.clustering_process.start()
         self.trigger_visz_functions_on_thread_run()
 

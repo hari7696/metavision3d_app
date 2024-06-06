@@ -5,10 +5,11 @@ from time import sleep
 import datetime
 
 
-def listener_configurer():
+def listener_configurer(log_dir):
     root = logging.getLogger()
     current_time = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    file_handler = handlers.RotatingFileHandler(f'vision_{current_time}.log', 'w')
+    file_location = f'{log_dir}/vision_{current_time}.log'
+    file_handler = handlers.RotatingFileHandler(file_location, 'w')
     console_handler = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s %(processName)-10s %(name)s %(levelname)-8s %(message)s')
     file_handler.setFormatter(formatter)
@@ -26,8 +27,8 @@ def worker_configurer(queue):
     root.setLevel(logging.INFO)
 
 
-def listener_process(queue):
-    listener_configurer()
+def listener_process(queue, log_dir):
+    listener_configurer(log_dir)
     while True:
         while not queue.empty():
             record = queue.get()
