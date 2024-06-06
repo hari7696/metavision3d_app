@@ -2,7 +2,7 @@
 from PyInstaller.utils.hooks import copy_metadata
 
 datas = [('C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/lib', 'lib'), ('C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/config', 'config'), \
-(r'C:\Program Files\R', 'R'), (r'C:\Users\ghari\Documents\OPS\UI\metavision3d_app\visionApp\SAMI\MetabAnalystR.R', 'config')]
+(r'C:\Users\ghari\Documents\OPS\UI\metavision3d_app\visionApp\SAMI\MetabAnalystR.R', 'config')]
 datas += copy_metadata('anndata')
 
 
@@ -51,4 +51,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['C:\\Users\\ghari\\Documents\\OPS\\UI\\Isotopes_app\\visionapp.ico'],
 )

@@ -10,6 +10,7 @@ from SAMI.markers import Markers
 import scanpy as sc
 from PIL import Image
 from ..utils import adata_filter
+from .display_image import ImageDisaplay
 from log_listener import worker_configurer
 logger = logging.getLogger(__name__)
 # logger = logging.getLogger(__name__)
@@ -211,14 +212,14 @@ class MarkerStep(ctk.CTkFrame):
         logger.info("Starting markers process")
         maker_process = Process(target=self.markers_actual_run, args=(adata1_path, adata2_path, abundance,
                                                                        prevalence, adj_pval_cutoff, top_n_molecules, self.queue, reference_name,
-                                                                       self.makers_working_folder, self.log_queue))
+                                                                       self.makers_working_folder, self.log_queue),  name = "SAMI:Markers_step")
         maker_process.start()
-        self.markers = Markers(reference_name)
+        self.markers = Markers(reference_name, None)
 
     @staticmethod
     def markers_actual_run(adata1_path, adata2_path, abundance, prevalence, adj_pval_cutoff, top_n_molecules, queue, reference_name, makers_working_folder, log_queue):
 
-        worker_configurer(log_queue)
+        # worker_configurer(log_queue)
         adata1 = sc.read(adata1_path) # case 
         adata_filtered1 = adata_filter(adata1, abundance,prevalence)
         logger.info(f"adata1 shape: {adata_filtered1.shape}")
@@ -229,7 +230,7 @@ class MarkerStep(ctk.CTkFrame):
             adata_filtered2 = None
             logger.info(f"adata2 shape: None")
 
-        markers = Markers(reference_name)  # reference name is the name of the file where it will save with markers
+        markers = Markers(reference_name, log_queue)  # reference name is the name of the file where it will save with markers
         markers.findmarkers(adata_filtered1,adj_pval_cutoff,top_n_molecules, adata_filtered2,makers_working_folder )
 
         queue.put("markers_done")
@@ -301,18 +302,17 @@ class MarkerStep(ctk.CTkFrame):
         self.run_button.grid(row=0, column=2, sticky="w", padx=(20,0), pady=5)
 
         # adding a status label
-        # self.status_label_circular_plot = ctk.CTkLabel(self.circular_options_panel, text="", text_color="yellow", width= 150)
-        # self.status_label_circular_plot.grid(row=0, column=3, sticky="w", padx=(20,0), pady=5)
+        self.status_label_circular_plot = ctk.CTkLabel(self.circular_options_panel, text="", text_color="yellow", width= 150)
+        self.status_label_circular_plot.grid(row=0, column=3, sticky="w", padx=(20,0), pady=5)
 
         
 
     def display_circular_plot(self):
 
         logger.info("Displaying circular plot")
-        # self.status_label_circular_plot.configure(text="Loading...", text_color="yellow")
-        # self.update()
-        if self.circular_image_label is not None:
-            self.circular_image_label.destroy()
+        self.status_label_circular_plot.configure(text="Loading...", text_color="yellow")
+        self.update()
+
 
         logger.info("displaying circular plot")
 
@@ -327,16 +327,23 @@ class MarkerStep(ctk.CTkFrame):
 
 
         # creating a label to display the image
-        self.circular_image_label = ctk.CTkLabel(self.circular_image_frame , text = "", width=800, height=800)
-        self.circular_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)
 
-        ctk_image1 = ctk.CTkImage(light_image=Image.open(image_location),
-                                     dark_image=None, size = (800,800))
-        self.circular_image_label.configure(image=ctk_image1)
-        self.circular_image_label.image = ctk_image1
+        self.circular_image_label = ImageDisaplay(self.circular_image_frame, image_location, 700, 700, 1.0)
+        self.circular_image_label.grid(row=0, column=0, sticky="nsew", padx=(5,0) , pady = (2,2))
+        self.circular_image_label.columnconfigure(0, weight=1)
+        self.circular_image_label.rowconfigure(0, weight=1)
 
-        # self.status_label_circular_plot.configure(text="", text_color="yellow")
-        # self.update()
+
+        # self.circular_image_label = ctk.CTkLabel(self.circular_image_frame , text = "", width=800, height=800)
+        # self.circular_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)
+
+        # ctk_image1 = ctk.CTkImage(light_image=Image.open(image_location),
+        #                              dark_image=None, size = (800,800))
+        # self.circular_image_label.configure(image=ctk_image1)
+        # self.circular_image_label.image = ctk_image1
+
+        self.status_label_circular_plot.configure(text="", text_color="yellow")
+        self.update()
     
     def prepare_volcano_plot(self):
 
@@ -402,11 +409,11 @@ class MarkerStep(ctk.CTkFrame):
 
 
         # creating a label to display the image
-        self.volcano_image_label = ctk.CTkLabel(self.volcano_image_frame , text = "", width=400, height=400)
+        self.volcano_image_label = ctk.CTkLabel(self.volcano_image_frame , text = "", width=600, height=600)
         self.volcano_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)
 
         ctk_image2 = ctk.CTkImage(light_image=Image.open(image_location),
-                                     dark_image=None, size = (400,400))
+                                     dark_image=None, size = (600,600))
         self.volcano_image_label.configure(image=ctk_image2)
         self.volcano_image_label.image = ctk_image2
 
