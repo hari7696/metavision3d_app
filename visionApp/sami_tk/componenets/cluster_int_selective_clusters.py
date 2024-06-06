@@ -16,7 +16,7 @@ class ClusterIntSelectiveClusters(ctk.CTkFrame):
     Its a part of of the cluster Intergration tab (selective clusters) in the SAMI app
     """
 
-    def __init__(self, master, cluster_int, n_clusters, region1, region2):
+    def __init__(self, master, cluster_int, n_clusters, region1, region2, log_queue=None):
         super().__init__(
             master,
         )
@@ -25,6 +25,7 @@ class ClusterIntSelectiveClusters(ctk.CTkFrame):
         self.n_clusters = n_clusters
         self.region1 = region1
         self.region2 = region2
+        self.log_queue = log_queue
         self.create_layout()
         self.after(500, self.prepare_specific_cluster_vis(self.region1_frame, self.region1))
         self.after(500, self.prepare_specific_cluster_vis(self.region2_frame, self.region2))
@@ -80,22 +81,23 @@ class ClusterIntSelectiveClusters(ctk.CTkFrame):
         right_frame.columnconfigure(2, weight=1)
         right_frame.rowconfigure(0, weight=1)
 
-        specific_cluster1 = SpecificCluster(right_frame, self.cluster_int, self.n_clusters, region, 0)
+        specific_cluster1 = SpecificCluster(right_frame, self.cluster_int, self.n_clusters, region, 0, self.log_queue)
         specific_cluster1.grid(row=0, column=0, sticky="nsew", padx=(3,3), pady=(3,3))
 
-        specific_cluster2 = SpecificCluster(right_frame, self.cluster_int, self.n_clusters, region, 1)
+        specific_cluster2 = SpecificCluster(right_frame, self.cluster_int, self.n_clusters, region, 1, self.log_queue)
         specific_cluster2.grid(row=0, column=1, sticky="nsew", padx=(3,3), pady=(3,3))
 
-        specific_cluster3 = SpecificCluster(right_frame, self.cluster_int, self.n_clusters, region, 2)
+        specific_cluster3 = SpecificCluster(right_frame, self.cluster_int, self.n_clusters, region, 2, self.log_queue)
         specific_cluster3.grid(row=0, column=2, sticky="nsew", padx=(3,3), pady=(3,3))
 
         logger.info(f"Prepared specific cluster vis for {region}")
         
 class SpecificCluster(ctk.CTkFrame):
-    def __init__(self, master, cluster, n_clusters, region, initial_choice=0):
+    def __init__(self, master, cluster, n_clusters, region, initial_choice=0 , log_queue=None):
         super().__init__(
             master,
         )
+
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.rowconfigure(1, weight=10)
@@ -104,6 +106,7 @@ class SpecificCluster(ctk.CTkFrame):
         self.initial_choice = initial_choice    
         self.region = region
         self.queue = Queue()
+        self.log_queue = log_queue
         
         self.cluster_image_label = None
 

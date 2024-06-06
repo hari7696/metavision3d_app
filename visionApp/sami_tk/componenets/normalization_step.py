@@ -392,7 +392,7 @@ class NormalizationStep(ctk.CTkFrame):
 
     @staticmethod
     def save_normalized_files_in_csv(file_name, df, log_queue):
-        worker_configurer(log_queue)
+        # worker_configurer(log_queue)
         df.to_csv(file_name, index=False)
         logger.info(f"file saved in csv : {file_name}")
         return
@@ -563,7 +563,7 @@ class NormalizationStep(ctk.CTkFrame):
 
         logger.info("on_label_click Triggered")
 
-        matrix = self.compound_matrix_high_res[id]
+        matrix = self.normalised_compound_matrix_high_res[id]
         # print(matrix.shape)
         scale_factor = 0.42  # Adjust this factor to scale the image size up
         dpi = 300  # Increasing the DPI for better resolution and larger image
@@ -751,9 +751,12 @@ class NormalizationStep(ctk.CTkFrame):
         import numpy as np
         matrix_reshape = matrix.reshape(matrix.shape[0], -1)
 
+        ARE_THERE_INFIS = False
         non_zero_list = []
         for row in matrix_reshape:
-            non_zero_row = row[np.nonzero(row)]
+            non_zero_row = row[np.logical_and(row != 0, np.isfinite(row))] # remove zeros and inf
+            if len(row[np.isinf(row)]) > 0:
+                ARE_THERE_INFIS = True
             non_zero_list.append(non_zero_row)
 
         ax.boxplot(non_zero_list, vert=False, showfliers=False)
@@ -764,6 +767,7 @@ class NormalizationStep(ctk.CTkFrame):
         ax.tick_params(axis='both', which='both', labelsize=10)
         labels = ax.get_xticklabels() + ax.get_yticklabels()
         labels = [label.set_fontweight('bold') for label in labels]
+        return ARE_THERE_INFIS
                 
     def display_norm_plot(self, matrix, norm_matrix):
         
@@ -781,8 +785,11 @@ class NormalizationStep(ctk.CTkFrame):
         combined_fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
         # Generate plots directly on the axes
-        self.generate_boxplot_directly(matrix, ax1, "Original Data")
-        self.generate_boxplot_directly(norm_matrix, ax2, "Normalized Data")
+        _ = self.generate_boxplot_directly(matrix, ax1, "Original Data")
+        are_there_infis = self.generate_boxplot_directly(norm_matrix, ax2, "Normalized Data")
+        if are_there_infis:
+            CTkMessagebox(title="Warning Message!",message="Comp Norm resulted in infinites, It can potentially break next steps",
+                  icon="warning", option_1="Ok")
         canvas = FigureCanvasTkAgg(combined_fig, master=self.norm_plot_frame)  # A tk.DrawingArea
         canvas.draw()
         canvas.get_tk_widget().grid(row=0,column=0)

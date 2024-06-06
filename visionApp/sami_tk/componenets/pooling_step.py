@@ -121,7 +121,7 @@ class PoolingStep(ctk.CTkFrame):
     @staticmethod   
     def start_pooling(working_dir, queue, log_queue):
 
-        worker_configurer(log_queue)
+        #worker_configurer(log_queue)
         
         logger.info("Pooling started")  
         data_reading_path = os.path.join(working_dir, 'normalised_data')
@@ -131,11 +131,11 @@ class PoolingStep(ctk.CTkFrame):
             os.makedirs(data_saving_path)
         logger.info("csv2h5ad started")
         # pooldata()
-        csv2h5ad(data_reading_path, r'^\w+norm\.pq', data_saving_path, split=True)
+        csv2h5ad(data_reading_path, r'^\w+norm\.pq', data_saving_path, split=True, log_queue = log_queue)
 
         logger.info("OMICS started")
         # pooling omics data
-        pooldata(data_reading_path, r'^\w+norm\.pq', data_saving_path, split=True)
+        pooldata(data_reading_path, r'^\w+norm\.pq', data_saving_path, split=True, log_queue = log_queue)
 
         files = os.listdir(data_saving_path)
         str = ""

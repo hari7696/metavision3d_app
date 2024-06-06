@@ -7,9 +7,11 @@ import pandas as pd
 import numpy as np
 import logging
 logger = logging.getLogger(__name__)
+from log_listener import worker_configurer
 
 class Clusters:
-    def __init__(self, region, modality, resolution, pooled_data_folder, working_folder):
+    def __init__(self, region, modality, resolution, pooled_data_folder, working_folder, log_queue=None):
+        self.log_queue = log_queue  
         self.region = region
         self.modality = modality
         self.resolution = round(resolution,1)
@@ -18,15 +20,24 @@ class Clusters:
         self.file_path = os.path.join(*[self.working_folder, 'results', 'clustering'])
 
     def clustering(self):
+
+        worker_configurer(self.log_queue)
+        logger.info("Clustering started")
         adata=sc.read(os.path.join(self.pooled_data_folder,f'{self.region}_{self.modality}.h5ad'))
-        sc.pp.pca(adata, random_state = 7)
-        sc.pp.neighbors(adata,n_pcs=20, random_state = 7)
-        sc.tl.umap(adata, random_state = 7)
-        sc.tl.leiden(adata,resolution=self.resolution, random_state = 7)
+
+        try:
+            sc.pp.pca(adata, random_state = 7)
+            sc.pp.neighbors(adata,n_pcs=20, random_state = 7)
+            sc.tl.umap(adata, random_state = 7)
+            sc.tl.leiden(adata,resolution=self.resolution, random_state = 7)
+        except Exception as e:
+            logger.error(f"Error in clustering core SAMI: {str(e)}")
+            return
 
         if not os.path.exists(self.file_path):
             os.makedirs(self.file_path)
         adata.write(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
+        logger.info("Clustering completed and written the output file")
     
     
     def plot_umap_cluster(self,size=50,show=False):
@@ -125,7 +136,9 @@ class Clusters:
         return os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_{cluster}.png')
     
 class Cluster_Integration:
-    def __init__(self,adata,adata_ref, working_folder):
+    def __init__(self,adata,adata_ref, working_folder, log_queue=None):
+
+        self.log_queue = log_queue
         self.adata = adata
         self.adata_ref = adata_ref
         self.working_folder = working_folder
@@ -133,15 +146,24 @@ class Cluster_Integration:
         self.region2, self.modality2, self.resolution2 =self.splitname(adata_ref)
         
     def integrate(self):
+
+        worker_configurer(self.log_queue)
+        logger.info("INtegration started")
         adata1 = sc.read(os.path.join(self.working_folder , self.adata))
         adata2 = sc.read(os.path.join(self.working_folder , self.adata_ref))
         var_names = adata1.var_names.intersection(adata2.var_names)
         adata1.obs['sample'] = self.region1
         adata2.obs['sample'] = self.region2
-        sc.tl.ingest(adata1,adata2,obs='leiden')
+
+        try:
+            sc.tl.ingest(adata1,adata2,obs='leiden')
+        except Exception as e:
+            logger.error(f"Error in integration core SAMI: {str(e)}")
+            return
         
         adata1.write(os.path.join(self.working_folder, f'{self.region1}_integrated.h5ad'))
         adata2.write(os.path.join(self.working_folder, f'{self.region2}_integrated.h5ad'))
+        logger.info("Integration completed and written the output file")
         
     def splitname(self,adata):
         # name,_ = os.path.splitext(adata)
