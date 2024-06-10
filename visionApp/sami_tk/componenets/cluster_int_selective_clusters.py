@@ -23,12 +23,12 @@ class ClusterIntSelectiveClusters(ctk.CTkFrame):
         self.cluster_int = cluster_int
         self.cluster_int = cluster_int
         self.n_clusters = n_clusters
-        self.region1 = region1
-        self.region2 = region2
+        self.region1, self.modality1, self.res1 = region1
+        self.region2, self.modality2, self.res2 = region2
         self.log_queue = log_queue
         self.create_layout()
-        self.after(500, self.prepare_specific_cluster_vis(self.region1_frame, self.region1))
-        self.after(500, self.prepare_specific_cluster_vis(self.region2_frame, self.region2))
+        self.after(500, self.prepare_specific_cluster_vis(self.region1_frame, self.region1, self.modality1, self.res1))
+        self.after(500, self.prepare_specific_cluster_vis(self.region2_frame, self.region2, self.modality2, self.res2))
 
     def create_layout(self):
 
@@ -55,7 +55,7 @@ class ClusterIntSelectiveClusters(ctk.CTkFrame):
         self.region2_frame.rowconfigure(0, weight=1)
 
 
-    def prepare_specific_cluster_vis(self, frame, region):
+    def prepare_specific_cluster_vis(self, frame, region, modality, res):
 
         for child in frame.winfo_children():
             child.destroy()
@@ -81,19 +81,19 @@ class ClusterIntSelectiveClusters(ctk.CTkFrame):
         right_frame.columnconfigure(2, weight=1)
         right_frame.rowconfigure(0, weight=1)
 
-        specific_cluster1 = SpecificCluster(right_frame, self.cluster_int, self.n_clusters, region, 0, self.log_queue)
+        specific_cluster1 = SpecificCluster(right_frame, self.cluster_int, self.n_clusters, region, modality, res, 0, self.log_queue)
         specific_cluster1.grid(row=0, column=0, sticky="nsew", padx=(3,3), pady=(3,3))
 
-        specific_cluster2 = SpecificCluster(right_frame, self.cluster_int, self.n_clusters, region, 1, self.log_queue)
+        specific_cluster2 = SpecificCluster(right_frame, self.cluster_int, self.n_clusters, region, modality, res, 1, self.log_queue)
         specific_cluster2.grid(row=0, column=1, sticky="nsew", padx=(3,3), pady=(3,3))
 
-        specific_cluster3 = SpecificCluster(right_frame, self.cluster_int, self.n_clusters, region, 2, self.log_queue)
+        specific_cluster3 = SpecificCluster(right_frame, self.cluster_int, self.n_clusters, region, modality, res, 2, self.log_queue)
         specific_cluster3.grid(row=0, column=2, sticky="nsew", padx=(3,3), pady=(3,3))
 
         logger.info(f"Prepared specific cluster vis for {region}")
         
 class SpecificCluster(ctk.CTkFrame):
-    def __init__(self, master, cluster, n_clusters, region, initial_choice=0 , log_queue=None):
+    def __init__(self, master, cluster, n_clusters, region,modality, res, initial_choice=0 , log_queue=None):
         super().__init__(
             master,
         )
@@ -105,6 +105,8 @@ class SpecificCluster(ctk.CTkFrame):
         self.n_clusters = n_clusters
         self.initial_choice = initial_choice    
         self.region = region
+        self.modality = modality
+        self.res = res
         self.queue = Queue()
         self.log_queue = log_queue
         
@@ -156,7 +158,7 @@ class SpecificCluster(ctk.CTkFrame):
         #integration.plot_select_cluster('cerebellumNPC1',cluster=i, size=60, show=False)
         # image_location = self.cluster.plot_select_cluster(self.region,int(choice),size=60,show=False)
 
-        self.image_getter = Process(target=self.trigger_process_for_specific_cluster, args=(self.cluster, self.region, int(choice), 60, False, self.queue))
+        self.image_getter = Process(target=self.trigger_process_for_specific_cluster, args=(self.cluster, self.region, self.modality, self.res, int(choice), 60, False, self.queue))
         self.image_getter.start()
         self.check_queue()
 
@@ -171,8 +173,8 @@ class SpecificCluster(ctk.CTkFrame):
             self.image_getter.join()
 
     @staticmethod
-    def trigger_process_for_specific_cluster(cluster, region, choice, size=60, show=False, queue=None):
-        image_path = cluster.plot_select_cluster(region,int(choice),size=size,show=False)
+    def trigger_process_for_specific_cluster(cluster, region,modality, res, choice, size=60, show=False, queue=None):
+        image_path = cluster.plot_select_cluster(region,modality, res , int(choice),size=size,show=False)
         image = Image.open(image_path)
         with io.BytesIO() as output:
             image.save(output, format="PNG")

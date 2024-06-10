@@ -23,6 +23,8 @@ class SAMIApp(ctk.CTkFrame):
         self.columnconfigure(0, weight=1)
         self.nav_frame = nav_frame
         self.process_step = None
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.queue = queue.Queue()
@@ -166,6 +168,8 @@ class SAMIApp(ctk.CTkFrame):
             step.columnconfigure(0, weight=1)
             step.rowconfigure(0, weight=1)
             step.grid(row=0, column=0, sticky="nsew")
+            step.columnconfigure(0, weight=1)
+            step.rowconfigure(0, weight=1)
             self.loaded_steps[step_name] = step
         return self.loaded_steps[step_name]
 
@@ -217,6 +221,8 @@ class SAMIApp(ctk.CTkFrame):
         # Show the selected step
         step.refresh()
         step.grid(row=0, column=0, sticky="nsew")
+        step.columnconfigure(0, weight=1)
+        step.rowconfigure(0, weight=1)
 
 
     # def execute_selected_step(self, choice):
