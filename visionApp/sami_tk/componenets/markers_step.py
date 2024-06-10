@@ -87,16 +87,27 @@ class MarkerStep(ctk.CTkFrame):
         logger.info("Markers tab prepared") 
 
         self.prepare_options_panel()
+
+    def get_files(self): 
+        self.files_to_path_dict = {}
+        self.files = []
+        for dirpath, dirs, lst_files in os.walk(self.working_folder):
+            for file in lst_files:
+                if file.endswith(".h5ad"):
+                    # print(file, dirpath)
+                    # if os.path.dirname(dirpath) != "clustering":
+                    new_dir_ref = os.path.basename(dirpath)
+                    file_ = new_dir_ref + "||" + file
+                    self.files_to_path_dict[file_] = os.path.join(dirpath, file)
+                    self.files.append(file_)
     
     def refresh(self):
         "whenever the tab swtich happens this function updates the files available in dropdowns"
-        files = os.listdir(self.working_folder)
-        files = [file for file in files if ('.h5ad') in file]
-
-        self.region1_selection.configure(values=files)
+        self.get_files()
+        self.region1_selection.configure(values=self.files)
 
         if self.sami_type == "multi":
-            self.region2_selection.configure(values=files)
+            self.region2_selection.configure(values=self.files)
 
         logger.info("Refreshing markers tab")
 
@@ -106,15 +117,14 @@ class MarkerStep(ctk.CTkFrame):
         for i in range(0,15):
             self.options_panel.columnconfigure(i, weight=1)
 
+        self.get_files()
 
-        files = os.listdir(self.working_folder)
-        files = [file for file in files if ('.h5ad') in file]
         # region selection 1
         region1_label = ctk.CTkLabel(self.options_panel, text="Select Region 1 :" )
         region1_label.grid(row=0,column=0,padx=(2,0),pady=2,sticky="ew")    
         _ = tk.StringVar(value='choose file')
         self.region1_selection = ctk.CTkComboBox(master= self.options_panel,
-                                            values=files,
+                                            values=self.files,
                                             variable=_,
                                             button_color="#b5b8b0",
                                             width = 150
@@ -127,7 +137,7 @@ class MarkerStep(ctk.CTkFrame):
             region2_label.grid(row=0,column=2,padx=(2,0),pady=2,sticky="ew")
             _ = tk.StringVar(value='choose file')
             self.region2_selection = ctk.CTkComboBox(master= self.options_panel,
-                                                values=files,
+                                                values=self.files,
                                                 variable=_,
                                                 button_color="#b5b8b0",
                                                 width = 150
@@ -184,10 +194,12 @@ class MarkerStep(ctk.CTkFrame):
         
         logger.info("Generating markers button hit")
         # this function run the command of generating markers button
-        region1 = self.region1_selection.get()
-
+        region1 = self.region1_selection.get().split("||")[-1]
+        region1_path = self.region1_selection.get()
         if self.sami_type == "multi":
-            region2 = self.region2_selection.get()
+            region2 = self.region2_selection.get().split("||")[-1]
+            region2_path = self.region2_selection.get()
+
         abundance = float(self.abundance_entry.get())
         prevalence = float(self.prevalance_entry.get())
         adj_pval_cutoff = float(self.adj_pval_cutoff_entry.get())
@@ -197,9 +209,9 @@ class MarkerStep(ctk.CTkFrame):
         self.time_constraint_label.configure(text="Note : Markers generation takes roughly 3 minutes", text_color="yellow")
         
 
-        adata1_path = os.path.join(self.working_folder, region1) 
+        adata1_path = os.path.join(self.working_folder, self.files_to_path_dict[region1_path]) 
         if self.sami_type == "multi":
-            adata2_path = os.path.join(self.working_folder, region2)
+            adata2_path = os.path.join(self.working_folder, self.files_to_path_dict[region2_path])
             reference_name = '_'.join(region1.replace('.h5ad' , "").split('_')[:-1]) + '_with_' + '_'.join(region2.replace('.h5ad', "").split('_')[:-1])
         else:
             adata2_path = None
