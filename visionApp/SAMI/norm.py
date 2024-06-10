@@ -270,6 +270,10 @@ def create_norm_dataset_gui(df, working_dir, key, rowNorm, transNorm, first_comp
     first_compound_idx = df.columns.get_loc(first_compound)
     # print("################", first_compound_idx)
     try:
+        # handling the 0s in the peak columns
+        if rowNorm == 'CompNorm':
+            df = df[df[ref_compound] != 0].reset_index(drop=True)
+
         df_norm = Normalization(df, first_compound_idx= first_compound_idx, rowNorm=rowNorm, transNorm=transNorm, c=1, log_base=2, ref_compound = ref_compound)
     except Exception as e:
         logger.error(f"Error in Normalization: {e}")

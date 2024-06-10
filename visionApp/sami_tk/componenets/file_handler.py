@@ -134,6 +134,11 @@ class FileOpenbutton(ctk.CTkFrame):
                 df = df.drop(col, axis=1)
         if 'tissue_id' in df.columns:
             df = df.rename(columns={'tissue_id': 'region'})
+        
+        if 'roi_named' in df.columns:
+            df = df.rename(columns={'roi_named': 'region'})
+
+
         df.dropna(subset=['region'], inplace=True)
         self.tissue_ids[base_filename] = list(df["region"].unique())
         self.molecule_name[base_filename] = list(df.columns[3:])

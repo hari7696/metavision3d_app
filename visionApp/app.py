@@ -111,6 +111,7 @@ class VisionApp(ctk.CTk):
             logger.info("num children in parent_frame {}".format(str(len(self.parent_frame.winfo_children()))))
             self.sami_ap = SAMIApp(self.parent_frame, self.nav_frame, self.algo_selection_dropdown, self.log_queue)
             self.sami_ap.grid(row=1, column=0, sticky="nsew", pady=(5,0), padx=(0,0),)
+            self.rowconfigure(1,weight=10)
 
 
 if __name__ == "__main__":
