@@ -30,6 +30,8 @@ class NormalizationStep(ctk.CTkFrame):
             master,
         )
         self.log_queue = log_queue
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.right_frame = None
@@ -774,14 +776,15 @@ class NormalizationStep(ctk.CTkFrame):
         for widget in self.norm_plot.winfo_children():
             widget.destroy()
 
-        self.norm_plot_frame = ctk.CTkScrollableFrame(self.norm_plot,height =600,width =400)
+        self.norm_plot_frame = ctk.CTkScrollableFrame(self.norm_plot, height = 900)
         self.norm_plot_frame.columnconfigure(0,weight=1)
         self.norm_plot_frame.rowconfigure(0,weight=1)
         self.norm_plot_frame.grid(row=0,column=0,sticky="nsew")
         # data_fig = self.generate_boxplot(matrix)
         # normalised_data_fig = self.generate_boxplot(norm_matrix)
 
-        combined_fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+
+        combined_fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, int(matrix.shape[0] / 2)))
 
         # Generate plots directly on the axes
         _ = self.generate_boxplot_directly(matrix, ax1, "Original Data")
