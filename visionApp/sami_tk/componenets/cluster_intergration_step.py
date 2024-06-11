@@ -195,7 +195,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
 
         self.region1, self.modality1, self.res1 = self.splitname(self.region1_selection.get())
         self.region2, self.modality2, self.res2 = self.splitname(self.region2_selection.get())
-        self.clusterInt_specific_working_folder = os.path.join(*[self.working_folder, f"{self.region1}-{self.modality1}-{self.res1}__{self.region2}-{self.modality2}-{self.res2}", '_integrated'])
+        self.clusterInt_specific_working_folder = os.path.join(*[self.working_folder, f"{self.region1}-{self.modality1}-{self.res1}__{self.region2}-{self.modality2}-{self.res2}__integrated"])
         if not os.path.exists(self.clusterInt_specific_working_folder):
             os.makedirs(self.clusterInt_specific_working_folder)
 
