@@ -6,29 +6,36 @@ import pandas as pd
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import networkx as nx
-
+import logging
+logger = logging.getLogger(__name__)
 try:
-# PyInstaller creates a temp folder and stores path in _MEIPASS
-    R_HOME = os.path.join(sys._MEIPASS , r'R\R-4.3.3')
-    path = os.path.join(sys._MEIPASS , r'R\R-4.3.3\bin\x64')
+    # PyInstaller creates a temp folder and stores path in _MEIPASS
+    base_path = sys._MEIPASS
+    inno_path = os.path.dirname(base_path)
+    R_HOME = os.path.join(inno_path, r"R-4.3.3")
+    path = os.path.join(inno_path, r"R-4.3.3\bin\x64")
     os.environ["R_HOME"] = R_HOME
     os.environ["PATH"] += path + ";" + os.environ["R_HOME"]
-    R_location = "in_executable"
+    logger.info("running in executable mode")
 except Exception as e:
-    os.environ["R_HOME"] = r"C:\Program Files\R\R-4.3.3" 
-    os.environ["PATH"] += r"C:\Program Files\R\R-4.3.3\bin\x64" + ";" + os.environ["R_HOME"] 
-    R_location = "in_local"
+    os.environ["R_HOME"] = r"C:\Program Files\R\R-4.3.3"
+    os.environ["PATH"] += (
+        r"C:\Program Files\R\R-4.3.3\bin\x64" + ";" + os.environ["R_HOME"]
+    )
+    logger.info("running in dev mode")
     # print(e)
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
-import logging
-logger = logging.getLogger(__name__)
+from log_listener import worker_configurer
+
+# logger.setLevel(logging.INFO)
 from .utils import resource_path
 
 class Pathway:
-    def __init__(self,region,modality, pathways_folder, makers_folder=None):
+    def __init__(self,region,modality, pathways_folder, makers_folder=None, log_queue=None):
         
+        self.log_queue = log_queue
         self.pathways_folder = pathways_folder
         self.markers_folder = makers_folder
         if not os.path.exists(pathways_folder):
@@ -41,25 +48,40 @@ class Pathway:
         else:
             self.modality = 'lipidomics'
 
-    @staticmethod
-    def wrtite_text(text):
-        with open('pathway_log.txt','a') as f:
-            f.write(text)
-            f.write('\n')
-
        
     def findpathway(self):
-        r_source = ro.r['source']
-        self.wrtite_text("current working directory: {}".format(os.getcwd()))
-        self.wrtite_text("Rlocation: {}".format(R_location))
 
+        worker_configurer(self.log_queue)
+
+        logger.info("Pathway enrichment core started")
+        try:
+            base_path = sys._MEIPASS
+            libraries_path = os.path.dirname(base_path)
+            libraries_path = os.path.join(libraries_path, r"R-4.3.3/win-library/4.3")
+            libraries_path = str(libraries_path).replace("\\", "/")
+            logger.info("running in executable mode")
+            logger.info(f"libraries path: {libraries_path}")
+        except:
+            libraries_path = "C:/Program Files/R/R-4.3.3/win-library/4.3"
+            logger.info("running in dev mode")
+            logger.info(f"libraries path: {libraries_path}")
+
+        
+        ro.r(f'custom_lib_path <- "{libraries_path}"')
+        ro.r(f'Sys.setenv(R_LIBS_USER = custom_lib_path)')
+        ro.r('.libPaths(c(custom_lib_path, .libPaths()))')
+
+        r_source = ro.r['source']
+        logger.info("current working directory: {}".format(os.getcwd()))
+        # logger.info("Rlocation: {}".format(R_location))
+        logger.info("Pathway enrichment started")
         try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
             base_path = os.path.join(sys._MEIPASS , 'config')
         except Exception:
             base_path = os.path.join(*[os.getcwd(), 'visionApp', 'SAMI'])
 
-        self.wrtite_text("base path of R file: {}".format(base_path))
+        logger.info("base path of R file: {}".format(base_path))
 
         r_file =  os.path.join(base_path, 'MetabAnalystR.R')
         r_source(r_file) 
@@ -87,17 +109,21 @@ class Pathway:
         except Exception as e:
             lib_folder = os.path.join(*[os.getcwd(), 'visionApp', 'lib'])
         finally:
-            print(lib_folder)
+            logger.info(f"lib folder: {lib_folder}")
 
         try:
             if self.modality=='metabolomics_glycomics':
                 PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[1],merge=logical_arg[1],
                                 results_folder=self.pathways_folder , lib_folder = lib_folder)
+                logger.info("Pathway enrichment metabolomics_glycomics")
             else:
                 PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[0],merge=logical_arg[1], 
                                 results_folder=self.pathways_folder, lib_folder = lib_folder)
+                logger.info("Pathway enrichment lipidomics")
         except Exception as e:
-            self.wrtite_text(f'Error in pathway enrichment: {e}')
+            logger.info(f'Error in pathway enrichment: {e}')
+
+        logger.info("Pathway enrichment core completed")
         
     def anndict(self):
         anndict = {}

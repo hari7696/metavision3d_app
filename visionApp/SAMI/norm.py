@@ -63,8 +63,8 @@ def SpecNorm(x,norm_vec=None):
 def GroupMedianPQN(x):
 
     grouped_medians_list = []
-    for group in unique_groups:
-        group_indices = np.where(np.array(group_labels) == group)[0]
+    for group in unique_groups: # type: ignore
+        group_indices = np.where(np.array(group_labels) == group)[0] # type: ignore
 
         group_data = x[group_indices]
 
@@ -82,11 +82,11 @@ def GroupMedianPQN(x):
 
     factor_dict = {}
     for i, row in enumerate(factor):
-        factor_dict[unique_groups[i]] = row
+        factor_dict[unique_groups[i]] = row # type: ignore
 
     out = x.copy().astype(float)
-    for group in unique_groups:
-        group_indices = np.where(np.array(group_labels) == group)[0]
+    for group in unique_groups: # type: ignore
+        group_indices = np.where(np.array(group_labels) == group)[0] # type: ignore
         out[group_indices] = x[group_indices]*factor_dict[group]
 
     return out
@@ -129,6 +129,7 @@ def MeanCenter(x):
 def Normalization(df, first_compound_idx, rowNorm=None, transNorm=None, scaleNorm=None, ref_sample_idx=None, ref_compound=None, norm_vec=None, group_column=None, c=1, log_base=2):
     #first_compound_idx = df.columns.get_loc(first_compound)
     df = df[df.iloc[:,first_compound_idx:].sum(axis=1)!=0].reset_index(drop=True)
+    # print("###########",df.columns)
     data = df.iloc[:,first_compound_idx:].values.astype(float)
     
     ### sampel-wise normalization
@@ -232,7 +233,7 @@ def Normalization(df, first_compound_idx, rowNorm=None, transNorm=None, scaleNor
         print("Autoscaling.")
     
     elif scaleNorm == 'ParetoNorm':
-        data = ParetoNorm(data)
+        data = ParetoNorm(data) # type: ignore
         print("Pareto Scaling.")
     
     elif scaleNorm == 'RangeNorm':
@@ -246,7 +247,8 @@ def Normalization(df, first_compound_idx, rowNorm=None, transNorm=None, scaleNor
     new_df = df.copy()
     
     if rowNorm == 'CompNorm' and ref_compound is not None:
-        new_df = new_df.drop(columns = ref_compound)
+        if ref_compound in new_df.columns:
+            new_df = new_df.drop(columns = ref_compound)
         
     new_df.iloc[:,first_compound_idx:] = data
     
@@ -263,9 +265,19 @@ def create_norm_dataset(data_path,pattern):
             df_norm.to_csv(os.path.join(data_path,f"{name}{ext}"),index=False)
             print(f'{name}{ext} is created.')
 
-def create_norm_dataset_gui(df, working_dir, key, rowNorm, transNorm):
+def create_norm_dataset_gui(df, working_dir, key, rowNorm, transNorm, first_compound, ref_compound = None):
 
-    df_norm = Normalization(df, first_compound_idx=3, rowNorm='SumNorm', transNorm='LogTrans2', c=1, log_base=2)
+    first_compound_idx = df.columns.get_loc(first_compound)
+    # print("################", first_compound_idx)
+    try:
+        # handling the 0s in the peak columns
+        if rowNorm == 'CompNorm':
+            df = df[df[ref_compound] != 0].reset_index(drop=True)
+
+        df_norm = Normalization(df, first_compound_idx= first_compound_idx, rowNorm=rowNorm, transNorm=transNorm, c=1, log_base=2, ref_compound = ref_compound)
+    except Exception as e:
+        logger.error(f"Error in Normalization: {e}")
+        print(e)
     name = key + "_norm" + ".pq"
     df_norm.to_parquet(os.path.join(*[working_dir,'normalised_data', name]), index = False)
     logger.info(f'{name} is created.')

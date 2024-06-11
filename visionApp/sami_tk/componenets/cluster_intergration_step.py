@@ -15,10 +15,11 @@ logger = logging.getLogger(__name__)
 
 class ClusterIntergrationStep(ctk.CTkFrame):
 
-    def __init__(self, master, file_handler):
+    def __init__(self, master, file_handler, log_queue):
         super().__init__(
             master,
         )
+        self.log_queue = log_queue
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.isrendering = False
@@ -162,7 +163,9 @@ class ClusterIntergrationStep(ctk.CTkFrame):
             child.destroy()
         self.specific_cluster = ClusterIntSelectiveClusters(self.specific_cluster_tab, 
                                                             self.cluster_int, self.n_clusters,
-                                                              self.region1, self.region2)
+                                                              (self.region1, self.modality1, self.res1),
+                                                              (self.region2, self.modality2, self.res2),
+                                                              self.log_queue)
         
         self.specific_cluster.grid(row=0, column=0, sticky="nsew", padx=(3,3), pady=(3,3))
 
@@ -181,7 +184,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         #region, modality, resolution = name.split('_')
         resolution = name.split('_')[-1]
         modality = name.split('_')[-2]
-        region = '_'.join(name.split('_')[:-1])
+        region = '_'.join(name.split('_')[:-2])
         logger.info(f"region : {region}, modality : {modality}, resolution : {resolution}")
 
         return region, modality, resolution
@@ -190,16 +193,21 @@ class ClusterIntergrationStep(ctk.CTkFrame):
 
         """This function prepares the cluster integration module"""
 
-        region1, modality1, res1 = self.splitname(self.region1_selection.get())
-        region2, modality2, res2 = self.splitname(self.region2_selection.get())
+        self.region1, self.modality1, self.res1 = self.splitname(self.region1_selection.get())
+        self.region2, self.modality2, self.res2 = self.splitname(self.region2_selection.get())
+        self.clusterInt_specific_working_folder = os.path.join(*[self.working_folder, f"{self.region1}-{self.modality1}-{self.res1}__{self.region2}-{self.modality2}-{self.res2}__integrated"])
+        if not os.path.exists(self.clusterInt_specific_working_folder):
+            os.makedirs(self.clusterInt_specific_working_folder)
 
-        self.integrated_file1 = os.path.join(self.working_folder, f"{region1}_integrated.h5ad")
-        self.integrated_file2 = os.path.join(self.working_folder, f"{region2}_integrated.h5ad")
+        self.integrated_file1 = os.path.join(self.clusterInt_specific_working_folder, f"{self.region1}-{self.modality1}-{self.res1}_integrated.h5ad")
+        self.integrated_file2 = os.path.join(self.clusterInt_specific_working_folder, f"{self.region2}-{self.modality2}-{self.res2}_integrated.h5ad")
 
         logger.info(f"path Integrated file 1 : {self.integrated_file1}")
         logger.info(f"path Integrated file 2 : {self.integrated_file2}")
+
         
-        cluster_int = Cluster_Integration(self.region1_selection.get(), self.region2_selection.get(), self.working_folder)
+        cluster_int = Cluster_Integration(self.region1_selection.get(), self.region2_selection.get(), self.working_folder, 
+                                          self.clusterInt_specific_working_folder, self.log_queue)
 
         # try:    
         #     adata1 = sc.read(r"C:\Users\ghari\Documents\OPS\Test_folders\original_data_test\AD_WT\results\clustering\brain1wt_pool_1.0.h5ad")
@@ -222,7 +230,7 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         return cluster_int
     
     @staticmethod
-    def clusterintegration(queue, cluster_int, integrated_file1, integrated_file2, region1, region2):
+    def clusterintegration(queue, cluster_int, integrated_file1, integrated_file2, region1, modality1, res1, region2, modality2, res2):
         
         response_dict = {}
         # checking whether the clustering is already performed or not
@@ -232,8 +240,8 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         else:
             logger.info("Clustering already done")
 
-        image_location1, n_clusters = cluster_int.plot_umap_cluster(region1 ,size=50,show=False)
-        image_location2, n_clusters = cluster_int.plot_umap_cluster(region2 ,size=50,show=False)
+        image_location1, n_clusters = cluster_int.plot_umap_cluster(region1, modality1, res1 ,size=50,show=False)
+        image_location2, n_clusters = cluster_int.plot_umap_cluster(region2 ,modality2, res2 , size=50,show=False)
 
         response_dict['image_location1'] = image_location1
         response_dict['image_location2'] = image_location2
@@ -250,14 +258,13 @@ class ClusterIntergrationStep(ctk.CTkFrame):
         self.cluster_int = self.prepare_cluster_module()
         self.time_constraint_label.configure(text="Note : cluster Integration usally takes roughly 10 minutes")
 
-        self.region1, _, _ = self.splitname(self.region1_selection.get())
-        self.region2, _, _ = self.splitname(self.region2_selection.get())
-
         # image_location1, self.n_clusters = self.cluster_int.plot_umap_cluster(region ,size=50,show=False)
         # image_location2, self.n_clusters = self.cluster_int.plot_umap_cluster(region ,size=50,show=False)
         logger.info("started the clustering process")
         self.clustering_process = Process(target=self.clusterintegration, args=(self.queue, self.cluster_int, 
-                                                                   self.integrated_file1, self.integrated_file2,self.region1, self.region2))
+                                                                   self.integrated_file1, self.integrated_file2,
+                                                                   self.region1,self.modality1,self.res1,
+                                                                    self.region2, self.modality2, self.res2), name = "SAMI:cluster_integration")
         self.clustering_process.start()
         self.trigger_visz_functions_on_thread_run()
 

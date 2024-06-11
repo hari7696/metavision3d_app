@@ -6,15 +6,17 @@ import anndata as ad
 from .utils import *
 import re
 import logging
+from log_listener import worker_configurer
 logger = logging.getLogger(__name__)
 
 #load .csv data and return .h5ad files
-def csv2h5ad(data_path,pattern,data_saving_path, split=False):
+def csv2h5ad(data_path,pattern,data_saving_path, split=False, log_queue=None):
+    worker_configurer(log_queue)
     for file in os.listdir(data_path):
         name, ext = os.path.splitext(file)
-        
+        logger.info(f'csv2h5ad processing {file}')
         if '_norm.pq' in file:
-            logger.info(f'csv2h5ad processing {file}')
+            logger.info(f"csv2h5ad processing after '_norm.pq' filter {file}")
             split_file = name.split('_')
             data_temp = pd.read_parquet(os.path.join(data_path, file))
             data_temp =data_temp.rename(columns={'tissue_id':'region'})
@@ -43,17 +45,20 @@ def csv2h5ad(data_path,pattern,data_saving_path, split=False):
                 for i in range(len(unique_id)):
                     adata_sub=adata[adata.obs['region']==unique_id[i]].copy()
                     adata_sub.write(os.path.join(data_saving_path,f'{unique_id[i]}_{split_file[1]}.h5ad'))
+    logger.info(f'csv2h5ad completed')
 
                     
 #merge omics data by coordinates and return .h5ad file
-def pooldata(data_path,pattern, data_saving_path, split=False):
+def pooldata(data_path,pattern, data_saving_path, split=False, log_queue=None):
+    # worker_configurer(log_queue)
     adata_dict={}
     for file in os.listdir(data_path):
         name, ext = os.path.splitext(file)
-        logger.info(f'pooling file before if {file}')             
+        logger.info(f'pooldata processing {file}')          
         if '_norm.pq' in file:
+            logger.info(f"pooldata processing after '_norm.pq' filter {file}")
             split_file = name.split('_')
-            print("converting", os.path.join(data_path, file))
+            # print("converting", os.path.join(data_path, file))
             data_temp = pd.read_parquet(os.path.join(data_path, file))
             data_temp =data_temp.rename(columns={'tissue_id':'region'})
             feat_cols = data_temp.columns[3:]
@@ -92,6 +97,7 @@ def pooldata(data_path,pattern, data_saving_path, split=False):
             adata_sub.write(os.path.join(data_saving_path,f'{unique_id[i]}_pool.h5ad'))
         
     adata.write(os.path.join(data_saving_path,f'{split_file[0]}_pool.h5ad'))
+    logger.info(f'pooling completed')
 
 # def handle_naming(id):
 

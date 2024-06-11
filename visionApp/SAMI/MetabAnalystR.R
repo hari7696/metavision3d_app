@@ -494,6 +494,8 @@ fast.write.csv <- function(dat, file, row.names=TRUE){
 
 PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folder, lib_folder){
   sink(file =  paste(results_folder, 'R_output.txt', sep = '/'), append = FALSE)
+
+  cat(Sys.getenv("R_LIBS_USER"),'\n')
   ora <- NULL
   nonmatch_list <- NULL
 
