@@ -63,8 +63,8 @@ def SpecNorm(x,norm_vec=None):
 def GroupMedianPQN(x):
 
     grouped_medians_list = []
-    for group in unique_groups:
-        group_indices = np.where(np.array(group_labels) == group)[0]
+    for group in unique_groups: # type: ignore
+        group_indices = np.where(np.array(group_labels) == group)[0] # type: ignore
 
         group_data = x[group_indices]
 
@@ -82,11 +82,11 @@ def GroupMedianPQN(x):
 
     factor_dict = {}
     for i, row in enumerate(factor):
-        factor_dict[unique_groups[i]] = row
+        factor_dict[unique_groups[i]] = row # type: ignore
 
     out = x.copy().astype(float)
-    for group in unique_groups:
-        group_indices = np.where(np.array(group_labels) == group)[0]
+    for group in unique_groups: # type: ignore
+        group_indices = np.where(np.array(group_labels) == group)[0] # type: ignore
         out[group_indices] = x[group_indices]*factor_dict[group]
 
     return out
@@ -233,7 +233,7 @@ def Normalization(df, first_compound_idx, rowNorm=None, transNorm=None, scaleNor
         print("Autoscaling.")
     
     elif scaleNorm == 'ParetoNorm':
-        data = ParetoNorm(data)
+        data = ParetoNorm(data) # type: ignore
         print("Pareto Scaling.")
     
     elif scaleNorm == 'RangeNorm':

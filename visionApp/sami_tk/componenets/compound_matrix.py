@@ -130,9 +130,10 @@ def create_slice_sami(df_all, slice, col="result", roi=False, reverse=False):
     x_indices = np.searchsorted(unique_x, x_values)
     y_indices = np.searchsorted(unique_y, y_values)
 
-    for value, x_ind, y_ind in zip(df_temp[col], x_indices, y_indices):
+    for value, x_ind, y_ind in zip(df_temp[col],  y_indices, x_indices):
+        #print(x_ind, y_ind, value)
         if not np.isnan(value):
-            reshaped_matrix[x_ind, y_ind] = value
+            reshaped_matrix[ y_ind, x_ind] = value
 
     return reshaped_matrix
 
