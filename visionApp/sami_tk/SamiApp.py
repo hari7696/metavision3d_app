@@ -13,16 +13,18 @@ import sys
 import queue
 sys.path.append('../SAMI')
 logger = logging.getLogger(__name__)
-
-
+# logger.setLevel(logging.INFO)
 class SAMIApp(ctk.CTkFrame):
-    def __init__(self, master, nav_frame, algo_drop_down):
+    def __init__(self, master, nav_frame, algo_drop_down, log_queue):
         super().__init__(
             master,
         )
+        self.log_queue = log_queue
         self.columnconfigure(0, weight=1)
         self.nav_frame = nav_frame
         self.process_step = None
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.queue = queue.Queue()
@@ -148,13 +150,13 @@ class SAMIApp(ctk.CTkFrame):
         """
 
         self.steps = {
-            "Visualization": (VisualizationStep, self.file_handler),
-            "Normalization": (NormalizationStep, self.file_handler),
-            "Pooling": (PoolingStep, self.file_handler),
-            "Clustering": (ClusteringStep, self.file_handler),
-            "Clusters Integration": (ClusterIntergrationStep, self.file_handler),
-            "Markers": (MarkerStep, self.file_handler),
-            "Pathways": (PathwaysStep, self.file_handler)
+            "Visualization": (VisualizationStep, self.file_handler, self.log_queue),
+            "Normalization": (NormalizationStep, self.file_handler,  self.log_queue),
+            "Pooling": (PoolingStep, self.file_handler, self.log_queue),
+            "Clustering": (ClusteringStep, self.file_handler, self.log_queue),
+            "Clusters Integration": (ClusterIntergrationStep, self.file_handler, self.log_queue),
+            "Markers": (MarkerStep, self.file_handler, self.log_queue),
+            "Pathways": (PathwaysStep, self.file_handler, self.log_queue)
         }
 
     def initialize_step(self, step_name):
@@ -166,6 +168,8 @@ class SAMIApp(ctk.CTkFrame):
             step.columnconfigure(0, weight=1)
             step.rowconfigure(0, weight=1)
             step.grid(row=0, column=0, sticky="nsew")
+            step.columnconfigure(0, weight=1)
+            step.rowconfigure(0, weight=1)
             self.loaded_steps[step_name] = step
         return self.loaded_steps[step_name]
 
@@ -217,6 +221,8 @@ class SAMIApp(ctk.CTkFrame):
         # Show the selected step
         step.refresh()
         step.grid(row=0, column=0, sticky="nsew")
+        step.columnconfigure(0, weight=1)
+        step.rowconfigure(0, weight=1)
 
 
     # def execute_selected_step(self, choice):

@@ -10,7 +10,9 @@ import logging
 from .timer import TimerApp
 from SAMI.clustering import Clusters
 from .display_image import ImageDisaplay
+from log_listener import worker_configurer
 logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 class ClusteringStep(ctk.CTkFrame):
 
@@ -18,10 +20,11 @@ class ClusteringStep(ctk.CTkFrame):
     This class is used to perform the clustering on the pooled data
     """
 
-    def __init__(self, master, file_handler):
+    def __init__(self, master, file_handler, log_queue):
         super().__init__(
             master,
         )
+        self.log_queue = log_queue
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.isrendering = False
@@ -165,14 +168,14 @@ class ClusteringStep(ctk.CTkFrame):
                                modality,
                                res,
                                os.path.join(self.file_handler.working_folder, 'pooled_data'),
-                               os.path.join(self.file_handler.working_folder))
+                               os.path.join(self.file_handler.working_folder), self.log_queue)
         
         return cluster, clustered_file
     
     @staticmethod
-    def clustering(queue, cluster, clustered_file):
+    def clustering(queue, cluster, clustered_file, log_queue):
         "This function is used to perform the clustering"
-
+        # worker_configurer(log_queue)
         response_dict = {}
         # checking whether the clustering is already performed or not
         if not os.path.exists(clustered_file):
@@ -197,7 +200,7 @@ class ClusteringStep(ctk.CTkFrame):
         self.timer.start_timer()
         cluster, clustered_file = self.prepare_cluster_module()
         self.time_constraint_label.configure(text="Note : clustering usally takes roughly 10 minutes", text_color="yellow")
-        self.clustering_process = Process(target=self.clustering, args=(self.queue, cluster,clustered_file ))
+        self.clustering_process = Process(target=self.clustering, args=(self.queue, cluster,clustered_file, self.log_queue), name= "SAMI:Clustering")
         self.clustering_process.start()
         self.trigger_visz_functions_on_thread_run()
 

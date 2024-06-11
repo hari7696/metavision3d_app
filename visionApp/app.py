@@ -1,36 +1,28 @@
-
-import tkinter as tk
 import customtkinter as ctk
-import pandas as pd
 import os
 # from meta_vision_tk.Metavision_tk import MetaVision3DApp
 from sami_tk.SamiApp import SAMIApp
 import logging
+from logging import handlers
 import sys
 import logging
-import re
 import multiprocessing
+from log_listener import listener_process
 sys.path.append('SAMI')
-
-# Set up logging configuration
-# from multiprocessing_logging import install_mp_handler
-
-# class FilteredLogs(logging.Filter):
-#     def filter(self, record):
-#         if re.search(r'Embedded R', record.getMessage()):
-#             return False
-#         return True
-
-# logging.basicConfig(filename='file.log', 
-#                     level=logging.INFO, format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', filemode='w')
-# logging.getLogger().addFilter(FilteredLogs())
-# install_mp_handler()
+logger = logging.getLogger(__name__) 
+def root_configurer(queue):
+    h = handlers.QueueHandler(queue)
+    root = logging.getLogger()
+    root.addHandler(h)
+    root.setLevel(logging.INFO)
+    
 class VisionApp(ctk.CTk):
 
     """DO NOT CHNAGE THIS TEMPLATE, you may update change_to_algo_ui() if new algorithm is added"""
 
-    def __init__(self):
+    def __init__(self, log_queue):
         super().__init__()
+        self.log_queue = log_queue
         self.title("Vision")
         self.geometry("1350x710")
         self.grid_columnconfigure(0, weight=1)
@@ -58,7 +50,7 @@ class VisionApp(ctk.CTk):
         # self.nav_frame.columnconfigure(5,weight=1)
         
         # self.nav_frame.rowconfigure(0,weight=1)
-        logging.info("application started")
+        logger.info("application started")
         algo_default_value = ctk.StringVar(value="Select the ALgorithm")
         self.algo_selection_dropdown = ctk.CTkOptionMenu(master= self.nav_frame,
                                             values=["3D file","SAMI"],
@@ -83,7 +75,7 @@ class VisionApp(ctk.CTk):
         # Assuming self.parent_frame is your root widget from which you want to start counting
         total_children = count_all_children(self.parent_frame)
 
-        logging.info("Frequent_checker :: Total children {}".format(str(total_children)))
+        logger.info("Frequent_checker :: Total children {}".format(str(total_children)))
         self.after(10000, self.write_num_children_to_logs)
         
 
@@ -116,31 +108,46 @@ class VisionApp(ctk.CTk):
         elif choice == "SAMI":
             # Destroy all widgets in the parent frame except nav_frame and dropdown bar in it
             self.destroy_children()
-            logging.info("num children in parent_frame {}".format(str(len(self.parent_frame.winfo_children()))))
-            self.sami_ap = SAMIApp(self.parent_frame, self.nav_frame, self.algo_selection_dropdown)
+            logger.info("num children in parent_frame {}".format(str(len(self.parent_frame.winfo_children()))))
+            self.sami_ap = SAMIApp(self.parent_frame, self.nav_frame, self.algo_selection_dropdown, self.log_queue)
             self.sami_ap.grid(row=1, column=0, sticky="nsew", pady=(5,0), padx=(0,0),)
+            self.rowconfigure(1,weight=10)
 
 
 if __name__ == "__main__":
-    import multiprocessing
+
+    ENVIRONMENT = "NONE"
+    try :
+        base_path = sys._MEIPASS
+        log_directory= os.path.join(base_path, "logs")
+        ENVIRONMENT = "EXE"
+    except Exception as e:
+        log_directory = os.path.abspath(r"C:\Users\ghari\Documents\OPS\UI\metavision3d_app\logs")
+        ENVIRONMENT = "DEV"
+
+    if not os.path.exists(log_directory):
+        os.makedirs(log_directory)
+        
+
     multiprocessing.set_start_method('spawn')
     multiprocessing.freeze_support()
-    from logger_tt import setup_logging   
-    try:
-    # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = os.path.join(sys._MEIPASS , 'config')
-    except Exception:
-        base_path = r'C:\Users\ghari\Documents\OPS\UI\metavision3d_app\visionApp\config'
+    log_queue = multiprocessing.Queue(-1)
+    listener = multiprocessing.Process(target=listener_process, args=(log_queue, log_directory))
+    listener.start()
+    root_configurer(log_queue)
 
-    setup_logging(full_context=1, log_path = 'file.log' , 
-                config_path =  os.path.join(base_path,'log_config.yaml'), use_multiprocessing = True)
+    logger.info("Starting the application")
     try:
         import pyi_splash # type: ignore
         pyi_splash.close()
     except Exception as e:
-        logging.error("error in closing splash screen {}".format(str(e)))
-    app = VisionApp()
+        logger.error("error in closing splash screen {}".format(str(e)))
+    app = VisionApp(log_queue)
     app.mainloop()
+    logger.info("teminating log listener process")
+    listener.terminate()
+    
+
 
     # (r'c:\Users\ghari\Pictures\R', 'R')
 

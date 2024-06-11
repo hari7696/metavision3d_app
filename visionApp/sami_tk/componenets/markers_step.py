@@ -10,14 +10,18 @@ from SAMI.markers import Markers
 import scanpy as sc
 from PIL import Image
 from ..utils import adata_filter
+from .display_image import ImageDisaplay
+from log_listener import worker_configurer
 logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 class MarkerStep(ctk.CTkFrame):
 
-    def __init__(self, master, file_handler):
+    def __init__(self, master, file_handler, queue):
         super().__init__(
             master,
         )
+        self.log_queue = queue
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.isrendering = False
@@ -83,16 +87,27 @@ class MarkerStep(ctk.CTkFrame):
         logger.info("Markers tab prepared") 
 
         self.prepare_options_panel()
+
+    def get_files(self): 
+        self.files_to_path_dict = {}
+        self.files = []
+        for dirpath, dirs, lst_files in os.walk(self.working_folder):
+            for file in lst_files:
+                if file.endswith(".h5ad"):
+                    # print(file, dirpath)
+                    # if os.path.dirname(dirpath) != "clustering":
+                    new_dir_ref = os.path.basename(dirpath)
+                    file_ = new_dir_ref + "||" + file
+                    self.files_to_path_dict[file_] = os.path.join(dirpath, file)
+                    self.files.append(file_)
     
     def refresh(self):
         "whenever the tab swtich happens this function updates the files available in dropdowns"
-        files = os.listdir(self.working_folder)
-        files = [file for file in files if ('.h5ad') in file]
-
-        self.region1_selection.configure(values=files)
+        self.get_files()
+        self.region1_selection.configure(values=self.files)
 
         if self.sami_type == "multi":
-            self.region2_selection.configure(values=files)
+            self.region2_selection.configure(values=self.files)
 
         logger.info("Refreshing markers tab")
 
@@ -102,15 +117,14 @@ class MarkerStep(ctk.CTkFrame):
         for i in range(0,15):
             self.options_panel.columnconfigure(i, weight=1)
 
+        self.get_files()
 
-        files = os.listdir(self.working_folder)
-        files = [file for file in files if ('.h5ad') in file]
         # region selection 1
         region1_label = ctk.CTkLabel(self.options_panel, text="Select Region 1 :" )
         region1_label.grid(row=0,column=0,padx=(2,0),pady=2,sticky="ew")    
         _ = tk.StringVar(value='choose file')
         self.region1_selection = ctk.CTkComboBox(master= self.options_panel,
-                                            values=files,
+                                            values=self.files,
                                             variable=_,
                                             button_color="#b5b8b0",
                                             width = 150
@@ -123,7 +137,7 @@ class MarkerStep(ctk.CTkFrame):
             region2_label.grid(row=0,column=2,padx=(2,0),pady=2,sticky="ew")
             _ = tk.StringVar(value='choose file')
             self.region2_selection = ctk.CTkComboBox(master= self.options_panel,
-                                                values=files,
+                                                values=self.files,
                                                 variable=_,
                                                 button_color="#b5b8b0",
                                                 width = 150
@@ -180,10 +194,12 @@ class MarkerStep(ctk.CTkFrame):
         
         logger.info("Generating markers button hit")
         # this function run the command of generating markers button
-        region1 = self.region1_selection.get()
-
+        region1 = self.region1_selection.get().split("||")[-1]
+        region1_path = self.region1_selection.get()
         if self.sami_type == "multi":
-            region2 = self.region2_selection.get()
+            region2 = self.region2_selection.get().split("||")[-1]
+            region2_path = self.region2_selection.get()
+
         abundance = float(self.abundance_entry.get())
         prevalence = float(self.prevalance_entry.get())
         adj_pval_cutoff = float(self.adj_pval_cutoff_entry.get())
@@ -193,9 +209,9 @@ class MarkerStep(ctk.CTkFrame):
         self.time_constraint_label.configure(text="Note : Markers generation takes roughly 3 minutes", text_color="yellow")
         
 
-        adata1_path = os.path.join(self.working_folder, region1) 
+        adata1_path = os.path.join(self.working_folder, self.files_to_path_dict[region1_path]) 
         if self.sami_type == "multi":
-            adata2_path = os.path.join(self.working_folder, region2)
+            adata2_path = os.path.join(self.working_folder, self.files_to_path_dict[region2_path])
             reference_name = '_'.join(region1.replace('.h5ad' , "").split('_')[:-1]) + '_with_' + '_'.join(region2.replace('.h5ad', "").split('_')[:-1])
         else:
             adata2_path = None
@@ -208,14 +224,14 @@ class MarkerStep(ctk.CTkFrame):
         logger.info("Starting markers process")
         maker_process = Process(target=self.markers_actual_run, args=(adata1_path, adata2_path, abundance,
                                                                        prevalence, adj_pval_cutoff, top_n_molecules, self.queue, reference_name,
-                                                                       self.makers_working_folder))
+                                                                       self.makers_working_folder, self.log_queue),  name = "SAMI:Markers_step")
         maker_process.start()
-        self.markers = Markers(reference_name)
+        self.markers = Markers(reference_name, None)
 
     @staticmethod
-    def markers_actual_run(adata1_path, adata2_path, abundance, prevalence, adj_pval_cutoff, top_n_molecules, queue, reference_name, makers_working_folder):
+    def markers_actual_run(adata1_path, adata2_path, abundance, prevalence, adj_pval_cutoff, top_n_molecules, queue, reference_name, makers_working_folder, log_queue):
 
-           
+        # worker_configurer(log_queue)
         adata1 = sc.read(adata1_path) # case 
         adata_filtered1 = adata_filter(adata1, abundance,prevalence)
         logger.info(f"adata1 shape: {adata_filtered1.shape}")
@@ -226,7 +242,7 @@ class MarkerStep(ctk.CTkFrame):
             adata_filtered2 = None
             logger.info(f"adata2 shape: None")
 
-        markers = Markers(reference_name)  # reference name is the name of the file where it will save with markers
+        markers = Markers(reference_name, log_queue)  # reference name is the name of the file where it will save with markers
         markers.findmarkers(adata_filtered1,adj_pval_cutoff,top_n_molecules, adata_filtered2,makers_working_folder )
 
         queue.put("markers_done")
@@ -298,18 +314,17 @@ class MarkerStep(ctk.CTkFrame):
         self.run_button.grid(row=0, column=2, sticky="w", padx=(20,0), pady=5)
 
         # adding a status label
-        # self.status_label_circular_plot = ctk.CTkLabel(self.circular_options_panel, text="", text_color="yellow", width= 150)
-        # self.status_label_circular_plot.grid(row=0, column=3, sticky="w", padx=(20,0), pady=5)
+        self.status_label_circular_plot = ctk.CTkLabel(self.circular_options_panel, text="", text_color="yellow", width= 150)
+        self.status_label_circular_plot.grid(row=0, column=3, sticky="w", padx=(20,0), pady=5)
 
         
 
     def display_circular_plot(self):
 
         logger.info("Displaying circular plot")
-        # self.status_label_circular_plot.configure(text="Loading...", text_color="yellow")
-        # self.update()
-        if self.circular_image_label is not None:
-            self.circular_image_label.destroy()
+        self.status_label_circular_plot.configure(text="Loading...", text_color="yellow")
+        self.update()
+
 
         logger.info("displaying circular plot")
 
@@ -324,16 +339,23 @@ class MarkerStep(ctk.CTkFrame):
 
 
         # creating a label to display the image
-        self.circular_image_label = ctk.CTkLabel(self.circular_image_frame , text = "", width=800, height=800)
-        self.circular_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)
 
-        ctk_image1 = ctk.CTkImage(light_image=Image.open(image_location),
-                                     dark_image=None, size = (800,800))
-        self.circular_image_label.configure(image=ctk_image1)
-        self.circular_image_label.image = ctk_image1
+        self.circular_image_label = ImageDisaplay(self.circular_image_frame, image_location, 700, 700, 1.0)
+        self.circular_image_label.grid(row=0, column=0, sticky="nsew", padx=(5,0) , pady = (2,2))
+        self.circular_image_label.columnconfigure(0, weight=1)
+        self.circular_image_label.rowconfigure(0, weight=1)
 
-        # self.status_label_circular_plot.configure(text="", text_color="yellow")
-        # self.update()
+
+        # self.circular_image_label = ctk.CTkLabel(self.circular_image_frame , text = "", width=800, height=800)
+        # self.circular_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)
+
+        # ctk_image1 = ctk.CTkImage(light_image=Image.open(image_location),
+        #                              dark_image=None, size = (800,800))
+        # self.circular_image_label.configure(image=ctk_image1)
+        # self.circular_image_label.image = ctk_image1
+
+        self.status_label_circular_plot.configure(text="", text_color="yellow")
+        self.update()
     
     def prepare_volcano_plot(self):
 
@@ -399,11 +421,11 @@ class MarkerStep(ctk.CTkFrame):
 
 
         # creating a label to display the image
-        self.volcano_image_label = ctk.CTkLabel(self.volcano_image_frame , text = "", width=400, height=400)
+        self.volcano_image_label = ctk.CTkLabel(self.volcano_image_frame , text = "", width=600, height=600)
         self.volcano_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)
 
         ctk_image2 = ctk.CTkImage(light_image=Image.open(image_location),
-                                     dark_image=None, size = (400,400))
+                                     dark_image=None, size = (600,600))
         self.volcano_image_label.configure(image=ctk_image2)
         self.volcano_image_label.image = ctk_image2
 

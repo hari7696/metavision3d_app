@@ -10,20 +10,27 @@ from adjustText import adjust_text
 from matplotlib.ticker import MaxNLocator
 import matplotlib.ticker as ticker
 import seaborn as sns
-    
+import logging
+from log_listener import worker_configurer
+logger = logging.getLogger(__name__)
 class Markers:
-    def __init__(self, region):
+    def __init__(self, region, log_queue):
         self.region = region
+        self.log_queue = log_queue
     
     def findmarkers(self,adata,adj_pval_cutoff,top,adata2=None, workdir=None):  
-
+        worker_configurer(self.log_queue)
+        logger.info("Markers core started")
+        logger.info(f'Finding markers for {self.region}')
         cluster_param='leiden'
 
         pvalue_result=pd.DataFrame()
         marker_result=pd.DataFrame()
         cluster_list=adata.obs[cluster_param].cat.categories.tolist()
         cluster_list = sorted([int(s) for s in cluster_list])
+        logger.info("Total clusters: "+str(len(cluster_list)))
         for i in range(len(cluster_list)):
+            logger.info(f'Finding markers for cluster {i}')
             pvalue_temp=pd.DataFrame(columns=['feature','omics','pvalue','avg_log2FC','abs_avg_log2FC','pct1','pct2','adj_pvalue','cluster','rank'])
             for feature in adata.var.index:
                 if adata2 is not None and feature in adata2.var.index:
@@ -71,6 +78,7 @@ class Markers:
         
         pvalue_result.to_csv(os.path.join(workdir,f'{self.region}_pvalue.csv'),index=False)
         marker_result.to_csv(os.path.join(workdir,f'{self.region}_marker.csv'),index=False)
+        logger.info("Markers core finished")
         
     def circular_tree(self,clusters=None,top_n=5, show=True, workdir=None):
         markers = pd.read_csv(os.path.join(workdir,f'{self.region}_marker.csv'))
