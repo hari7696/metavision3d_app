@@ -274,6 +274,7 @@ def create_norm_dataset_gui(df, working_dir, key, rowNorm, transNorm, first_comp
         if rowNorm == 'CompNorm':
             df = df[df[ref_compound] != 0].reset_index(drop=True)
 
+<<<<<<< HEAD
         if rowNorm == "None":
             rowNorm = None
         if transNorm == "None":
@@ -282,6 +283,9 @@ def create_norm_dataset_gui(df, working_dir, key, rowNorm, transNorm, first_comp
         df_norm = Normalization(df, first_compound_idx= first_compound_idx, rowNorm=rowNorm, transNorm=transNorm, c=1, log_base=2, ref_compound = ref_compound)
 
 
+=======
+        df_norm = Normalization(df, first_compound_idx= first_compound_idx, rowNorm=rowNorm, transNorm=transNorm, c=1, log_base=2, ref_compound = ref_compound)
+>>>>>>> a997715271f5c7eb0a77bed014245626e522a419
     except Exception as e:
         logger.error(f"Error in Normalization: {e}")
         print(e)
