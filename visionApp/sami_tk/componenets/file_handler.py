@@ -4,6 +4,7 @@ from tkinter import filedialog
 import threading
 import os
 import pandas as pd
+from CTkMessagebox import CTkMessagebox
 logger = logging.getLogger(__name__)
 
 class FileOpenbutton(ctk.CTkFrame):
@@ -127,23 +128,31 @@ class FileOpenbutton(ctk.CTkFrame):
         The field 'region' is adhoc, need to discuss with the team to get the correct field name
 
         """
-        # writing all columns names to log file
-        logger.info(f"Original columns: {df.columns}")
-        for col in ['Unnamed: 0', 'spotId','raster', 'z', 'Date', ]:
-            if col in df.columns:
-                df = df.drop(col, axis=1)
-        if 'tissue_id' in df.columns:
-            df = df.rename(columns={'tissue_id': 'region'})
-        
-        if 'roi_named' in df.columns:
-            df = df.rename(columns={'roi_named': 'region'})
+
+        try:
+            # writing all columns names to log file
+            logger.info(f"Original columns: {df.columns}")
+            for col in ['Unnamed: 0', 'spotId','raster', 'z', 'Date', ]:
+                if col in df.columns:
+                    df = df.drop(col, axis=1)
+            if 'tissue_id' in df.columns:
+                df = df.rename(columns={'tissue_id': 'region'})
+            
+            if 'roi_named' in df.columns:
+                df = df.rename(columns={'roi_named': 'region'})
 
 
-        df.dropna(subset=['region'], inplace=True)
-        self.tissue_ids[base_filename] = list(df["region"].unique())
-        self.molecule_name[base_filename] = list(df.columns[3:])
-        logger.info(f"Preprocessed columns: {df.columns}")
-        return df
+            df.dropna(subset=['region'], inplace=True)
+            self.tissue_ids[base_filename] = list(df["region"].unique())
+            self.molecule_name[base_filename] = list(df.columns[3:])
+            logger.info(f"Preprocessed columns: {df.columns}")
+            return df
+        except Exception as e:
+            logger.error(f"Error in preprocessing: {e}")
+            CTkMessagebox(
+                title="Error",
+                message=f"Error in preprocessing the file: maybe missing {e}. Please check the log file for more details"
+            )
 
     def display_file_loading(self):
         # Displying the loading label

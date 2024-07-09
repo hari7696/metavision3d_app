@@ -3,7 +3,7 @@ from CTkMessagebox import CTkMessagebox
 import os
 import logging
 from .compound_matrix import create_compound_matrix
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 import math
 from pylab import Figure
 import numpy as np
@@ -227,7 +227,7 @@ class NormalizationStep(ctk.CTkFrame):
 
         norm_default_value = ctk.StringVar(value="SumNorm")
         self.algo_selection_dropdown = ctk.CTkComboBox(master= self.norm_frame,
-                                            values=['SumNorm', 'CompNorm'],
+                                            values=['SumNorm', 'CompNorm', "None"],
                                             variable=norm_default_value,button_color="#b5b8b0",
                                             command= self.update_normalize_with_dropdown
                                             )
@@ -243,7 +243,7 @@ class NormalizationStep(ctk.CTkFrame):
 
         norm_default_value2 = ctk.StringVar(value="LogTrans2")
         self.algo_selection_dropdown2 = ctk.CTkComboBox(master= self.norm_frame,
-                                            values=['LogTrans2'],  
+                                            values=['LogTrans2', "None"],  
                                             variable=norm_default_value2, button_color="#b5b8b0"
                                             )
         self.algo_selection_dropdown2.set("LogTrans2")
@@ -784,7 +784,7 @@ class NormalizationStep(ctk.CTkFrame):
         # normalised_data_fig = self.generate_boxplot(norm_matrix)
 
 
-        combined_fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, int(matrix.shape[0] / 2)))
+        combined_fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, max(int(matrix.shape[0] / 2), 8)))
 
         # Generate plots directly on the axes
         _ = self.generate_boxplot_directly(matrix, ax1, "Original Data")
