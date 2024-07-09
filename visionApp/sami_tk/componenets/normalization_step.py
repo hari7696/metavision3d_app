@@ -227,11 +227,7 @@ class NormalizationStep(ctk.CTkFrame):
 
         norm_default_value = ctk.StringVar(value="SumNorm")
         self.algo_selection_dropdown = ctk.CTkComboBox(master= self.norm_frame,
-<<<<<<< HEAD
                                             values=['SumNorm', 'CompNorm', "None"],
-=======
-                                            values=['SumNorm', 'CompNorm'],
->>>>>>> a997715271f5c7eb0a77bed014245626e522a419
                                             variable=norm_default_value,button_color="#b5b8b0",
                                             command= self.update_normalize_with_dropdown
                                             )
@@ -788,11 +784,7 @@ class NormalizationStep(ctk.CTkFrame):
         # normalised_data_fig = self.generate_boxplot(norm_matrix)
 
 
-<<<<<<< HEAD
         combined_fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, max(int(matrix.shape[0] / 2), 8)))
-=======
-        combined_fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, int(matrix.shape[0] / 2)))
->>>>>>> a997715271f5c7eb0a77bed014245626e522a419
 
         # Generate plots directly on the axes
         _ = self.generate_boxplot_directly(matrix, ax1, "Original Data")
