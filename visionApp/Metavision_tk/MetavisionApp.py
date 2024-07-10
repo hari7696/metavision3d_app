@@ -64,7 +64,15 @@ class MetaVision3DApp(ctk.CTkFrame):
             self.display_file_loading()
             threading.Thread(target=self.load_file, args=(self.filepath,), daemon=True).start()
 
+    # def display_file_loading(self):
+    #     self.loading_label = ctk.CTkLabel(self.nav_frame, text="Loading...")
+    #     self.loading_label.grid(row=0, column=3, padx=(5, 0), pady=(10, 10), sticky="w")
+
     def display_file_loading(self):
+        # Destroy previous loading label if it exists
+        if hasattr(self, 'loading_label') and self.loading_label is not None:
+            self.loading_label.destroy()
+
         self.loading_label = ctk.CTkLabel(self.nav_frame, text="Loading...")
         self.loading_label.grid(row=0, column=3, padx=(5, 0), pady=(10, 10), sticky="w")
 
@@ -77,8 +85,30 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.is_roi=False
         remove_values = ["spotId", "raster", "x", "y", "z", "Date", "Class", "tissue_id","roi"]
         self.molecule_names = [option for option in self.molecule_names if option not in remove_values]
+
+        # Ensure previous widgets are destroyed before creating new ones
+        self.destroy_previous_widgets()
+
         self.create_molecule_dropdown()
         self.create_export_tab()
+
+    def destroy_previous_widgets(self):
+        if hasattr(self, 'molecule_dropdown') and self.molecule_dropdown is not None:
+            self.molecule_dropdown.destroy()
+        if hasattr(self, 'process_steps_frame') and self.process_steps_frame is not None:
+            self.process_steps_frame.destroy()
+        if hasattr(self, 'export_moelcule_options_frame') and self.export_moelcule_options_frame is not None:
+            self.export_moelcule_options_frame.destroy()
+        if hasattr(self, 'export_tissue_options_frame') and self.export_tissue_options_frame is not None:
+            self.export_tissue_options_frame.destroy()    
+        if hasattr(self, 'export_norm_options_frame') and self.export_norm_options_frame is not None:
+            self.export_norm_options_frame.destroy()             
+        if hasattr(self, 'export_output_options_frame') and self.export_output_options_frame is not None:
+            self.export_output_options_frame.destroy()                              
+        if hasattr(self, 'molecules_cbox_frame') and self.molecules_cbox_frame is not None:
+            self.molecules_cbox_frame.destroy()
+        if hasattr(self, 'tissue_cbox_frame') and self.tissue_cbox_frame is not None:
+            self.tissue_cbox_frame.destroy()
 
     def create_molecule_dropdown(self):
         if self.molecule_names:
@@ -135,19 +165,6 @@ class MetaVision3DApp(ctk.CTkFrame):
             self.normalize_process_rad.configure(state="disabled")
             self.allign_rad.select()
             self.start_normalization()
-        # elif self.process_step_var.get()==3:
-        #     self.allign_rad.configure(state="disabled")
-        #     self.interp_rad.select()
-        #     self.start_allignment()
-        #     self.process_button.grid_forget()
-        #     self.interp_scale_entry = ctk.CTkEntry(self.process_steps_frame,placeholder_text="Enter extra slices between")
-        #     self.interp_scale_entry.grid(row=0,column=7)
-        #     self.interp_scale_entry.insert(0,"2")
-        #     self.process_button.grid(row=0,column=8)
-        # elif self.process_step_var.get()==4:
-        #     self.interp_rad.configure(state="disabled")
-        #     self.process_button.configure(state="disabled")
-        #     self.start_interp()
         elif self.process_step_var.get() == 3:
             self.allign_rad.configure(state="disabled")
             self.start_allignment()

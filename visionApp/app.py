@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import os
-# from meta_vision_tk.Metavision_tk import MetaVision3DApp
+from Metavision_tk.MetavisionApp import MetaVision3DApp
 from sami_tk.SamiApp import SAMIApp
 import logging
 from logging import handlers
@@ -76,7 +76,7 @@ class VisionApp(ctk.CTk):
         total_children = count_all_children(self.parent_frame)
 
         logger.info("Frequent_checker :: Total children {}".format(str(total_children)))
-        self.after(10000, self.write_num_children_to_logs)
+        self.after(1000, self.write_num_children_to_logs)
         
 
     def destroy_children(self):
@@ -97,13 +97,13 @@ class VisionApp(ctk.CTk):
         Switching to respective UI based on the choice
         """
 
-        if choice == "MetaVision3D":
+        if choice == "3D file":
             # Destroy all widgets in the parent frame except nav_frame
 
             self.destroy_children()
-            # logging.info("num children in parent_frame {}".format(str(len(self.parent_frame.winfo_children()))))
-            # self.meta_app = MetaVision3DApp(self.parent_frame, self.nav_frame, self.algo_selection_dropdown)
-            # self.meta_app.grid(row=1, column=0, sticky="nsew")
+            logging.info("num children {}".format(str(len(self.parent_frame.winfo_children()))))
+            self.meta_frame = MetaVision3DApp(self.parent_frame, self.nav_frame)
+            self.meta_frame.grid(row=1, column=0, sticky="nsew",pady=(5,0), padx=(0,0))
 
         elif choice == "SAMI":
             # Destroy all widgets in the parent frame except nav_frame and dropdown bar in it
