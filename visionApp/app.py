@@ -53,7 +53,7 @@ class VisionApp(ctk.CTk):
         logger.info("application started")
         algo_default_value = ctk.StringVar(value="Select the ALgorithm")
         self.algo_selection_dropdown = ctk.CTkOptionMenu(master= self.nav_frame,
-                                            values=["3D file","SAMI"],
+                                            values=["MetaVision3D","SAMI"],
                                             command=self.change_to_algo_ui,
                                             variable=algo_default_value,
                                             )
@@ -97,7 +97,7 @@ class VisionApp(ctk.CTk):
         Switching to respective UI based on the choice
         """
 
-        if choice == "3D file":
+        if choice == "MetaVision3D":
             # Destroy all widgets in the parent frame except nav_frame
 
             self.destroy_children()
