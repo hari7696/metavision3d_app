@@ -9,6 +9,7 @@ from .componenets.clustering_step import ClusteringStep
 from .componenets.cluster_intergration_step import ClusterIntergrationStep
 from .componenets.markers_step import MarkerStep
 from .componenets.pathways_step import PathwaysStep
+from .componenets.grouping_step import GroupingStep
 import sys
 import queue
 sys.path.append('../SAMI')
@@ -121,6 +122,7 @@ class SAMIApp(ctk.CTkFrame):
             "Visualization",
             "Normalization",
             "Pooling",
+            "Grouping",
             "Clustering",
             "Clusters Integration",
             "Markers",
@@ -132,6 +134,7 @@ class SAMIApp(ctk.CTkFrame):
             "Visualization",
             "Normalization",
             "Pooling",
+            "Grouping",
             "Clustering",
             "Markers",
             "Pathways",
@@ -153,6 +156,7 @@ class SAMIApp(ctk.CTkFrame):
             "Visualization": (VisualizationStep, self.file_handler, self.log_queue),
             "Normalization": (NormalizationStep, self.file_handler,  self.log_queue),
             "Pooling": (PoolingStep, self.file_handler, self.log_queue),
+            "Grouping": (GroupingStep, self.file_handler, self.log_queue),
             "Clustering": (ClusteringStep, self.file_handler, self.log_queue),
             "Clusters Integration": (ClusterIntergrationStep, self.file_handler, self.log_queue),
             "Markers": (MarkerStep, self.file_handler, self.log_queue),
@@ -211,7 +215,7 @@ class SAMIApp(ctk.CTkFrame):
 
         if self.file_loading_status == False:
             logger.info("Please load the files first")
-            CTkMessagebox(title="Info", message="Wait till the files reading is complete")
+            CTkMessagebox(title="Info", message="Select files and wait till the file loading is complete")
             return
 
         step = self.initialize_step(choice)
