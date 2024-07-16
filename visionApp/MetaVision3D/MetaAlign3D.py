@@ -356,7 +356,7 @@ def get_warp_matrix(ref_matrix):
     for ii in range(matrix_corrected.shape[0] - 1):
         matrix_corrected[ii + 1], warp_matrix_all[ii] = motionCorr_apply_maldi(
             matrix_corrected[ii], ref_matrix[ii + 1])
-    np.save('./warpmatrix/warp_matrix_all', warp_matrix_all)
+    np.save('visionApp/MetaVision3D/warpmatrix/warp_matrix_all', warp_matrix_all)
     return warp_matrix_all
         
 
@@ -372,8 +372,10 @@ class MetaAlign3D:
     def __init__(self,data):
         self.data = data
         self.matrix=None
-        if os.path.exists('./warpmatrix/warp_matrix_all.npy'):
-            self.warp_matrix_all = np.load('./warpmatrix/warp_matrix_all.npy')
+        # current path
+        # print(os.getcwd())
+        if os.path.exists('visionApp/MetaVision3D/warpmatrix/warp_matrix_all.npy'):
+            self.warp_matrix_all = np.load('visionApp/MetaVision3D/warpmatrix/warp_matrix_all.npy')
         # if os.path.exists(r'C:\Users\dprav\OneDrive\Desktop\MetaAPP\MetaVision3D\warpmatrix\warp_matrix_all.npy'):
         #     self.warp_matrix_all = np.load(r'C:\Users\dprav\OneDrive\Desktop\MetaAPP\MetaVision3D\warpmatrix\warp_matrix_all.npy')
         else:
