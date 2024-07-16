@@ -97,7 +97,7 @@ class GroupingStep(ctk.CTkFrame):
         self.files = os.listdir(path)
         # adding a scrollable frame and adding checkboxes in it for selection
 
-        self.file_selection_frame  = ctk.CTkScrollableFrame(self.grouping_frame)
+        self.file_selection_frame  = ctk.CTkScrollableFrame(self.grouping_frame, width= 400)
         self.file_selection_frame.grid(row=2, column=0, padx=(0, 0), pady=(2, 2), sticky="w")
 
         self.lst_file_checkboxes = []
@@ -136,7 +136,7 @@ class GroupingStep(ctk.CTkFrame):
         self.processing_status_label.grid(row=0, column=4, padx=(20, 0), pady=(2, 2), sticky="w")
 
         # Displaying selected files
-        self.selected_files_textbox = ctk.CTkTextbox(self.grouping_frame, font = ("Arial", 15))
+        self.selected_files_textbox = ctk.CTkTextbox(self.grouping_frame, font = ("Arial", 15), width = 400)
         self.selected_files_textbox.grid(row=2, column=1,  padx=(0, 0), pady=(10, 10), sticky="w")
 
 
