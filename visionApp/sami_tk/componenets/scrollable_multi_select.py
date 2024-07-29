@@ -17,7 +17,7 @@ class ScrollableWindowMulitSelect(ctk.CTkFrame):
 
     def create_widgets(self):
 
-        self.file_selection_frame  = ctk.CTkScrollableFrame(self,height=350,width=300)
+        self.file_selection_frame  = ctk.CTkScrollableFrame(self,height=350,width=400)
         self.file_selection_frame.grid(row=0, column=0, padx=(5, 5), pady=(5, 5), sticky="w")
         self.file_selection_frame.columnconfigure(0, weight=1)
         self.file_selection_frame.rowconfigure(0, weight=1)
