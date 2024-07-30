@@ -151,10 +151,14 @@ class ClusterPrismExport(ctk.CTkFrame):
 
                 for table_name, df in temp_dict_df.items():
                     logger.info(f"Preparing the dataframe for {table_name}")
-                    temp_dict_df[table_name] = self.prepare_df_for_columnar_prism(df)
+                    temp_dict_df[table_name], num_clusters = self.prepare_df_for_columnar_prism(df)
                 logger.info("Dataframes are prepared")
                 ct = ColumnTable(temp_dict_df)
-                ct.to_xml(r"C:\Users\ghari\Documents\OPS\UI\prism_export_dry\templates\group5.pzfx", file_path)
+                num_clusters = min(num_clusters, 15)
+                if not file_path.endswith('.pzfx'):
+                    file_path = file_path + '.pzfx'
+                ct.to_xml(r"C:\Users\ghari\Documents\OPS\UI\prism_export_dry\templates\group{}.pzfx".format(str(num_clusters)))
+                CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
                 
             elif format == "Group":
                 for table_name, df in temp_dict_df.items():
@@ -163,11 +167,15 @@ class ClusterPrismExport(ctk.CTkFrame):
                 logger.info("Dataframes are prepared")
                 nt = NestedTable(temp_dict_df)
                 nt.to_xml(r"C:\Users\ghari\Documents\OPS\UI\prism_export_dry\templates\group5.pzfx", file_path)
+                CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
+                C:/Users/ghari/Documents/OPS/UI/prism_export_dry/templates/group3.pzfx"
+                "C:\Users\ghari\Documents\OPS\UI\prism_export_dry\templates\templates\group3.pzfx"
     
     @staticmethod       
     def prepare_df_for_columnar_prism(df):
         
         lst_df = []
+        num_clusters = len(set(df["cluster_id"]))
         for cluster in np.sort(list(set(df["cluster_id"]))):
             # logger.info(df.columns)
             tempdf = df[df['cluster_id'] == cluster].copy(deep=True)
@@ -182,7 +190,7 @@ class ClusterPrismExport(ctk.CTkFrame):
         
         cols_order = list(combined_df.columns)
         cols_order.sort(key = lambda x : x.split('__')[-1])
-        return combined_df[cols_order]
+        return combined_df[cols_order], num_clusters
     
     @staticmethod
     def prepare_df_for_nested_prism(df):
