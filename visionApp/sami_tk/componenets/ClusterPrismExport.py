@@ -168,8 +168,6 @@ class ClusterPrismExport(ctk.CTkFrame):
                 nt = NestedTable(temp_dict_df)
                 nt.to_xml(r"C:\Users\ghari\Documents\OPS\UI\prism_export_dry\templates\group5.pzfx", file_path)
                 CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
-                C:/Users/ghari/Documents/OPS/UI/prism_export_dry/templates/group3.pzfx"
-                "C:\Users\ghari\Documents\OPS\UI\prism_export_dry\templates\templates\group3.pzfx"
     
     @staticmethod       
     def prepare_df_for_columnar_prism(df):
