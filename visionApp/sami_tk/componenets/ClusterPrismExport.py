@@ -66,7 +66,8 @@ class ClusterPrismExport(ctk.CTkFrame):
 
         self.lst_compounds = self.df_clusters.columns[3:]
         # logger.info(f"Compounds are {self.lst_compounds}")
-        self.lst_cluster_ids  = list(np.sort(self.df_clusters['cluster_id'].unique()))
+        self.lst_cluster_ids  = list(np.sort((self.df_clusters['cluster_id'].astype(int).unique())))
+        # logger.info(f"Clusters are {self.lst_cluster_ids}")
         
         
         # scrillable frame for clusters
@@ -157,7 +158,7 @@ class ClusterPrismExport(ctk.CTkFrame):
                 num_clusters = min(num_clusters, 15)
                 if not file_path.endswith('.pzfx'):
                     file_path = file_path + '.pzfx'
-                ct.to_xml(r"C:\Users\ghari\Documents\OPS\UI\prism_export_dry\templates\group{}.pzfx".format(str(num_clusters)))
+                ct.to_xml(r"C:\Users\ghari\Documents\OPS\UI\prism_export_dry\templates\group{}.pzfx".format(str(num_clusters)), file_path)
                 CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
                 
             elif format == "Group":
@@ -166,7 +167,7 @@ class ClusterPrismExport(ctk.CTkFrame):
                     temp_dict_df[table_name] = self.prepare_df_for_nested_prism(df)
                 logger.info("Dataframes are prepared")
                 nt = NestedTable(temp_dict_df)
-                nt.to_xml(r"C:\Users\ghari\Documents\OPS\UI\prism_export_dry\templates\group5.pzfx", file_path)
+                nt.to_xml(r"C:\Users\ghari\Documents\OPS\UI\prism_export_dry\templates\nested_template.pzfx", file_path)
                 CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
     
     @staticmethod       

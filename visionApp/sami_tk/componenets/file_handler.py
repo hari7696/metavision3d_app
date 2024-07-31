@@ -31,8 +31,8 @@ class FileOpenbutton(ctk.CTkFrame):
         """
         Button to open the file dialog to select the file
 
-        if its single file type, It should display open file dialog
-        if its multi file type, It should display open directory dialog
+        if its Single CSV type, It should display open file dialog
+        if its Multiple CSV type, It should display open directory dialog
         """
         logger.debug(f"Choice is {choice}")
         logger.debug(
@@ -41,19 +41,19 @@ class FileOpenbutton(ctk.CTkFrame):
             )
         )
 
-        if choice == "Multi file":
+        if choice == "Multiple CSV":
             self.f_open_btn = ctk.CTkButton(
                 self, text="Open Folder", command=self.open_multiple_files
             )
-            logger.debug("multi file type selected")
+            logger.debug("Multiple CSV type selected")
             self.file_type = "multi"
 
-        elif choice == "Single file":
+        elif choice == "Single CSV":
 
             self.f_open_btn = ctk.CTkButton(
                 self, text="Open File", command=self.open_file
             )
-            logger.debug("Single file type selected")
+            logger.debug("Single CSV type selected")
             self.file_type = "single"
 
         self.f_open_btn.grid(row=0, column=0, padx=(0, 0), pady=(2, 2), sticky="w")

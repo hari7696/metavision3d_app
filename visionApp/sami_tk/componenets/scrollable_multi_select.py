@@ -18,7 +18,7 @@ class ScrollableWindowMulitSelect(ctk.CTkFrame):
     def create_widgets(self):
 
         self.file_selection_frame  = ctk.CTkScrollableFrame(self,height=350,width=400)
-        self.file_selection_frame.grid(row=0, column=0, padx=(5, 5), pady=(5, 5), sticky="w")
+        self.file_selection_frame.grid(row=0, column=0, padx=(5, 5), pady=(5, 1), sticky="w")
         self.file_selection_frame.columnconfigure(0, weight=1)
         self.file_selection_frame.rowconfigure(0, weight=1)
         self.lst_file_checkboxes = []
@@ -35,12 +35,12 @@ class ScrollableWindowMulitSelect(ctk.CTkFrame):
         self.button_frame.grid(row=1, column=0, padx=(0, 0), pady=(2, 2), sticky="w")
             
         # adding a clear selection button
-        self.clear_selection_button = ctk.CTkButton(self.button_frame, text="Clear Selection", command=self.clear_selection, fg_color='transparent', border_width=1,)
-        self.clear_selection_button.grid(row=0, column=1, padx=(10, 0), pady=(2, 2), sticky="w", columnspan=2)
+        self.clear_selection_button = ctk.CTkButton(self.button_frame, text="Clear Selection", command=self.clear_selection, fg_color='transparent', border_width=0.5, width = 100)
+        self.clear_selection_button.grid(row=0, column=1, padx=(10, 0), pady=(1, 5), sticky="w", columnspan=2)
         
         # adding a select all button
-        self.btn_select_all = ctk.CTkButton(self.button_frame, text="Select All", command=self.select_all, fg_color='transparent', border_width=1,)
-        self.btn_select_all.grid(row=0, column=3, padx=(20, 0), pady=(2, 2), sticky="w", columnspan=2)
+        self.btn_select_all = ctk.CTkButton(self.button_frame, text="Select All", command=self.select_all, fg_color='transparent', border_width=0.5, width = 100)
+        self.btn_select_all.grid(row=0, column=3, padx=(20, 0), pady=(1, 5), sticky="w", columnspan=2)
         
 
     def clear_selection(self):
