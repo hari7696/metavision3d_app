@@ -23,6 +23,8 @@ class VisualizationStep(ctk.CTkFrame):
         super().__init__(
             master,
         )
+
+        logger.info("VisualizationStep created")
         self.log_queue = log_queue
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
