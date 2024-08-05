@@ -14,7 +14,7 @@ from SAMI.clustering import Clusters
 from PRISM.ColumnTable import ColumnTable
 from PRISM.NestedTable import NestedTable
 from .display_image import ImageDisaplay
-from .ClusterPrismExport import ClusterPrismExport
+from .ClusterPrismExport2 import ClusterPrismExport
 from log_listener import worker_configurer
 import scanpy as sc
 import pandas as pd 
