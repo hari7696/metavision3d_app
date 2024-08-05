@@ -34,8 +34,10 @@ class ClusterPrismExport(ctk.CTkFrame):
         self.log_queue = log_queue
         self.clustered_file = clustered_file
         self.prism_table_value = []
-        self.prism_table_value.append(["Table Name", "Clusters", "Compounds"])
+        self.prism_table_value.append(["Table Name", "Clusters", "Regions", "Compounds"])
         self.dict_df = {}
+        # metric that keeps track of the maximum number of groups in terms of visualization sake, not literal
+        self.prism_metric = 0
         # self.trigger_visz_functions_on_thread_run()
         logger.info("ClusterPrismExport started")
         self.set_templates_dir()
@@ -81,34 +83,41 @@ class ClusterPrismExport(ctk.CTkFrame):
 
         self.df_clusters = self.hd5adtodf(self.clustered_file)
 
-        self.lst_compounds = self.df_clusters.columns[3:]
-        # logger.info(f"Compounds are {self.lst_compounds}")
+        self.lst_compounds = self.df_clusters.columns[4:]
+        logger.info(f"Compounds are {self.lst_compounds}")
         self.lst_cluster_ids  = list(np.sort((self.df_clusters['cluster_id'].astype(int).unique())))
         # logger.info(f"Clusters are {self.lst_cluster_ids}")
+        # logger.info(f"Regions are {self.lst_regions}")
+        self.lst_regions = list(self.df_clusters['region'].unique())
         
         
         # scrillable frame for clusters
         # a label for the clusters
         
-        
         label = ctk.CTkLabel(self.prism_frame, text="Select Clusters :")
         label.grid(row=1, column=0, padx=(5,0), pady=8, sticky="w")
-
         self.scrollable_frame_clusters = ScrollableWindowMulitSelect(self.prism_frame, self.lst_cluster_ids)
         self.scrollable_frame_clusters.grid(row=2, column=0, sticky="nsew")
+
+        # for regions
+        label = ctk.CTkLabel(self.prism_frame, text="Select Region:")
+        label.grid(row=1, column=1, padx=(5,0), pady=8, sticky="w")
+        self.scrollable_frame_regions = ScrollableWindowMulitSelect(self.prism_frame, self.lst_regions)
+        self.scrollable_frame_regions.grid(row=2, column=1, sticky="nsew")
+        
 
         # scrillable frame for compounds
         # a label for the compounds
         label = ctk.CTkLabel(self.prism_frame, text="Select Compounds :")
-        label.grid(row=1, column=1, padx=(5,0), pady=8, sticky="w")
+        label.grid(row=1, column=2, padx=(5,0), pady=8, sticky="w")
         self.scrollable_frame_compounds = ScrollableWindowMulitSelect(self.prism_frame, self.lst_compounds)
-        self.scrollable_frame_compounds.grid(row=2, column=1, sticky="nsew")
+        self.scrollable_frame_compounds.grid(row=2, column=2, sticky="nsew")
         
         # Adding a third frame to display selected Table names
         label = ctk.CTkLabel(self.prism_frame, text="Select Tables :")
-        label.grid(row=1, column=2, padx=(5,0), pady=8, sticky="w")
+        label.grid(row=1, column=3, padx=(5,0), pady=8, sticky="w")
         self.scrollable_table_frame = ctk.CTkScrollableFrame(self.prism_frame, width= 800)
-        self.scrollable_table_frame.grid(row=2, column=2, sticky="nsew")
+        self.scrollable_table_frame.grid(row=2, column=3, sticky="nsew")
 
         # Add table frame
         self.add_table_frame = ctk.CTkFrame(self.prism_frame)
@@ -174,10 +183,9 @@ class ClusterPrismExport(ctk.CTkFrame):
                         temp_dict_df[table_name], num_clusters = self.prepare_df_for_columnar_prism(df)
                     logger.info("Dataframes are prepared")
                     ct = ColumnTable(temp_dict_df)
-                    num_clusters = min(num_clusters, 15)
                     if not file_path.endswith('.pzfx'):
                         file_path = file_path + '.pzfx'
-                    ct.to_xml( os.path.join(self.templates_dir,  "group{}.pzfx".format(str(num_clusters))), file_path)
+                    ct.to_xml( os.path.join(self.templates_dir,  "group{}.pzfx".format(str(self.prism_metric))), file_path)
                     CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
                     
                 elif format == "Group":
@@ -198,10 +206,22 @@ class ClusterPrismExport(ctk.CTkFrame):
         lst_df = []
         num_clusters = len(set(df["cluster_id"]))
         for cluster in np.sort(list(set(df["cluster_id"]))):
-            # logger.info(df.columns)
+            logger.info(df.columns)
             tempdf = df[df['cluster_id'] == cluster].copy(deep=True)
-            tempdf.drop(columns = ['cluster_id'], inplace = True)
-            new_colums =  {col : f"Cluster_{cluster}__{col}" for col in tempdf.columns}
+
+            # checking the region and creating dataframe for each region
+            lst_df_holder = []
+            for region in tempdf['region'].unique():
+                tempdf_region = tempdf[tempdf['region'] == region].copy(deep=True)
+                tempdf_region.drop(columns = ['region', 'cluster_id'], inplace = True)
+                tempdf_region.reset_index(drop=True, inplace=True)
+                if 'index' in tempdf_region.columns:
+                    tempdf_region.drop(columns = ['index'], inplace = True)
+                tempdf_region.columns = [f"{region}__{col}" for col in tempdf_region.columns]
+                lst_df_holder.append(tempdf_region)
+            
+            tempdf = pd.concat(lst_df_holder, axis = 1)
+            new_colums =  {col : f"C{cluster}_{col}" for col in tempdf.columns}
             tempdf = tempdf.rename(columns = new_colums)   
             tempdf.reset_index(drop=True, inplace=True)
             if 'index' in tempdf.columns:
@@ -210,7 +230,8 @@ class ClusterPrismExport(ctk.CTkFrame):
         combined_df =  pd.concat(lst_df, axis = 1)
         
         cols_order = list(combined_df.columns)
-        cols_order.sort(key = lambda x : x.split('__')[-1])
+        cols_order.sort(key=lambda x: (x.split('__')[-1], x.split('__')[0].split('_')[-1]))
+        
         logger.info(f"prepared dataframe for prism columnar export")
 
         return combined_df[cols_order], num_clusters
@@ -221,7 +242,21 @@ class ClusterPrismExport(ctk.CTkFrame):
         nested_dict_df = {}
         for cluster in np.sort(list(set(df["cluster_id"]))):
             tempdf = df[df['cluster_id'] == cluster].copy(deep=True)
-            tempdf.drop(columns = ['cluster_id'], inplace = True)
+
+            lst_df_holder = []
+            for region in tempdf['region'].unique():
+                tempdf_region = tempdf[tempdf['region'] == region].copy(deep=True)
+                tempdf_region.drop(columns = ['region', 'cluster_id'], inplace = True)
+                tempdf_region.reset_index(drop=True, inplace=True)
+                if 'index' in tempdf_region.columns:
+                    tempdf_region.drop(columns = ['index'], inplace = True)
+                tempdf_region.columns = [f"{region}__{col}" for col in tempdf_region.columns]
+
+                cols_order = list(tempdf_region.columns)
+                cols_order.sort(key = lambda x : x.split('__')[-1])
+                lst_df_holder.append(tempdf_region[cols_order])
+
+            tempdf = pd.concat(lst_df_holder, axis = 1)
             tempdf.reset_index(drop=True, inplace=True)
             if 'index' in tempdf.columns:
                 tempdf.drop(columns = ['index'], inplace = True)
@@ -234,18 +269,23 @@ class ClusterPrismExport(ctk.CTkFrame):
         
     def add_table(self):    
         
-        df, selected_clusters, selected_compounds = self.filter_dataframe()
-        self.prism_table_value.append([self.table_name.get(), ", ".join(map(str, selected_clusters)), ", ".join(map(str, selected_compounds))])
+        df, selected_clusters , selected_regions, selected_compounds = self.filter_dataframe()
+        self.prism_metric = max(self.prism_metric , len(selected_clusters) * len(selected_regions))
+        self.prism_table_value.append([self.table_name.get(),
+                                        ", ".join(map(str, selected_clusters)), 
+                                        ", ".join(map(str, selected_regions)),
+                                        ", ".join(map(str, selected_compounds))])
         self.dict_df[self.table_name.get()] = df 
         
         if hasattr(self, 'table'):
             self.table.destroy()
-        self.table = CTkTable(master=self.scrollable_table_frame, row=0, column=0, values = self.prism_table_value, wraplength = 300)
+        self.table = CTkTable(master=self.scrollable_table_frame, row=0, column=0, values = self.prism_table_value, wraplength = 150)
         self.table.grid(row=0, column=0, sticky="nsew")
         
     def clear_table(self):
         self.dict_df = {}
         self.prism_table_value = []
+        self.prism_metric = 0
         if hasattr(self, 'table'):
             self.table.destroy()
         self.table = CTkTable(master=self.scrollable_table_frame, row=0, column=0, values = [" "], wraplength = 300)
@@ -262,21 +302,26 @@ class ClusterPrismExport(ctk.CTkFrame):
     def filter_dataframe(self):
         selected_compounds = []
         filtered_df = self.df_clusters.copy(deep=True)
-        selected_clusters = self.scrollable_frame_clusters.get_selected_files()
+        selected_clusters = self.scrollable_frame_clusters.get_selected_files().copy()
         selected_clusters = [int(cluster) for cluster in selected_clusters]
         selected_compounds = self.scrollable_frame_compounds.get_selected_files().copy()
+        selected_regions = self.scrollable_frame_regions.get_selected_files().copy()
         selected_compounds.append('cluster_id')
-        logger.info(f"Selected compounds before are {selected_compounds}")
-        logger.info(f"Selected compounds are {selected_compounds, self.scrollable_frame_compounds.get_selected_files()}")
+        selected_compounds.append('region')
+        # logger.info(f"Selected compounds before are {selected_compounds}")
+        # logger.info(f"Selected compounds are {selected_compounds, self.scrollable_frame_compounds.get_selected_files()}")
         filtered_df['cluster_id'] = filtered_df['cluster_id'].astype(int)   
-        logger.info(f"Selected clusters are {selected_clusters}")
+        # logger.info(f"Selected clusters are {selected_clusters}")
         filtered_df = filtered_df[filtered_df['cluster_id'].isin(selected_clusters)]
+        filtered_df = filtered_df[filtered_df['region'].isin(selected_regions)]
         filtered_df = filtered_df[selected_compounds]
         logger.info(f"filtered_Df_columns {filtered_df.columns}")
-        return filtered_df.copy(), selected_clusters , selected_compounds
-
+        selected_compounds.remove('cluster_id')
+        selected_compounds.remove('region')
+        return filtered_df.copy(), selected_clusters , selected_regions, selected_compounds
+    
     @staticmethod
-    def hd5adtodf(file_name):
+    def hd5adtodf( file_name):
         adata = sc.read(file_name)
         data = adata.to_df().reset_index(drop=True)
         spatial = pd.DataFrame(adata.obsm['spatial'], columns=['x', 'y'])
