@@ -6,7 +6,9 @@ import os
 import matplotlib.pyplot as plt
 from skimage.transform import resize
 from PIL import Image
-
+import logging
+logger = logging.getLogger(__name__)
+import sys 
 def create_slice(df_all,slice_number, col='result', reverse = False):
     nslice = len(df_all.tissue_id.unique())
     if reverse:
@@ -374,12 +376,20 @@ class MetaAlign3D:
         self.matrix=None
         # current path
         # print(os.getcwd())
-        if os.path.exists('visionApp/MetaVision3D/warpmatrix/warp_matrix_all.npy'):
-            self.warp_matrix_all = np.load('visionApp/MetaVision3D/warpmatrix/warp_matrix_all.npy')
+        try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = os.path.join(sys._MEIPASS , 'config')
+        except Exception:
+            base_path = 'visionApp/MetaVision3D/warpmatrix'
+
+        self.warp_matrix_file = os.path.join(base_path, 'warp_matrix_all.npy')
+        if os.path.exists(self.warp_matrix_file):
+            self.warp_matrix_all = np.load(self.warp_matrix_file)
         # if os.path.exists(r'C:\Users\dprav\OneDrive\Desktop\MetaAPP\MetaVision3D\warpmatrix\warp_matrix_all.npy'):
         #     self.warp_matrix_all = np.load(r'C:\Users\dprav\OneDrive\Desktop\MetaAPP\MetaVision3D\warpmatrix\warp_matrix_all.npy')
         else:
-             raise ValueError("Warp matrix is not available. Please run get_warp_matrix() with reference compound first.")
+            logger.info("Warp matrix file not found")
+             
     def create_compound_matrix(self,col='result',reverse=False):
         nslice = len(self.data.tissue_id.unique())
         self.matrix = np.zeros((nslice, 200, 350))
