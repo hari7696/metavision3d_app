@@ -12,6 +12,8 @@ from .timer import TimerApp
 from PIL import Image
 import scanpy as sc
 import anndata
+import pickle
+import sys
 from tkinter import filedialog
 from CTkMessagebox import CTkMessagebox
 from SCILS.scils_export_r2py import run_scils_export
@@ -28,8 +30,14 @@ class ScilsExportStep(ctk.CTkFrame):
         # self.rowconfigure(0, weight=1)
         self.log_queue    = log_queue
         self.messgae_queue = Queue()
-    
+
+        try:
+            self.base_path = os.path.join(sys._MEIPASS , 'templates')
+        except Exception:
+            self.base_path = os.path.join(*[os.getcwd(), 'visionApp', 'SCILS'])
+
         self.create_widgets()
+        logger.info("Scils export step created")
 
     def refresh(self):
         pass
@@ -44,6 +52,30 @@ class ScilsExportStep(ctk.CTkFrame):
         self.parent_frame.columnconfigure(2, weight=5)
         # self.parent_frame.rowconfigure(0, weight=1)
         self.create_export_pane()
+
+    import pickle
+
+    @staticmethod   
+    def pickle_object(obj, file_path):
+        """
+        Serialize the given object and save it to the specified file path.
+        
+        :param obj: The object to be pickled.
+        :param file_path: The file path where the pickled object will be saved.
+        """
+        with open(file_path, 'wb') as file:
+            pickle.dump(obj, file)
+
+    @staticmethod
+    def unpickle_object(file_path):
+        """
+        Load and deserialize an object from the specified file path.
+        
+        :param file_path: The file path from where the object will be unpickled.
+        :return: The deserialized object.
+        """
+        with open(file_path, 'rb') as file:
+            return pickle.load(file)
 
     def create_export_pane(self):
 
@@ -84,7 +116,12 @@ class ScilsExportStep(ctk.CTkFrame):
         ctk.CTkLabel(self.parent_frame, text="License Key").grid(row=4, column=0, padx=(0, 20), pady=(10, 10), sticky="e")
         self.entry_license_key = ctk.CTkEntry(self.parent_frame, width = 200)
         self.entry_license_key.grid(row=4, column=1, padx=(0, 0), pady=(10, 10), sticky="e")
-        self.entry_license_key.insert(0, "130-2448274819-17")
+        
+        if os.path.exists(os.path.join(self.base_path, "license_key.pkl")):
+            license_key = self.unpickle_object(os.path.join(self.base_path, "license_key.pkl"))[0]
+            self.entry_license_key.insert(0, license_key)
+
+        # self.entry_license_key.insert(0, "130-2448274819-17")
 
         # a button to export the scils file
         self.btn_export_scils = ctk.CTkButton(self.parent_frame, text="Export Scils", 
@@ -139,9 +176,13 @@ class ScilsExportStep(ctk.CTkFrame):
         # usig multiprocessing
         self.progress_bar.start()
         self.status_label.configure(text="Processing ...")
+        logger.info("Scils file export process started")
         self.export_process = Process(target=run_scils_export, args=(params, self.log_queue, self.messgae_queue))
         self.export_process.start()
         self.check_export_status()
+
+        #caching the license key
+        self.pickle_object([self.entry_license_key.get()], os.path.join(self.base_path, "license_key.pkl"))
 
     def check_export_status(self):
 

@@ -157,25 +157,34 @@ class MetaVision3DApp(ctk.CTkFrame):
             self.interp_scale_entry.grid_remove()
 
     def start_selected_process(self):
-        if self.process_step_var.get()==1:            
-            self.visualize_process_rad.configure(state="disabled")
-            self.normalize_process_rad.select()
-            self.start_initial_visualization()
-        elif self.process_step_var.get()==2:
-            self.normalize_process_rad.configure(state="disabled")
-            self.allign_rad.select()
-            self.start_normalization()
-        elif self.process_step_var.get() == 3:
-            self.allign_rad.configure(state="disabled")
-            self.start_allignment()
-            self.handle_process_selection()
-        elif self.process_step_var.get() == 4:
-            self.handle_process_selection()    
+
+        try:
+
+            if self.process_step_var.get()==1:    
+                logger.info("Starting the visualization process")
+                self.visualize_process_rad.configure(state="disabled")
+                self.normalize_process_rad.select()
+                self.start_initial_visualization()
+            elif self.process_step_var.get()==2:
+                logger.info("Starting the normalization process")
+                self.normalize_process_rad.configure(state="disabled")
+                self.allign_rad.select()
+                self.start_normalization()
+            elif self.process_step_var.get() == 3:
+                logger.info("Starting the alignment process")
+                self.allign_rad.configure(state="disabled")
+                self.start_allignment()
+                self.handle_process_selection()
+            elif self.process_step_var.get() == 4:
+                logger.info("Starting the selected process: Interp/Impute/Both")
+                self.handle_process_selection()
+        except Exception as e:
+            logger.error(f"Error in executing the selected : {e}")
 
     def handle_process_selection(self):
         selected_process = self.process_selection.get()
         if selected_process == "Select Process":
-            messagebox.showerror("Error", "Alignment is done. Please select a process if you would like to continue with imputation/interpolation.")
+            messagebox.showinfo("Success", "Alignment is done. Please select a process if you would like to continue with imputation/interpolation.")
             return
 
         if selected_process in ["Interp", "Both"]:

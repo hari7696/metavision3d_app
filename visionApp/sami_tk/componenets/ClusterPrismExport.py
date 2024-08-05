@@ -20,6 +20,7 @@ import pandas as pd
 from CTkMessagebox import CTkMessagebox
 from .scrollable_multi_select import ScrollableWindowMulitSelect
 import copy 
+import sys
 logger = logging.getLogger(__name__)
 # logger = logging.getLogger(__name__)
 
@@ -36,7 +37,22 @@ class ClusterPrismExport(ctk.CTkFrame):
         self.prism_table_value.append(["Table Name", "Clusters", "Compounds"])
         self.dict_df = {}
         # self.trigger_visz_functions_on_thread_run()
+        logger.info("ClusterPrismExport started")
+        self.set_templates_dir()
         self.prepare_widgets()
+
+    def set_templates_dir(self):
+
+        try :
+            base_path = sys._MEIPASS
+            self.templates_dir = os.path.join(base_path, 'templates')
+        except Exception as e:
+            self.templates_dir = r'C:\Users\ghari\Documents\OPS\UI\prism_export_dry\templates'
+
+        logger.info(f"Templates dir is {self.templates_dir}")
+        
+
+
         
     def prepare_widgets(self):
 
@@ -148,27 +164,32 @@ class ClusterPrismExport(ctk.CTkFrame):
             format = self.prsim_format.get()
             temp_dict_df = copy.deepcopy(self.dict_df)  
             
-            if format == "Columnar":
+            try:
 
-                for table_name, df in temp_dict_df.items():
-                    logger.info(f"Preparing the dataframe for {table_name}")
-                    temp_dict_df[table_name], num_clusters = self.prepare_df_for_columnar_prism(df)
-                logger.info("Dataframes are prepared")
-                ct = ColumnTable(temp_dict_df)
-                num_clusters = min(num_clusters, 15)
-                if not file_path.endswith('.pzfx'):
-                    file_path = file_path + '.pzfx'
-                ct.to_xml(r"C:\Users\ghari\Documents\OPS\UI\prism_export_dry\templates\group{}.pzfx".format(str(num_clusters)), file_path)
-                CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
-                
-            elif format == "Group":
-                for table_name, df in temp_dict_df.items():
-                    logger.info(f"Preparing the dataframe for {table_name}")
-                    temp_dict_df[table_name] = self.prepare_df_for_nested_prism(df)
-                logger.info("Dataframes are prepared")
-                nt = NestedTable(temp_dict_df)
-                nt.to_xml(r"C:\Users\ghari\Documents\OPS\UI\prism_export_dry\templates\nested_template.pzfx", file_path)
-                CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
+                if format == "Columnar":
+
+                    for table_name, df in temp_dict_df.items():
+                        logger.info(f"Preparing the dataframe for {table_name}")
+                        temp_dict_df[table_name], num_clusters = self.prepare_df_for_columnar_prism(df)
+                    logger.info("Dataframes are prepared")
+                    ct = ColumnTable(temp_dict_df)
+                    num_clusters = min(num_clusters, 15)
+                    if not file_path.endswith('.pzfx'):
+                        file_path = file_path + '.pzfx'
+                    ct.to_xml( os.path.join(self.templates_dir,  "group{}.pzfx".format(str(num_clusters))), file_path)
+                    CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
+                    
+                elif format == "Group":
+                    for table_name, df in temp_dict_df.items():
+                        logger.info(f"Preparing the dataframe for {table_name}")
+                        temp_dict_df[table_name] = self.prepare_df_for_nested_prism(df)
+                    logger.info("Dataframes are prepared")
+                    nt = NestedTable(temp_dict_df)
+                    nt.to_xml( os.path.join(self.templates_dir, "nested_template.pzfx"), file_path)
+                    CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
+            except Exception as e :
+                logger.error(f"Error in prism export: {e}")
+                CTkMessagebox(title="Message", message=f"Prism export failed, Call Hari : {e} ", icon="error", option_1 = "Ok")
     
     @staticmethod       
     def prepare_df_for_columnar_prism(df):
@@ -189,6 +210,8 @@ class ClusterPrismExport(ctk.CTkFrame):
         
         cols_order = list(combined_df.columns)
         cols_order.sort(key = lambda x : x.split('__')[-1])
+        logger.info(f"prepared dataframe for prism columnar export")
+
         return combined_df[cols_order], num_clusters
     
     @staticmethod
@@ -202,6 +225,7 @@ class ClusterPrismExport(ctk.CTkFrame):
             if 'index' in tempdf.columns:
                 tempdf.drop(columns = ['index'], inplace = True)
             nested_dict_df[f"Cluster_{cluster}"] = tempdf
+        logger.info(f"prepared dataframe for prism nested export")
             
         return nested_dict_df
             

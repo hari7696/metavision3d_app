@@ -33,11 +33,11 @@ from rpy2.robjects.packages import importr
 from rpy2.robjects import r
 import logging
 import queue
-# from log_listener import listener_process, worker_configurer
+from log_listener import listener_process, worker_configurer
 
 def run_scils_export(params, log_queue, message_queue):
 
-    # worker_configurer(log_queue)
+    worker_configurer(log_queue)
 
     try:
         base_path = sys._MEIPASS
@@ -48,10 +48,29 @@ def run_scils_export(params, log_queue, message_queue):
         base_path = os.path.abspath(r"C:\Users\ghari\Documents\OPS\UI\metavision3d_app\visionApp\SCILS")
         libraries_path = "C:/Program Files/R/R-4.3.3/win-library/4.3"
 
-    source_r_file = 'C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/SCILS/ScilsExport.R'
+
     # running commands
     logger.info("running scils export")
     logger.info(f"params: {params}")
+
+
+    try:
+    # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = os.path.join(sys._MEIPASS , 'config')
+    except Exception:
+        base_path = os.path.join(*[os.getcwd(), 'visionApp', 'SCILS'])
+
+    source_r_file =  os.path.join(base_path, 'ScilsExport.R')
+    r_output = os.path.join(base_path, 'R_output.txt')
+
+    logger.info(f"source_r_file: {source_r_file}")
+    logger.info(f"r_output: {r_output}")
+
+    source_r_file = str(source_r_file).replace("\\", "/")
+    r_output = str(r_output).replace("\\", "/")
+
+    logger.info(f"after formatting: source_r_file: {source_r_file}")
+    logger.info(f"after formatting: r_output: {r_output}")
 
     try:
 
@@ -59,7 +78,6 @@ def run_scils_export(params, log_queue, message_queue):
         r(f'save_path <- "{params["save_path"]}"')
         r(f'peaklist_name <- "{params["peaklist_name"]}"')
         r(f'Sys.setenv("SCILSMSSERVER_LICENSE" = "{params["license_key"]}")')
-        r_output = "C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/SCILS/R_output.txt"
         r(f'r_output_filename <- "{r_output}"')
         logger.info("parameters commands executed")
 
