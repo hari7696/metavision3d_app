@@ -137,11 +137,16 @@ if __name__ == "__main__":
     root_configurer(log_queue)
 
     logger.info("Starting the application")
+    logger.info("Running Environment: {}".format(ENVIRONMENT))
+    logger.info("_MEIPASS base path: {}".format(base_path))
+    logger.info("_MEIPASS base path dirname: {}".format(os.path.dirname(base_path)))
     try:
         import pyi_splash # type: ignore
         pyi_splash.close()
     except Exception as e:
         logger.error("error in closing splash screen {}".format(str(e)))
+    
+    ctk.set_appearance_mode("Dark")
     app = VisionApp(log_queue)
     app.mainloop()
     logger.info("teminating log listener process")
