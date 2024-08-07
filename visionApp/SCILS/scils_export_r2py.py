@@ -44,6 +44,7 @@ def run_scils_export(params, log_queue, message_queue):
         libraries_path = os.path.dirname(base_path)
         libraries_path = os.path.join(libraries_path, r"R-4.3.3/win-library/4.3")
         libraries_path = str(libraries_path).replace("\\", "/")
+        logger.info(f"libraries_path: {libraries_path}")
     except:
         base_path = os.path.abspath(r"C:\Users\ghari\Documents\OPS\UI\metavision3d_app\visionApp\SCILS")
         libraries_path = "C:/Program Files/R/R-4.3.3/win-library/4.3"
@@ -73,7 +74,10 @@ def run_scils_export(params, log_queue, message_queue):
     logger.info(f"after formatting: r_output: {r_output}")
 
     try:
-
+        r(f'custom_lib_path <- "{libraries_path}"')
+        r(f'Sys.setenv(R_LIBS_USER = custom_lib_path)')
+        r('.libPaths(c(custom_lib_path, .libPaths()))')
+        logger.info(f"R libraries path set {libraries_path}")
         r(f'scils_file_path <- "{params["scils_file_path"]}"')
         r(f'save_path <- "{params["save_path"]}"')
         r(f'peaklist_name <- "{params["peaklist_name"]}"')

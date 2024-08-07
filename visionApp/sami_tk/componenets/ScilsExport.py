@@ -156,8 +156,10 @@ class ScilsExportStep(ctk.CTkFrame):
 
     def select_export_scils_file_path(self):
 
-        file_path = filedialog.asksaveasfilename(defaultextension=".slx")
+        file_path = filedialog.asksaveasfilename()
         if file_path:
+            if not file_path.endswith(".csv"):
+                file_path = file_path + ".csv"
             self.scils_export_file_path = file_path
             logger.info(f"Scils export file path selected: {file_path}")
             self.scile_export_file_path_label.configure(text=file_path)
