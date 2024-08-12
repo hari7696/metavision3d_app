@@ -157,25 +157,34 @@ class MetaVision3DApp(ctk.CTkFrame):
             self.interp_scale_entry.grid_remove()
 
     def start_selected_process(self):
-        if self.process_step_var.get()==1:            
-            self.visualize_process_rad.configure(state="disabled")
-            self.normalize_process_rad.select()
-            self.start_initial_visualization()
-        elif self.process_step_var.get()==2:
-            self.normalize_process_rad.configure(state="disabled")
-            self.allign_rad.select()
-            self.start_normalization()
-        elif self.process_step_var.get() == 3:
-            self.allign_rad.configure(state="disabled")
-            self.start_allignment()
-            self.handle_process_selection()
-        elif self.process_step_var.get() == 4:
-            self.handle_process_selection()    
+
+        try:
+
+            if self.process_step_var.get()==1:    
+                logger.info("Starting the visualization process")
+                self.visualize_process_rad.configure(state="disabled")
+                self.normalize_process_rad.select()
+                self.start_initial_visualization()
+            elif self.process_step_var.get()==2:
+                logger.info("Starting the normalization process")
+                self.normalize_process_rad.configure(state="disabled")
+                self.allign_rad.select()
+                self.start_normalization()
+            elif self.process_step_var.get() == 3:
+                logger.info("Starting the alignment process")
+                self.allign_rad.configure(state="disabled")
+                self.start_allignment()
+                self.handle_process_selection()
+            elif self.process_step_var.get() == 4:
+                logger.info("Starting the selected process: Interp/Impute/Both")
+                self.handle_process_selection()
+        except Exception as e:
+            logger.error(f"Error in executing the selected : {e}")
 
     def handle_process_selection(self):
         selected_process = self.process_selection.get()
         if selected_process == "Select Process":
-            messagebox.showerror("Error", "Alignment is done. Please select a process if you would like to continue with imputation/interpolation.")
+            messagebox.showinfo("Success", "Alignment is done. Please select a process if you would like to continue with imputation/interpolation.")
             return
 
         if selected_process in ["Interp", "Both"]:
@@ -389,9 +398,9 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.export_output_options_frame = ctk.CTkFrame(self.export_tab)
         self.export_output_options_frame.grid(row=3,column=0,padx=5,pady=5) 
         self.export_file_option = ctk.IntVar(value=1)
-        rad1 = ctk.CTkRadioButton(self.export_output_options_frame,text ="Single File",variable= self.export_file_option,value=1,command=self.change_output_label)
+        rad1 = ctk.CTkRadioButton(self.export_output_options_frame,text ="Single CSV",variable= self.export_file_option,value=1,command=self.change_output_label)
         rad1.grid(row=0,column=0,padx=5,pady=5)
-        rad2 = ctk.CTkRadioButton(self.export_output_options_frame, text = "Multi Files",variable = self.export_file_option,value =2,command = self.change_output_label)
+        rad2 = ctk.CTkRadioButton(self.export_output_options_frame, text = "Multiple CSVs",variable = self.export_file_option,value =2,command = self.change_output_label)
         rad2.grid(row=0,column=1,padx=5,pady=5)
         self.select_output_dir_button = ctk.CTkButton(self.export_output_options_frame,text="Select output directory",command=self.open_output_dir_select_dialog)
         self.select_output_dir_button.grid(row=1,column=0,padx =5,pady=3,sticky="e")

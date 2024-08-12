@@ -6,6 +6,7 @@ import string
 import pandas as pd
 import numpy as np
 import logging
+import harmonypy as hm
 logger = logging.getLogger(__name__)
 from log_listener import worker_configurer
 
@@ -25,14 +26,22 @@ class Clusters:
         logger.info("Clustering started")
         adata=sc.read(os.path.join(self.pooled_data_folder,f'{self.region}_{self.modality}.h5ad'))
 
-        try:
-            sc.pp.pca(adata, random_state = 7)
-            sc.pp.neighbors(adata,n_pcs=20, random_state = 7)
-            sc.tl.umap(adata, random_state = 7)
-            sc.tl.leiden(adata,resolution=self.resolution, random_state = 7)
-        except Exception as e:
-            logger.error(f"Error in clustering core SAMI: {str(e)}")
-            return
+        # try:
+        sc.pp.pca(adata)
+        if len(np.unique(adata.obs['region']))>1:
+            sc.external.pp.harmony_integrate(adata,key='region',max_iter_harmony=20)
+            all_pcs = adata.obsm['X_pca_harmony'].shape[1]
+            n_pcs = min(20, all_pcs)
+            sc.pp.neighbors(adata,use_rep = 'X_pca_harmony', n_pcs=n_pcs)
+        else:
+            
+            sc.pp.neighbors(adata,n_pcs=20, random_state= 7)
+            
+        sc.tl.umap(adata, random_state= 7)
+        sc.tl.leiden(adata,resolution=self.resolution, random_state= 7)
+        # except Exception as e:
+        #     logger.error(f"Error in clustering core SAMI: {str(e)}")
+        #     return
 
         if not os.path.exists(self.file_path):
             os.makedirs(self.file_path)
@@ -70,6 +79,13 @@ class Clusters:
             ax=axs[1],
             show=False
         )
+
+        samples = np.unique(adata.obs['region']).tolist()
+        for sample in samples:
+            adata_sub = adata[adata.obs['region']==sample]
+            x_label = np.min(adata_sub.obsm['spatial'][:,0])
+            y_label = np.min(adata_sub.obsm['spatial'][:,1])
+            axs[1].text(x_label,y_label, sample,fontsize=10, color='black')
         
         plt.savefig(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_umap_{n_cluster}.png'),dpi=400)
         
@@ -86,7 +102,7 @@ class Clusters:
         clusters_colors = dict(zip([str(i) for i in range(102)], sc.pl.palettes.default_102))
         colorlist=adata.obs[color].cat.categories.tolist()
         n_cluster=str(len(colorlist))
-
+        fig, axs = plt.subplots(1, 1, figsize=(15, 10))
         sc.pl.spatial(
             adata,
             img_key=None,
@@ -98,6 +114,13 @@ class Clusters:
             palette=[v for k, v in clusters_colors.items() if k in colorlist],
             show=False
         )
+
+        samples = np.unique(adata.obs['region']).tolist()
+        for sample in samples:
+            adata_sub = adata[adata.obs['region']==sample]
+            x_label = np.min(adata_sub.obsm['spatial'][:,0])
+            y_label = np.min(adata_sub.obsm['spatial'][:,1])
+            axs.text(x_label,y_label, sample,fontsize=10, color='black')
 
         plt.savefig(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_{n_cluster}.png'),dpi=400)
         if show==False:
@@ -115,6 +138,7 @@ class Clusters:
             
         colorlist=adata.obs['leiden'].cat.categories.tolist()
         palette=[v if k in map(str,cluster) else '#A0A0A0' for k, v in clusters_colors.items()]
+        fig, axs = plt.subplots(1, 1, figsize=(15, 10))
         sc.pl.spatial(
             adata,
             img_key=None,
@@ -127,6 +151,13 @@ class Clusters:
             palette=palette,
             show=False
         )
+
+        samples = np.unique(adata.obs['region']).tolist()
+        for sample in samples:
+            adata_sub = adata[adata.obs['region']==sample]
+            x_label = np.min(adata_sub.obsm['spatial'][:,0])
+            y_label = np.min(adata_sub.obsm['spatial'][:,1])
+            axs.text(x_label,y_label, sample,fontsize=10, color='black')
         plt.savefig(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}_{cluster}.png'),dpi=400) 
         if show==False:
             plt.close()
@@ -210,6 +241,12 @@ class Cluster_Integration:
             ax=axs[1],
             show=False
         )
+        samples = np.unique(adata.obs['region']).tolist()
+        for sample in samples:
+            adata_sub = adata[adata.obs['region']==sample]
+            x_label = np.min(adata_sub.obsm['spatial'][:,0])
+            y_label = np.min(adata_sub.obsm['spatial'][:,1])
+            axs[1].text(x_label,y_label, sample,fontsize=10, color='black')
 
         plt.savefig(os.path.join(self.clusterInt_specific_working_folder,f'{region}-{modality}-{res}_umap_integrated.png'),dpi=400)
 
@@ -245,6 +282,7 @@ class Cluster_Integration:
             
         colorlist=adata.obs['leiden'].cat.categories.tolist()
         palette=[v if k in map(str,cluster) else '#A0A0A0' for k, v in clusters_colors.items()]
+        fig, axs = plt.subplots(1, 1, figsize=(15, 10))
         sc.pl.spatial(
             adata,
             img_key=None,
@@ -257,6 +295,14 @@ class Cluster_Integration:
             palette=palette,
             show=False
         )
+
+        samples = np.unique(adata.obs['region']).tolist()
+        for sample in samples:
+            adata_sub = adata[adata.obs['region']==sample]
+            x_label = np.min(adata_sub.obsm['spatial'][:,0])
+            y_label = np.min(adata_sub.obsm['spatial'][:,1])
+            axs.text(x_label,y_label, sample,fontsize=10, color='black')
+
         plt.savefig(os.path.join(self.clusterInt_specific_working_folder,f'{region}-{modality}-{res}_{cluster}.png'),dpi=400) 
         if show==False:
             plt.close()

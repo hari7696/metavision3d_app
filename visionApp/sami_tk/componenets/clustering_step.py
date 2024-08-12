@@ -1,16 +1,25 @@
 import tkinter as tk
 import customtkinter as ctk
+from tkinter import filedialog
 import os
 import logging
 from multiprocessing import Process, Queue
 from PIL import Image
 from sami_tk.colormap import *
+from CTkTable import CTkTable
 import io
 import logging
 from .timer import TimerApp
 from SAMI.clustering import Clusters
+from PRISM.ColumnTable import ColumnTable
+from PRISM.NestedTable import NestedTable
 from .display_image import ImageDisaplay
+from .ClusterPrismExport2 import ClusterPrismExport
 from log_listener import worker_configurer
+import scanpy as sc
+import pandas as pd 
+from CTkMessagebox import CTkMessagebox
+from .scrollable_multi_select import ScrollableWindowMulitSelect
 logger = logging.getLogger(__name__)
 # logger = logging.getLogger(__name__)
 
@@ -34,8 +43,11 @@ class ClusteringStep(ctk.CTkFrame):
         self.cluster_image_label = None
         self.image_label = None
         self.queue = Queue()
+        self.is_clustering_ran = False
+        self.prism_table_value = []
+        self.prism_table_value.append(["Table Name", "Clusters", "Compounds"])
+        self.dict_df = {}
         # self.trigger_visz_functions_on_thread_run()
-
 
 
     def prepare_visualization_dock_type2(self):
@@ -63,6 +75,13 @@ class ClusteringStep(ctk.CTkFrame):
         self.cluster_tab.rowconfigure((0), weight = 1)
         self.cluster_tab.rowconfigure((1), weight = 20)
         self.cluster_tab.rowconfigure((2), weight = 7)
+
+        #prism export tab  
+        self.prism_export_tab = self.vis_tabs.add("Prism Export")
+        
+
+        # self.prism_export_tab.columnconfigure(0, weight=1)
+        # self.prism_export_tab.rowconfigure((0), weight = 1)
 
 
         # cluster options tab
@@ -139,7 +158,7 @@ class ClusteringStep(ctk.CTkFrame):
         self.timer.grid(row=0,column=5,padx=(50,0),pady=8,sticky="w")
 
         # time constraint
-        self.time_constraint_label = ctk.CTkLabel(self.cluster_options, text="Note : clustering usally takes roughly 10 minutes",
+        self.time_constraint_label = ctk.CTkLabel(self.cluster_options, text="Note : clustering usally takes 15+ minutes",
                                                    text_color="yellow", width=300)
         self.time_constraint_label.grid(row=0,column=6,padx=(10,0),pady=8,sticky="e")
 
@@ -152,8 +171,15 @@ class ClusteringStep(ctk.CTkFrame):
         """
 
         selected_file = self.file_selection.get()
-        region = '_'.join(selected_file.split('_')[:-1])
-        modality = selected_file.split('_')[-1].split('.')[0] 
+
+        if len(selected_file.split('_')) ==1:
+            region = selected_file.split('.')[0]
+            modality = ""
+        else:
+            region = '_'.join(selected_file.split('_')[:-1])
+            modality = selected_file.split('_')[-1].split('.')[0] 
+
+        logger.info(f"region : {region} and modality : {modality}")
         logger.info("CLuster module is created")
         logger.info(f"Selected file is {selected_file}")
         logger.info(f"{region} and {modality} are the region and modality selected")
@@ -198,9 +224,9 @@ class ClusteringStep(ctk.CTkFrame):
         logger.info("perform_clustering Triggered" )
         self.timer.reset_timer()
         self.timer.start_timer()
-        cluster, clustered_file = self.prepare_cluster_module()
-        self.time_constraint_label.configure(text="Note : clustering usally takes roughly 10 minutes", text_color="yellow")
-        self.clustering_process = Process(target=self.clustering, args=(self.queue, cluster,clustered_file, self.log_queue), name= "SAMI:Clustering")
+        cluster, self.clustered_file = self.prepare_cluster_module()
+        self.time_constraint_label.configure(text="Note : clustering usally takes 15+ minutes", text_color="yellow")
+        self.clustering_process = Process(target=self.clustering, args=(self.queue, cluster,self.clustered_file, self.log_queue), name= "SAMI:Clustering")
         self.clustering_process.start()
         self.trigger_visz_functions_on_thread_run()
 
@@ -225,6 +251,8 @@ class ClusteringStep(ctk.CTkFrame):
                 self.prepare_specific_cluster_vis()
                 logger.info("visualization prepared")
                 
+                self.prepare_prism_export_tab()
+                logger.info("prism export tab prepared")
                 self.timer.stop_timer()
                 self.time_constraint_label.configure(text="Clustering Done", text_color="green")
             except Exception as e:
@@ -289,8 +317,18 @@ class ClusteringStep(ctk.CTkFrame):
         specific_cluster3 = SpecificCluster(self.frame3, self.cluster, self.n_clusters, 2)
         specific_cluster3.grid(row=0, column=2, sticky="nsew")
 
+    def prepare_prism_export_tab(self):
+        
+        logger.info("preparing prism export tab")
+        for child in self.prism_export_tab.winfo_children():
+            child.destroy()
+        
+        prism_pane = ClusterPrismExport(self.prism_export_tab, self.log_queue, self.clustered_file)
+        prism_pane.grid(row=0, column=0, sticky="nsew")
+        prism_pane.columnconfigure(0, weight=1)
+        prism_pane.rowconfigure(0, weight=1)
+ 
 
-       
 class SpecificCluster(ctk.CTkFrame):
 
     """

@@ -1,0 +1,287 @@
+import tkinter as tk
+import customtkinter as ctk
+from tkinter import filedialog
+import os
+import logging
+from multiprocessing import Process, Queue
+from PIL import Image
+from sami_tk.colormap import *
+from CTkTable import CTkTable
+import io
+import logging
+from .timer import TimerApp
+from SAMI.clustering import Clusters
+from PRISM.ColumnTable import ColumnTable
+from PRISM.NestedTable import NestedTable
+from .display_image import ImageDisaplay
+from log_listener import worker_configurer
+import scanpy as sc
+import pandas as pd 
+from CTkMessagebox import CTkMessagebox
+from .scrollable_multi_select import ScrollableWindowMulitSelect
+import copy 
+import sys
+logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
+
+class ClusterPrismExport(ctk.CTkFrame):
+    def __init__(self, master, log_queue, clustered_file):
+        super().__init__(
+            master,
+        )
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.log_queue = log_queue
+        self.clustered_file = clustered_file
+        self.prism_table_value = []
+        self.prism_table_value.append(["Table Name", "Clusters", "Compounds"])
+        self.dict_df = {}
+        # self.trigger_visz_functions_on_thread_run()
+        logger.info("ClusterPrismExport started")
+        self.set_templates_dir()
+        self.prepare_widgets()
+
+    def set_templates_dir(self):
+
+        try :
+            base_path = sys._MEIPASS
+            self.templates_dir = os.path.join(base_path, 'templates')
+        except Exception as e:
+            self.templates_dir = r'C:\Users\ghari\Documents\OPS\UI\prism_export_dry\templates'
+
+        logger.info(f"Templates dir is {self.templates_dir}")
+        
+
+
+        
+    def prepare_widgets(self):
+
+        # if not self.is_clustering_ran:
+        #     CTkMessagebox(title="Message", message="Please run clustering to export", icon="warning")
+        #     return
+        
+        self.prism_frame = ctk.CTkFrame(self)
+        self.prism_frame.grid(row=0, column=0, sticky="nsew")
+        self.prism_frame.rowconfigure(0, weight=1)
+        self.prism_frame.columnconfigure(0, weight=1)
+        self.prism_frame.columnconfigure(1, weight=1)
+        self.prism_frame.columnconfigure(2, weight=1)
+        
+        # for i in range(3):
+        #     self.prism_frame.columnconfigure(i, weight=1)
+
+        self.rowconfigure(0, weight=1)
+
+        self.prism_export_label = ctk.CTkLabel(self.prism_frame, text="Prism Export", width=100, font=("Arial", 18))
+        self.prism_export_label.grid(row=0, column=0, sticky="nsew", columnspan=3)
+        self.prism_export_label.columnconfigure(0, weight=1)
+
+
+
+        self.df_clusters = self.hd5adtodf(self.clustered_file)
+
+        self.lst_compounds = self.df_clusters.columns[3:]
+        # logger.info(f"Compounds are {self.lst_compounds}")
+        self.lst_cluster_ids  = list(np.sort((self.df_clusters['cluster_id'].astype(int).unique())))
+        # logger.info(f"Clusters are {self.lst_cluster_ids}")
+        
+        
+        # scrillable frame for clusters
+        # a label for the clusters
+        
+        
+        label = ctk.CTkLabel(self.prism_frame, text="Select Clusters :")
+        label.grid(row=1, column=0, padx=(5,0), pady=8, sticky="w")
+
+        self.scrollable_frame_clusters = ScrollableWindowMulitSelect(self.prism_frame, self.lst_cluster_ids)
+        self.scrollable_frame_clusters.grid(row=2, column=0, sticky="nsew")
+
+        # scrillable frame for compounds
+        # a label for the compounds
+        label = ctk.CTkLabel(self.prism_frame, text="Select Compounds :")
+        label.grid(row=1, column=1, padx=(5,0), pady=8, sticky="w")
+        self.scrollable_frame_compounds = ScrollableWindowMulitSelect(self.prism_frame, self.lst_compounds)
+        self.scrollable_frame_compounds.grid(row=2, column=1, sticky="nsew")
+        
+        # Adding a third frame to display selected Table names
+        label = ctk.CTkLabel(self.prism_frame, text="Select Tables :")
+        label.grid(row=1, column=2, padx=(5,0), pady=8, sticky="w")
+        self.scrollable_table_frame = ctk.CTkScrollableFrame(self.prism_frame, width= 800)
+        self.scrollable_table_frame.grid(row=2, column=2, sticky="nsew")
+
+        # Add table frame
+        self.add_table_frame = ctk.CTkFrame(self.prism_frame)
+        self.add_table_frame.grid(row=3, column=0, columnspan = 8 ,sticky="nsew")
+        
+        # label
+        _  = ctk.CTkLabel(self.add_table_frame, text="Tabe Name:")
+        _.grid(row=0, column=0, padx=(5,10), pady=8, sticky="w")
+        
+        # entry box
+        self.table_name = ctk.CTkEntry(self.add_table_frame, placeholder_text="Enter Table Name", width=300)
+        self.table_name.grid(row=0, column=1, padx=(15,15), pady=8, sticky="w")
+        
+        # add button
+        self.add_table_button = ctk.CTkButton(self.add_table_frame, text="Add Table", command=self.add_table)
+        self.add_table_button.grid(row=0, column=2, padx=(5,0), pady=8, sticky="w")
+        
+        # clear tables
+        self.clear_table_button = ctk.CTkButton(self.add_table_frame, text="Clear Tables", command=self.clear_table)
+        self.clear_table_button.grid(row=0, column=3, padx=(5,0), pady=8, sticky="w")
+        
+
+        #### button frame
+        
+        self.button_frame = ctk.CTkFrame(self.prism_frame)
+        self.button_frame.grid(row=4, column=0, columnspan = 8 ,sticky="nsew", pady=(5,5), padx=(5,5))
+        for i in range(6):
+            self.button_frame.columnconfigure(i, weight=1)
+        self.button_frame.rowconfigure(0, weight=1)
+        
+        
+        # Export to excel button
+        self.export_button = ctk.CTkButton(self.button_frame, text="Export to Excel", command=self.export_to_excel)
+        self.export_button.grid(row=2, column=0, padx=(5,0), pady=8, sticky="w")
+
+        # Format 
+        # label
+        _  = ctk.CTkLabel(self.button_frame, text="Prism Format :")
+        _.grid(row=2, column=1, padx=(5,0), pady=8, sticky="w")
+        
+        # a dropdown for the format
+        self.prsim_format = ctk.CTkComboBox(self.button_frame, values=["Columnar", "Group"], button_color="#b5b8b0")
+        self.prsim_format.grid(row=2, column=2, padx=(10,0), pady=8, sticky="w")
+        
+        #prism export button
+        self.export_button = ctk.CTkButton(self.button_frame, text="Export to Prism", command=self.export_to_prism)
+        self.export_button.grid(row=2, column=3, padx=(5,0), pady=8, sticky="w")
+        
+    def export_to_prism(self):
+        
+        file_path = filedialog.asksaveasfilename(defaultextension=".pzfx")
+        if file_path:
+            filtered_df = self.filter_dataframe()
+            format = self.prsim_format.get()
+            temp_dict_df = copy.deepcopy(self.dict_df)  
+            
+            try:
+
+                if format == "Columnar":
+
+                    for table_name, df in temp_dict_df.items():
+                        logger.info(f"Preparing the dataframe for {table_name}")
+                        temp_dict_df[table_name], num_clusters = self.prepare_df_for_columnar_prism(df)
+                    logger.info("Dataframes are prepared")
+                    ct = ColumnTable(temp_dict_df)
+                    num_clusters = min(num_clusters, 15)
+                    if not file_path.endswith('.pzfx'):
+                        file_path = file_path + '.pzfx'
+                    ct.to_xml( os.path.join(self.templates_dir,  "group{}.pzfx".format(str(num_clusters))), file_path)
+                    CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
+                    
+                elif format == "Group":
+                    for table_name, df in temp_dict_df.items():
+                        logger.info(f"Preparing the dataframe for {table_name}")
+                        temp_dict_df[table_name] = self.prepare_df_for_nested_prism(df)
+                    logger.info("Dataframes are prepared")
+                    nt = NestedTable(temp_dict_df)
+                    nt.to_xml( os.path.join(self.templates_dir, "nested_template.pzfx"), file_path)
+                    CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
+            except Exception as e :
+                logger.error(f"Error in prism export: {e}")
+                CTkMessagebox(title="Message", message=f"Prism export failed, Call Hari : {e} ", icon="error", option_1 = "Ok")
+    
+    @staticmethod       
+    def prepare_df_for_columnar_prism(df):
+        
+        lst_df = []
+        num_clusters = len(set(df["cluster_id"]))
+        for cluster in np.sort(list(set(df["cluster_id"]))):
+            # logger.info(df.columns)
+            tempdf = df[df['cluster_id'] == cluster].copy(deep=True)
+            tempdf.drop(columns = ['cluster_id'], inplace = True)
+            new_colums =  {col : f"Cluster_{cluster}__{col}" for col in tempdf.columns}
+            tempdf = tempdf.rename(columns = new_colums)   
+            tempdf.reset_index(drop=True, inplace=True)
+            if 'index' in tempdf.columns:
+                tempdf.drop(columns = ['index'], inplace = True)
+            lst_df.append(tempdf)
+        combined_df =  pd.concat(lst_df, axis = 1)
+        
+        cols_order = list(combined_df.columns)
+        cols_order.sort(key = lambda x : x.split('__')[-1])
+        logger.info(f"prepared dataframe for prism columnar export")
+
+        return combined_df[cols_order], num_clusters
+    
+    @staticmethod
+    def prepare_df_for_nested_prism(df):
+        #returns a dictionary of dataframes
+        nested_dict_df = {}
+        for cluster in np.sort(list(set(df["cluster_id"]))):
+            tempdf = df[df['cluster_id'] == cluster].copy(deep=True)
+            tempdf.drop(columns = ['cluster_id'], inplace = True)
+            tempdf.reset_index(drop=True, inplace=True)
+            if 'index' in tempdf.columns:
+                tempdf.drop(columns = ['index'], inplace = True)
+            nested_dict_df[f"Cluster_{cluster}"] = tempdf
+        logger.info(f"prepared dataframe for prism nested export")
+            
+        return nested_dict_df
+            
+            
+        
+    def add_table(self):    
+        
+        df, selected_clusters, selected_compounds = self.filter_dataframe()
+        self.prism_table_value.append([self.table_name.get(), ", ".join(map(str, selected_clusters)), ", ".join(map(str, selected_compounds))])
+        self.dict_df[self.table_name.get()] = df 
+        
+        if hasattr(self, 'table'):
+            self.table.destroy()
+        self.table = CTkTable(master=self.scrollable_table_frame, row=0, column=0, values = self.prism_table_value, wraplength = 300)
+        self.table.grid(row=0, column=0, sticky="nsew")
+        
+    def clear_table(self):
+        self.dict_df = {}
+        self.prism_table_value = []
+        if hasattr(self, 'table'):
+            self.table.destroy()
+        self.table = CTkTable(master=self.scrollable_table_frame, row=0, column=0, values = [" "], wraplength = 300)
+        self.table.grid(row=0, column=0, sticky="nsew")
+        
+
+    def export_to_excel(self):
+
+        temp_df = pd.concat(self.dict_df.values(), axis = 0)
+        file_path = filedialog.asksaveasfilename(defaultextension=".xlsx")
+        if file_path:
+            temp_df.to_excel(file_path, index=False)
+
+    def filter_dataframe(self):
+        selected_compounds = []
+        filtered_df = self.df_clusters.copy(deep=True)
+        selected_clusters = self.scrollable_frame_clusters.get_selected_files()
+        selected_clusters = [int(cluster) for cluster in selected_clusters]
+        selected_compounds = self.scrollable_frame_compounds.get_selected_files().copy()
+        selected_compounds.append('cluster_id')
+        logger.info(f"Selected compounds before are {selected_compounds}")
+        logger.info(f"Selected compounds are {selected_compounds, self.scrollable_frame_compounds.get_selected_files()}")
+        filtered_df['cluster_id'] = filtered_df['cluster_id'].astype(int)   
+        logger.info(f"Selected clusters are {selected_clusters}")
+        filtered_df = filtered_df[filtered_df['cluster_id'].isin(selected_clusters)]
+        filtered_df = filtered_df[selected_compounds]
+        logger.info(f"filtered_Df_columns {filtered_df.columns}")
+        return filtered_df.copy(), selected_clusters , selected_compounds
+
+    @staticmethod
+    def hd5adtodf(file_name):
+        adata = sc.read(file_name)
+        data = adata.to_df().reset_index(drop=True)
+        spatial = pd.DataFrame(adata.obsm['spatial'], columns=['x', 'y'])
+        cluster = adata.obs['leiden'].reset_index(drop=True)
+        df = pd.concat([spatial, cluster, data], axis=1)
+        df.rename(columns={'leiden': 'cluster_id'}, inplace=True)
+        return df
+    
+        

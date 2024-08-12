@@ -206,7 +206,7 @@ class MarkerStep(ctk.CTkFrame):
         top_n_molecules = int(self.top_n_molecules_entry.get())
         logger.info(f"Num molecules: {top_n_molecules}")
         self.timer.start_timer()
-        self.time_constraint_label.configure(text="Note : Markers generation takes roughly 3 minutes", text_color="yellow")
+        self.time_constraint_label.configure(text="Note : Markers generation takes 10+ minutes", text_color="yellow")
         
 
         adata1_path = os.path.join(self.working_folder, self.files_to_path_dict[region1_path]) 

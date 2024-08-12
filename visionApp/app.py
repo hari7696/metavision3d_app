@@ -76,7 +76,7 @@ class VisionApp(ctk.CTk):
         total_children = count_all_children(self.parent_frame)
 
         logger.info("Frequent_checker :: Total children {}".format(str(total_children)))
-        self.after(1000, self.write_num_children_to_logs)
+        self.after(10000, self.write_num_children_to_logs)
         
 
     def destroy_children(self):
@@ -137,11 +137,19 @@ if __name__ == "__main__":
     root_configurer(log_queue)
 
     logger.info("Starting the application")
+    logger.info("Running Environment: {}".format(ENVIRONMENT))
+
+    if hasattr(sys, '_MEIPASS'):
+        logger.info("_MEIPASS base path: {}".format(sys._MEIPASS))
+        logger.info("_MEIPASS base path dirname: {}".format(os.path.dirname(base_path)))
+
     try:
         import pyi_splash # type: ignore
         pyi_splash.close()
     except Exception as e:
         logger.error("error in closing splash screen {}".format(str(e)))
+    
+    ctk.set_appearance_mode("Dark")
     app = VisionApp(log_queue)
     app.mainloop()
     logger.info("teminating log listener process")
