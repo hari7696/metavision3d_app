@@ -138,8 +138,11 @@ if __name__ == "__main__":
 
     logger.info("Starting the application")
     logger.info("Running Environment: {}".format(ENVIRONMENT))
-    logger.info("_MEIPASS base path: {}".format(base_path))
-    logger.info("_MEIPASS base path dirname: {}".format(os.path.dirname(base_path)))
+
+    if hasattr(sys, '_MEIPASS'):
+        logger.info("_MEIPASS base path: {}".format(sys._MEIPASS))
+        logger.info("_MEIPASS base path dirname: {}".format(os.path.dirname(base_path)))
+
     try:
         import pyi_splash # type: ignore
         pyi_splash.close()
