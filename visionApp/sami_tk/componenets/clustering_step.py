@@ -158,7 +158,7 @@ class ClusteringStep(ctk.CTkFrame):
         self.timer.grid(row=0,column=5,padx=(50,0),pady=8,sticky="w")
 
         # time constraint
-        self.time_constraint_label = ctk.CTkLabel(self.cluster_options, text="Note : clustering usally takes roughly 10 minutes",
+        self.time_constraint_label = ctk.CTkLabel(self.cluster_options, text="Note : clustering usally takes 15+ minutes",
                                                    text_color="yellow", width=300)
         self.time_constraint_label.grid(row=0,column=6,padx=(10,0),pady=8,sticky="e")
 
@@ -171,8 +171,15 @@ class ClusteringStep(ctk.CTkFrame):
         """
 
         selected_file = self.file_selection.get()
-        region = '_'.join(selected_file.split('_')[:-1])
-        modality = selected_file.split('_')[-1].split('.')[0] 
+
+        if len(selected_file.split('_')) ==1:
+            region = selected_file.split('.')[0]
+            modality = ""
+        else:
+            region = '_'.join(selected_file.split('_')[:-1])
+            modality = selected_file.split('_')[-1].split('.')[0] 
+
+        logger.info(f"region : {region} and modality : {modality}")
         logger.info("CLuster module is created")
         logger.info(f"Selected file is {selected_file}")
         logger.info(f"{region} and {modality} are the region and modality selected")
@@ -218,7 +225,7 @@ class ClusteringStep(ctk.CTkFrame):
         self.timer.reset_timer()
         self.timer.start_timer()
         cluster, self.clustered_file = self.prepare_cluster_module()
-        self.time_constraint_label.configure(text="Note : clustering usally takes roughly 10 minutes", text_color="yellow")
+        self.time_constraint_label.configure(text="Note : clustering usally takes 15+ minutes", text_color="yellow")
         self.clustering_process = Process(target=self.clustering, args=(self.queue, cluster,self.clustered_file, self.log_queue), name= "SAMI:Clustering")
         self.clustering_process.start()
         self.trigger_visz_functions_on_thread_run()

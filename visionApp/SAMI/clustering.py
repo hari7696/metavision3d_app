@@ -6,6 +6,7 @@ import string
 import pandas as pd
 import numpy as np
 import logging
+import harmonypy as hm
 logger = logging.getLogger(__name__)
 from log_listener import worker_configurer
 
@@ -25,14 +26,22 @@ class Clusters:
         logger.info("Clustering started")
         adata=sc.read(os.path.join(self.pooled_data_folder,f'{self.region}_{self.modality}.h5ad'))
 
-        try:
-            sc.pp.pca(adata, random_state = 7)
-            sc.pp.neighbors(adata,n_pcs=20, random_state = 7)
-            sc.tl.umap(adata, random_state = 7)
-            sc.tl.leiden(adata,resolution=self.resolution, random_state = 7)
-        except Exception as e:
-            logger.error(f"Error in clustering core SAMI: {str(e)}")
-            return
+        # try:
+        sc.pp.pca(adata)
+        if len(np.unique(adata.obs['region']))>1:
+            sc.external.pp.harmony_integrate(adata,key='region',max_iter_harmony=20)
+            all_pcs = adata.obsm['X_pca_harmony'].shape[1]
+            n_pcs = min(20, all_pcs)
+            sc.pp.neighbors(adata,use_rep = 'X_pca_harmony', n_pcs=n_pcs)
+        else:
+            
+            sc.pp.neighbors(adata,n_pcs=20, random_state= 7)
+            
+        sc.tl.umap(adata, random_state= 7)
+        sc.tl.leiden(adata,resolution=self.resolution, random_state= 7)
+        # except Exception as e:
+        #     logger.error(f"Error in clustering core SAMI: {str(e)}")
+        #     return
 
         if not os.path.exists(self.file_path):
             os.makedirs(self.file_path)
