@@ -491,7 +491,7 @@ class NormalizationStep(ctk.CTkFrame):
             grid_rows += 1
 
         # Create a frame for each image and store it for later processing
-        self.vmax = np.percentile(data[data != 0], 99)
+        # self.vmax = np.percentile(data[data != 0], 99)
         self.frames = []
         for i in range(slices):
             frame = ctk.CTkFrame(
@@ -521,9 +521,11 @@ class NormalizationStep(ctk.CTkFrame):
         ax.set_facecolor("black")
         fig.patch.set_facecolor("black")
         if self.color_map_dropdown.get() == "magma":
-            im = ax.imshow(image_array, cmap=new_cmap1, vmin=0, vmax=self.vmax)
+            # im = ax.imshow(image_array, cmap=new_cmap1, vmin=0, vmax=self.vmax)
+            im = ax.imshow(image_array, cmap=new_cmap1)
         elif self.color_map_dropdown.get() == "viridis":
-            im = ax.imshow(image_array, cmap=new_cmap2, vmin=0, vmax=self.vmax)
+            # im = ax.imshow(image_array, cmap=new_cmap2, vmin=0, vmax=self.vmax)
+            im = ax.imshow(image_array, cmap=new_cmap2)
         else:
             im = ax.imshow(image_array, cmap="grey")
         buf = io.BytesIO()
@@ -609,10 +611,11 @@ class NormalizationStep(ctk.CTkFrame):
         # Add color bar if applicable
         if cmap in ["magma", "viridis"]:
             cbar = fig.colorbar(
-                im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+                # im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+                im, ax=ax
             )
-            cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
-            cbar.ax.set_yticklabels(["low", "high"])
+            # cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
+            # cbar.ax.set_yticklabels(["low", "high"])
 
         # Turn off axis labeling to maximize space for the image
         ax.axis("off")
@@ -699,10 +702,11 @@ class NormalizationStep(ctk.CTkFrame):
         # Add color bar if applicable
         if cmap in ["magma", "viridis"]:
             cbar = fig.colorbar(
-                im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+                # im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+                im, ax=ax
             )
-            cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
-            cbar.ax.set_yticklabels(["low", "high"])
+            # cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
+            # cbar.ax.set_yticklabels(["low", "high"])
 
         # Turn off axis labeling to maximize space for the image
         ax.axis("off")
@@ -737,10 +741,11 @@ class NormalizationStep(ctk.CTkFrame):
         # Add color bar if applicable
         if cmap in ["magma", "viridis"]:
             cbar = fig.colorbar(
-                im, ax=ax2, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+                # im, ax=ax2, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+                im, ax=ax2
             )
-            cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
-            cbar.ax.set_yticklabels(["low", "high"])
+            # cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
+            # cbar.ax.set_yticklabels(["low", "high"])
 
         # Turn off axis labeling to maximize space for the image
         ax2.axis("off")
