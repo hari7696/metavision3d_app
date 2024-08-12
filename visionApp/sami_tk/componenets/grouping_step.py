@@ -194,6 +194,9 @@ class GroupingStep(ctk.CTkFrame):
         files_to_group = [os.path.join(self.file_handler.working_folder, "pooled_data", file) for file in self.selected_files]
         
         group_name = self.group_name.get()
+        if '_' not in group_name:
+            group_name = group_name + "_"
+
         if not group_name.endswith(".h5ad"):
             group_name = group_name + ".h5ad"
         group_name = os.path.join(self.file_handler.working_folder, "pooled_data", group_name)
