@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import copy_metadata
 
-datas = [('C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/lib', 'lib'), ('C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/config', 'config'), ('C:\\\\Users\\\\ghari\\\\Documents\\\\OPS\\\\UI\\\\metavision3d_app\\\\visionApp\\\\SAMI\\\\MetabAnalystR.R', 'config')]
+datas = [('C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/lib', 'lib'), ('C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/config', 'config'), ('C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/SAMI/MetabAnalystR.R', 'config'), ('C:/Users/ghari/anaconda3/envs/sami/Lib/site-packages/vedo/fonts', 'fonts'), ('C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/MetaVision3D/warpmatrix/warp_matrix_all.npy', 'config'), ('C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/SCILS/ScilsExport.R', 'config'), ('C:/Users/ghari/Documents/OPS/UI/prism_export_dry/templates', 'templates')]
 datas += copy_metadata('anndata')
 
 
@@ -46,7 +46,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['C:\\Users\\ghari\\Documents\\OPS\\UI\\Isotopes_app\\visionapp.ico'],
+    icon=['C:\\Users\\ghari\\Documents\\OPS\\UI\\metavision3d_app\\visionapp.ico'],
 )
 coll = COLLECT(
     exe,

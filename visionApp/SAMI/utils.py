@@ -45,3 +45,24 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 #r_binary_path = resource_path('bin/R-binary')
+
+def adata_concat(adata_list):
+
+    common_vars = adata_list[0].var_names
+    for adata in adata_list[1:]:
+        common_vars = common_vars.intersection(adata.var_names)
+    
+    adata_sub_list = [adata[:, list(common_vars)] for adata in adata_list]
+    
+    adata_combined = sc.concat(adata_sub_list, join='inner', label='sample')
+
+    adata_combined.var = adata_sub_list[0].var
+    
+    return adata_combined
+
+
+# adata1 = sc.read('../datasets/brain1ad_pool.h5ad')
+# adata2 = sc.read('../datasets/brain2ad_pool.h5ad')
+# adata3 = sc.read('../datasets/brain3ad_pool.h5ad')
+# adata_comb = adata_concat(adata1,adata2,adata3)
+# adata_comb.write('../datasets/ad_pool.h5ad')

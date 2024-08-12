@@ -9,6 +9,8 @@ from .componenets.clustering_step import ClusteringStep
 from .componenets.cluster_intergration_step import ClusterIntergrationStep
 from .componenets.markers_step import MarkerStep
 from .componenets.pathways_step import PathwaysStep
+from .componenets.grouping_step import GroupingStep
+from .componenets.ScilsExport import ScilsExportStep
 import sys
 import queue
 sys.path.append('../SAMI')
@@ -32,10 +34,10 @@ class SAMIApp(ctk.CTkFrame):
         self.algo_drop_down = algo_drop_down    
         logger.debug("SAMI class initialized")
 
-        file_type_variable = ctk.StringVar(value="Single/Multi file?")
+        file_type_variable = ctk.StringVar(value="File Type")
         self.dropdown_file_type_single_multi = ctk.CTkOptionMenu(
             self.nav_frame,
-            values=["Single file", "Multi file"],
+            values=["Single CSV", "Multiple CSV", "Scils"],
             command=self.file_open,
             variable=file_type_variable,
         )
@@ -54,6 +56,7 @@ class SAMIApp(ctk.CTkFrame):
         # self.create_visualization_dock()
         # self.create_left_visualization_dock()
         self.check_for_file_load()
+        self.initialize_step_constructor()
  
 
     def file_open(self, choice):
@@ -62,11 +65,20 @@ class SAMIApp(ctk.CTkFrame):
             if (child != self.dropdown_file_type_single_multi) and (child != self.algo_drop_down):
                 child.destroy()
 
+        if self.dropdown_file_type_single_multi.get() == "Scils":
+            self.create_process_bar()
+            self.process_step.set("ScilsExport")
+            self.execute_selected_step("ScilsExport")
+            return
+        
+            
+
         self.file_handler = FileOpenbutton(self.nav_frame, self.queue)
         self.file_handler.file_opening_button(choice)
         self.file_handler.grid(row=0, column=2, padx=(5, 5), pady=(2, 2), sticky="w", columnspan=2)
         self.file_handler.columnconfigure(0, weight=1)
         self.file_handler.columnconfigure(1, weight=1)
+        logger.info(f"File handler created")
         # updating the process bar based on the file type selected
         self.create_process_bar()
 
@@ -91,14 +103,15 @@ class SAMIApp(ctk.CTkFrame):
                     step.destroy()
                 self.file_loading_status = False
                 self.loaded_steps = {}
-                self.initialize_step_constructor()
                 self.file_loading_status = True
                 self.process_step.set("Visualization")
+                self.initialize_step_constructor()
                 # self.after(100, self.process_step.invoke())
                 self.execute_selected_step("Visualization")
             # Schedule the next queue check
         except Exception as e:
             logger.error(f"Error in check_for_file_load: {e}")
+            logger.info(f" File reading status {self.file_handler.is_files_read}" )
         finally:
             self.after(100, self.check_for_file_load)
 
@@ -116,29 +129,36 @@ class SAMIApp(ctk.CTkFrame):
         logger.debug(
             "value in dropdown:{}".format(self.dropdown_file_type_single_multi.get())
         )
-        # multi file process steps
+        # Multiple CSV process steps
         values = [
             "Visualization",
             "Normalization",
             "Pooling",
+            "Grouping",
             "Clustering",
             "Clusters Integration",
             "Markers",
             "Pathways",
         ]
 
-        if self.dropdown_file_type_single_multi.get() == "Single file":
+        if self.dropdown_file_type_single_multi.get() == "Single CSV":
             values = [
             "Visualization",
             "Normalization",
             "Pooling",
+            "Grouping",
             "Clustering",
             "Markers",
             "Pathways",
             ]
 
+        if self.dropdown_file_type_single_multi.get() == "Scils":
+
+            values = ["ScilsExport"]
+
+
         self.process_step = ctk.CTkSegmentedButton(
-            master=self.nav_frame, values=values, command=self.execute_selected_step
+            master=self.nav_frame, values=values, command=self.execute_selected_step, font = ("Arial", 14)
         )
         self.process_step.grid(
             row=0, column=4, padx=(5, 5), pady=(2, 2), sticky="w"
@@ -153,10 +173,12 @@ class SAMIApp(ctk.CTkFrame):
             "Visualization": (VisualizationStep, self.file_handler, self.log_queue),
             "Normalization": (NormalizationStep, self.file_handler,  self.log_queue),
             "Pooling": (PoolingStep, self.file_handler, self.log_queue),
+            "Grouping": (GroupingStep, self.file_handler, self.log_queue),
             "Clustering": (ClusteringStep, self.file_handler, self.log_queue),
             "Clusters Integration": (ClusterIntergrationStep, self.file_handler, self.log_queue),
             "Markers": (MarkerStep, self.file_handler, self.log_queue),
-            "Pathways": (PathwaysStep, self.file_handler, self.log_queue)
+            "Pathways": (PathwaysStep, self.file_handler, self.log_queue),
+            "ScilsExport": (ScilsExportStep, self.file_handler, self.log_queue)
         }
 
     def initialize_step(self, step_name):
@@ -181,21 +203,6 @@ class SAMIApp(ctk.CTkFrame):
             But the requirement is changed now, so I deleted the Export tab and the made the original frame as the parent tab
         """
 
-        # self.rowconfigure(0, weight=1)
-        # self.columnconfigure(0, weight=1)
-        # self.parent_tab_switch = ctk.CTkTabview(self, bg_color="transparent")
-        # self.parent_tab_switch.columnconfigure(0, weight=1)
-        # self.parent_tab_switch.rowconfigure(0, weight=1)
-
-        # self.visualization_tab = self.parent_tab_switch.add("Visualization")
-        # # self.export_tab = self.parent_tab_switch.add("Export")
-
-        # self.visualization_tab.columnconfigure(0, weight=1)
-        # self.visualization_tab.rowconfigure(0, weight=1)
-
-        # # it goes to parent frame row 1
-        # self.parent_tab_switch.grid(row=0, column=0, sticky="new", padx=5)
-
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.visualization_tab = ctk.CTkFrame(self, bg_color="transparent")
@@ -209,9 +216,9 @@ class SAMIApp(ctk.CTkFrame):
             It forgets the previous steps and shows the selected step
             It also initailizes the step if it has not been created yet"""
 
-        if self.file_loading_status == False:
+        if self.file_loading_status == False and self.dropdown_file_type_single_multi.get() != "Scils":
             logger.info("Please load the files first")
-            CTkMessagebox(title="Info", message="Wait till the files reading is complete")
+            CTkMessagebox(title="Info", message="Select files and wait till the file loading is complete")
             return
 
         step = self.initialize_step(choice)

@@ -23,6 +23,8 @@ class VisualizationStep(ctk.CTkFrame):
         super().__init__(
             master,
         )
+
+        logger.info("VisualizationStep created")
         self.log_queue = log_queue
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -175,7 +177,7 @@ class VisualizationStep(ctk.CTkFrame):
         """
         This function is triggered when the user selects a file from the dropdown
 
-        It calculates a new compound matrix based on the selected file and first molecule in the molecule dropdown
+        It calculates a new compound matrix based on the selected file and  molecule in the molecule dropdown
         It also updates the molecule dropdown with the molecules present in the selected file
 
         after the above operations, it calculates the high resolution compound matrix and displays the image grids in the left frame
@@ -191,7 +193,7 @@ class VisualizationStep(ctk.CTkFrame):
             timeout_seconds=600,
             waiting_for="File reading",
         )
-        logging.info(f"file_inspection: {self.file_handler.input_data_raw[self.file_dropdown.get()].columns}")
+        logging.info(f"file_inspection: {list(self.file_handler.input_data_raw[self.file_dropdown.get()].columns)}")
         logging.info(f"chosen molecule: {self.file_handler.molecule_name[self.file_dropdown.get()][0]}")
 
         #dynamically updating the molecule dropdown
@@ -264,7 +266,7 @@ class VisualizationStep(ctk.CTkFrame):
             grid_rows += 1
 
         # Create a frame for each image and store it for later processing
-        self.vmax = np.percentile(data[data != 0], 99)
+        # self.vmax = np.percentile(data[data != 0], 99)
         self.frames = []
         for i in range(slices):
             frame = ctk.CTkFrame(
@@ -301,9 +303,11 @@ class VisualizationStep(ctk.CTkFrame):
         ax.set_facecolor("black")
         fig.patch.set_facecolor("black")
         if self.color_map_dropdown.get() == "magma":
-            im = ax.imshow(image_array, cmap=new_cmap1, vmin=0, vmax=self.vmax)
+            # im = ax.imshow(image_array, cmap=new_cmap1, vmin=0, vmax=self.vmax)
+            im = ax.imshow(image_array, cmap=new_cmap1)
         elif self.color_map_dropdown.get() == "viridis":
-            im = ax.imshow(image_array, cmap=new_cmap2, vmin=0, vmax=self.vmax)
+            # im = ax.imshow(image_array, cmap=new_cmap2, vmin=0, vmax=self.vmax)
+            im = ax.imshow(image_array, cmap=new_cmap2)
         else:
             im = ax.imshow(image_array, cmap="grey")
         buf = io.BytesIO()
@@ -381,10 +385,11 @@ class VisualizationStep(ctk.CTkFrame):
         # Add color bar if applicable
         if cmap in ["magma", "viridis"]:
             cbar = fig.colorbar(
-                im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+                # im, ax=ax, ticks=[0, np.percentile(matrix[matrix != 0], 99)], shrink=0.5
+                im, ax=ax
             )
-            cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
-            cbar.ax.set_yticklabels(["low", "high"])
+            # cbar.mappable.set_clim(vmin=0, vmax=np.percentile(matrix[matrix != 0], 99))
+            # cbar.ax.set_yticklabels(["low", "high"])
 
         # Turn off axis labeling to maximize space for the image
         ax.axis("off")

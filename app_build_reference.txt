@@ -1,3 +1,5 @@
+conda env export --file environment.yml 
+
 pyinstaller --onefile --windowed .\app\main_app.py
 
 pyinstaller .\main_app.spec
@@ -25,5 +27,4 @@ pyinstaller --noconsole --icon=C:\Users\ghari\Documents\OPS\UI\Isotopes_app\visi
 pyinstaller --noconsole --onefile --icon="C:\\Users\\ghari\\Documents\\OPS\\UI\\Isotopes_app\\visionapp.ico" --add-data "C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/lib;lib" --add-data "C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/config;config" --add-data "C:\\Users\\ghari\\Documents\\OPS\\UI\\metavision3d_app\\visionApp\\SAMI\\MetabAnalystR.R;config" --hidden-import SAMI --hidden-import sami_tk --hidden-import anndata --hidden-import igraph --hidden-import pyarrow --hidden-import leidenalg  visionApp\app.py
 
 
-# latest command
-pyinstaller --noconfirm --noconsole --onedir --name vision --windowed --icon="C:\\Users\\ghari\\Documents\\OPS\\UI\\Isotopes_app\\visionapp.ico" --add-data "C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/lib;lib" --add-data "C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/config;config" --copy-metadata anndata --hidden-import SAMI --hidden-import sami_tk --hidden-import anndata --hidden-import igraph --hidden-import pyarrow --hidden-import leidenalg --splash app_load.jpg --upx-dir "/usr/local/share" visionApp/app.py
+pyinstaller --noconfirm --noconsole --onedir --name vision --windowed --icon="C:\\Users\\ghari\\Documents\\OPS\\UI\\Isotopes_app\\visionapp.ico" --add-data "C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/lib;lib" --add-data "C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/config;config" --add-data "C:/Users/ghari/Documents/OPS/UI/prism_export_dry/templates;templates" --add-data "C:/Users/ghari/Documents/OPS/UI/metavision3d_app/visionApp/SCILS/ScilsExport.R;config" --copy-metadata anndata --hidden-import SAMI --hidden-import sami_tk --hidden-import anndata --hidden-import igraph --hidden-import pyarrow --hidden-import leidenalg --splash app_load.jpg --upx-dir "/usr/local/share" visionApp/app.py
