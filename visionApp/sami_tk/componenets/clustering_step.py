@@ -49,6 +49,14 @@ class ClusteringStep(ctk.CTkFrame):
         self.dict_df = {}
         # self.trigger_visz_functions_on_thread_run()
 
+        # clustering tracker 
+        self.df_tracker_path = os.path.join(self.file_handler.working_folder, 'results', 'clustering_tracker.csv')
+
+        if os.path.exists(self.df_tracker_path):
+            self.df_tracker = pd.read_csv(self.df_tracker_path)
+        else:
+            self.df_tracker = pd.DataFrame(columns=['timestamp', 'resolution', 'harmony', 'input_file', 'clustered_file' ])
+
 
     def prepare_visualization_dock_type2(self):
         """This visualization is used for the tabs 1. Pooling, 2. Clustering, 3. Clusters Integration, 4. Markers, 5. Pathways
@@ -201,6 +209,10 @@ class ClusteringStep(ctk.CTkFrame):
         self.post_norm_adata_filepath =os.path.join(*[self.file_handler.working_folder,'pooled_data', f'{region}_{modality}.h5ad'])
         logger.info(f"Post norm adata file path is {self.post_norm_adata_filepath}")
 
+        # adding info in tracker
+        self.record = [pd.Timestamp.now(), res, self.harmony_checkbox.get(),self.post_norm_adata_filepath, clustered_file]
+
+
         cluster = Clusters(region, 
                                hmodality,
                                res,
@@ -261,7 +273,9 @@ class ClusteringStep(ctk.CTkFrame):
                 self.prepare_cluster_visualization()
                 self.prepare_specific_cluster_vis()
                 logger.info("visualization prepared")
-                
+                self.df_tracker.loc[len(self.df_tracker)] = self.record
+                self.df_tracker.to_csv(self.df_tracker_path, index=False)
+
                 self.prepare_prism_export_tab()
                 logger.info("prism export tab prepared")
                 self.timer.stop_timer()

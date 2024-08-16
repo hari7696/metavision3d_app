@@ -54,7 +54,7 @@ class NormalizationStep(ctk.CTkFrame):
             os.mkdir(norm_dir)
 
         # making a tracker file to keep track of the normalization
-        self.tracker_file = os.path.join(*[self.file_handler.working_folder, 'normalised_data', 'tracker.csv'])
+        self.tracker_file = os.path.join(*[self.file_handler.working_folder, 'normalised_data', 'Normalisation_tracker.csv'])
 
         if os.path.exists(self.tracker_file):
             self.tracker_df = pd.read_csv(self.tracker_file)
