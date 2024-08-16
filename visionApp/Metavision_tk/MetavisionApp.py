@@ -53,7 +53,7 @@ class MetaVision3DApp(ctk.CTkFrame):
         # self.show_cmap_switch.grid(row=2,column=0,sticky="e",pady=5)
         self.cmap_cbox.configure(state="normal")
         self.compound_matrix=None
-
+        self._3d_tab_exists = False  # Add a flag to track the 3D tab
     
     def open_file(self):
         self.filepath = filedialog.askopenfilename(
@@ -132,51 +132,54 @@ class MetaVision3DApp(ctk.CTkFrame):
             self.allign_rad.grid(row=0,column=4,padx=(3,0),pady=3)
             arrow_label3 = ctk.CTkLabel(self.process_steps_frame,text= '\u27A1',font=("Arial", 20))
             arrow_label3.grid(row=0,column=5,padx=(0,10))
-            #self.interp_rad = ctk.CTkRadioButton(self.process_steps_frame,text="Interp",variable=self.process_step_var,value=4,state="disabled")
-            #self.interp_rad.grid(row=0,column=6,padx=(3,0),pady=3)    
+
+            self.interp_rad = ctk.CTkRadioButton(self.process_steps_frame,text="Next Steps", variable=self.process_step_var,value=4,state="disabled")
+            self.interp_rad.grid(row=0,column=6,padx=(3,0),pady=3)    
              
             # Dropdown for selecting Impute, Interp, or both
-            self.process_selection = ctk.CTkComboBox(self.process_steps_frame, values=["Select Process", "Impute", "Interp", "Both"])
-            self.process_selection.grid(row=0, column=6, padx=3, pady=3)
-            self.process_selection.bind("<<ComboboxSelected>>", self.handle_process_selection_change)
+            self.process_selection = ctk.CTkComboBox(self.process_steps_frame, values=["Select Process", "Impute", "Interpolate", "Both"], command=self.update_interpolation_entry)
+            self.process_selection.grid(row=0, column=7, padx=3, pady=3)
 
             self.interp_scale_entry = ctk.CTkEntry(self.process_steps_frame, placeholder_text="Enter extra slices between")
-            self.interp_scale_entry.grid(row=0, column=7)
+            self.interp_scale_entry.grid(row=0, column=8)
             self.interp_scale_entry.insert(0, "2")
             self.interp_scale_entry.grid_remove()  # Hide by default
 
-       
             self.process_button = ctk.CTkButton(self.process_steps_frame, text="Run", command=self.start_selected_process)
-            self.process_button.grid(row=0, column=8, padx=3, pady=3)
+            self.process_button.grid(row=0, column=9, padx=3, pady=3)
 
-    def handle_process_selection_change(self, event=None):
+            self.reset_button = ctk.CTkButton(self.process_steps_frame, text="Reset", command=self.reset_process)
+            self.reset_button.grid(row=0, column=10, padx=3, pady=3)
+
+    def update_interpolation_entry(self, selected_process):
         selected_process = self.process_selection.get()
-        if selected_process in ["Interp", "Both"]:
+        if selected_process in ["Interpolate", "Both"]:
             self.interp_scale_entry.grid()
         else:
             self.interp_scale_entry.grid_remove()
 
     def start_selected_process(self):
-
         try:
-
-            if self.process_step_var.get()==1:    
+            step = self.process_step_var.get()
+            if step ==1:    
                 logger.info("Starting the visualization process")
                 self.visualize_process_rad.configure(state="disabled")
                 self.normalize_process_rad.select()
                 self.start_initial_visualization()
-            elif self.process_step_var.get()==2:
+            elif step ==2:
                 logger.info("Starting the normalization process")
                 self.normalize_process_rad.configure(state="disabled")
                 self.allign_rad.select()
                 self.start_normalization()
-            elif self.process_step_var.get() == 3:
+            elif step == 3:
+                # self.allign_rad.configure(state="disabled")
                 logger.info("Starting the alignment process")
-                self.allign_rad.configure(state="disabled")
                 self.start_allignment()
-                self.handle_process_selection()
-            elif self.process_step_var.get() == 4:
-                logger.info("Starting the selected process: Interp/Impute/Both")
+                # self.interp_rad.configure(state="normal")
+                # self.handle_process_selection()
+            elif step == 4:
+                logger.info("Starting the selected process: Interpolate/Impute/Both")
+                self.interp_rad.configure(state="disabled")
                 self.handle_process_selection()
         except Exception as e:
             logger.error(f"Error in executing the selected : {e}")
@@ -187,18 +190,19 @@ class MetaVision3DApp(ctk.CTkFrame):
             messagebox.showinfo("Success", "Alignment is done. Please select a process if you would like to continue with imputation/interpolation.")
             return
 
-        if selected_process in ["Interp", "Both"]:
+        if selected_process in ["Interpolate", "Both"]:
             self.interp_scale_entry.grid()
         else:
             self.interp_scale_entry.grid_remove()
-            
-        self.process_button.configure(command=lambda: self.run_selected_process(selected_process))
-        self.process_button.grid(row=0, column=8)
+        
+        self.run_selected_process(selected_process)    
+        # self.process_button.configure(command=lambda: self.run_selected_process(selected_process))
+        # self.process_button.grid(row=0, column=8)
 
     def run_selected_process(self, selected_process):
         if selected_process == "Impute":
             self.start_imputation()
-        elif selected_process == "Interp":
+        elif selected_process == "Interpolate":
             self.start_interp()
         elif selected_process == "Both":
             self.start_imputation()
@@ -209,6 +213,7 @@ class MetaVision3DApp(ctk.CTkFrame):
 
 
     def start_initial_visualization(self):
+        self.molecule_dropdown.configure(state="disabled")
         self.cmap_cbox.configure(state="normal")
         self.compound_matrix = algo_meta3d_align.create_compound_matrix(self.df,col=self.molecule_dropdown.get(),reverse=True)
         time.sleep(1)
@@ -231,13 +236,13 @@ class MetaVision3DApp(ctk.CTkFrame):
         meta_align = algo_meta3d_align.MetaAlign3D(self.data)
         self.compound_matrix = meta_align.create_compound_matrix(reverse=True)
         self.compound_matrix = meta_align.seq_align()
-        # self.compound_matrix = meta_align.seq_align()
         self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
         self.display_norm_plot(self.compound_matrix)
         self.display_animation()
         self.generate_3d_file()
         self.create_3d_tab()
         self.allign_rad.configure(state="disabled")  # Disable the "Align" button after alignment
+        self.interp_rad.configure(state="normal")
         self.process_step_var.set(4)  # Set to 4 to allow imputation/interpolation selection
 
     def start_imputation(self):
@@ -245,12 +250,14 @@ class MetaVision3DApp(ctk.CTkFrame):
         if self.compound_matrix is None:
             messagebox.showerror("Error", "Compound matrix is not available. Please complete the alignment process first.")
             return
+        logger.info("Starting the Imputation process")
         meta_impute = algo_meta3d_impute.MetaImpute3D(self.compound_matrix)
         self.compound_matrix = meta_impute.seq_impute()
         self.display_individual_images(self.cmap_switch_var.get(), self.compound_matrix)
         self.display_norm_plot(self.compound_matrix)
         self.display_animation()
         self.generate_3d_file()
+        self.interp_rad.configure(state="disabled")  
         # self.create_3d_tab()
 
 
@@ -259,13 +266,38 @@ class MetaVision3DApp(ctk.CTkFrame):
             int(self.interp_scale_entry.get())
         except ValueError:
             messagebox.showerror("Error", "Only Integer values are allowed")
+        logger.info("Starting the Interpolation process")
         meta_interp = algo_meta3d_interp.MetaInterp3D(self.compound_matrix,int(self.interp_scale_entry.get()))
         self.compound_matrix = meta_interp.interp()
         self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
         self.display_norm_plot(self.compound_matrix)
         self.display_animation()
         self.generate_3d_file()
-    
+        self.interp_rad.configure(state="disabled")
+ 
+    def reset_process(self):
+        for widget in self.slides_display_frame.winfo_children():
+            widget.destroy()  
+        for widget in self.slide_tab.winfo_children():
+            widget.destroy()
+        # Destroy the 3D tab if it exists
+        if self._3d_tab_exists:
+            self.tab_view.delete("3D view")
+            self._3d_tab_exists = False  # Reset the flag
+        if hasattr(self, 'norm_plot_frame') and self.norm_plot_frame is not None:
+            self.norm_plot_frame.destroy()
+        self.ani_ax.clear()
+        self.ani_fig.clear()
+        self.animation_canvas_widget.destroy()
+        self.animation_slider.destroy()
+
+        self.molecule_dropdown.configure(state="normal")
+        self.visualize_process_rad.configure(state="normal")
+        self.process_step_var.set(1)
+        self.process_button.configure(state="normal") # Enable the Run button
+
+        logger.info("Reset process completed")
+
     def create_parent_tab_switch(self):
 
         self.parent_tab_switch = ctk.CTkTabview(self,bg_color="transparent")
@@ -644,6 +676,8 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.nii_file_entry.grid(row=3,column=0)
         self.nii_file_save_button = ctk.CTkButton(self._3d_tab,text="Save",command=self.save_nii_file)
         self.nii_file_save_button.grid(row=3,column=1,sticky="w")
+
+        self._3d_tab_exists = True  # Mark the 3D tab as created
 
     def open_nii_output_dir_select_dialog(self):
         self.nii_output_directory = filedialog.askdirectory(title="Select Output Folder")
