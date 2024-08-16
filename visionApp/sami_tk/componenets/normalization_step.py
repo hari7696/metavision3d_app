@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from CTkMessagebox import CTkMessagebox
 import os
+import pandas as pd
 import logging
 from .compound_matrix import create_compound_matrix
 from multiprocessing import Process, Queue
@@ -47,9 +48,19 @@ class NormalizationStep(ctk.CTkFrame):
         self.prepare_visualization_dock_type1()
         self.create_normalization_tab()
 
+
         norm_dir = os.path.join(*[self.file_handler.working_folder, 'normalised_data'])
         if not os.path.exists(norm_dir):
             os.mkdir(norm_dir)
+
+        # making a tracker file to keep track of the normalization
+        self.tracker_file = os.path.join(*[self.file_handler.working_folder, 'normalised_data', 'tracker.csv'])
+
+        if os.path.exists(self.tracker_file):
+            self.tracker_df = pd.read_csv(self.tracker_file)
+        else:
+            self.tracker_df = pd.DataFrame(columns=['time_stamp','file', 'rowNorm', 'transNorm', 'compnorm', ])
+
         # self.check_for_normalization_thread_signal()
 
         # threading.Thread(target=self.displaying_loading_on_main_thread, args= (),daemon=True).start()
@@ -310,6 +321,14 @@ class NormalizationStep(ctk.CTkFrame):
                 CTkMessagebox(title="Info", message="Please select a compound to normalize with")
                 return
             ref_compound = self.algo_selection_dropdown3.get()
+
+        # waiting till the input files 
+        record = [pd.Timestamp.now(), self.file_dropdown.get(), 
+                  self.algo_selection_dropdown.get(), 
+                  self.algo_selection_dropdown2.get(), 
+                  self.algo_selection_dropdown3.get()]
+        self.tracker_df.loc[len(self.tracker_df)] = record
+        self.tracker_df.to_csv(self.tracker_file, index=False)
 
         # running normalization
         self.normalized_data[self.file_dropdown.get()] = create_norm_dataset_gui(self.file_handler.input_data_raw[self.file_dropdown.get()],
