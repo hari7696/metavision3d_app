@@ -14,7 +14,7 @@ from SAMI.clustering import Clusters
 from PRISM.ColumnTable import ColumnTable
 from PRISM.NestedTable import NestedTable
 from .display_image import ImageDisaplay
-from .ClusterPrismExport2 import ClusterPrismExport
+from .ClusterPrismExport import ClusterPrismExport
 from log_listener import worker_configurer
 import scanpy as sc
 import pandas as pd 
@@ -48,6 +48,14 @@ class ClusteringStep(ctk.CTkFrame):
         self.prism_table_value.append(["Table Name", "Clusters", "Compounds"])
         self.dict_df = {}
         # self.trigger_visz_functions_on_thread_run()
+
+        # clustering tracker 
+        self.df_tracker_path = os.path.join(self.file_handler.working_folder, 'results', 'clustering_tracker.csv')
+
+        if os.path.exists(self.df_tracker_path):
+            self.df_tracker = pd.read_csv(self.df_tracker_path)
+        else:
+            self.df_tracker = pd.DataFrame(columns=['timestamp', 'resolution', 'harmony', 'input_file', 'clustered_file' ])
 
 
     def prepare_visualization_dock_type2(self):
@@ -150,17 +158,22 @@ class ClusteringStep(ctk.CTkFrame):
         self.resolution.grid(row=0,column=3,padx=(5,0),pady=8,sticky="w")
         self.resolution.insert(0, "1")
 
+        #adding a check box for the Harmony optons
+        self.harmony_checkbox = ctk.CTkCheckBox(self.cluster_options, text="Harmony")
+        self.harmony_checkbox.grid(row=0,column=4,padx=(10,0),pady=8,sticky="w")
+        self.harmony_checkbox.select()
+
         self.cluster_button = ctk.CTkButton(self.cluster_options,text="Run Clustering",command=self.perform_clustering)
-        self.cluster_button.grid(row=0,column=4,padx=(10,0),pady=8,sticky="w")
+        self.cluster_button.grid(row=0,column=5,padx=(10,0),pady=8,sticky="w")
 
         # timer button
         self.timer = TimerApp(self.cluster_options)
-        self.timer.grid(row=0,column=5,padx=(50,0),pady=8,sticky="w")
+        self.timer.grid(row=0,column=6,padx=(50,0),pady=8,sticky="w")
 
         # time constraint
         self.time_constraint_label = ctk.CTkLabel(self.cluster_options, text="Note : clustering usally takes 15+ minutes",
                                                    text_color="yellow", width=300)
-        self.time_constraint_label.grid(row=0,column=6,padx=(10,0),pady=8,sticky="e")
+        self.time_constraint_label.grid(row=0,column=7,padx=(10,0),pady=8,sticky="e")
 
         logger.info("Cluster options tab prepared")
 
@@ -185,16 +198,26 @@ class ClusteringStep(ctk.CTkFrame):
         logger.info(f"{region} and {modality} are the region and modality selected")
         # print(region, modality)   
         res = float(self.resolution.get())
+        
         # print(res)
         file_location = os.path.join(*[self.file_handler.working_folder, 'results', 'clustering'])
-        clustered_file = os.path.join(file_location,f'{region}_{modality}_{res}.h5ad')
+
+        hmodality = modality + '_harmony' if self.harmony_checkbox.get() == 1 else modality
+        clustered_file = os.path.join(file_location,f'{region}_{hmodality}_{res}.h5ad')
         logger.info(f"File location is {file_location}")
         logger.info(f"Clustered file location is {clustered_file}")
+        self.post_norm_adata_filepath =os.path.join(*[self.file_handler.working_folder,'pooled_data', f'{region}_{modality}.h5ad'])
+        logger.info(f"Post norm adata file path is {self.post_norm_adata_filepath}")
+
+        # adding info in tracker
+        self.record = [pd.Timestamp.now(), res, self.harmony_checkbox.get(),self.post_norm_adata_filepath, clustered_file]
+
+
         cluster = Clusters(region, 
-                               modality,
+                               hmodality,
                                res,
                                os.path.join(self.file_handler.working_folder, 'pooled_data'),
-                               os.path.join(self.file_handler.working_folder), self.log_queue)
+                               os.path.join(self.file_handler.working_folder), self.log_queue, harmony_flag = self.harmony_checkbox.get())
         
         return cluster, clustered_file
     
@@ -250,7 +273,9 @@ class ClusteringStep(ctk.CTkFrame):
                 self.prepare_cluster_visualization()
                 self.prepare_specific_cluster_vis()
                 logger.info("visualization prepared")
-                
+                self.df_tracker.loc[len(self.df_tracker)] = self.record
+                self.df_tracker.to_csv(self.df_tracker_path, index=False)
+
                 self.prepare_prism_export_tab()
                 logger.info("prism export tab prepared")
                 self.timer.stop_timer()
@@ -323,7 +348,7 @@ class ClusteringStep(ctk.CTkFrame):
         for child in self.prism_export_tab.winfo_children():
             child.destroy()
         
-        prism_pane = ClusterPrismExport(self.prism_export_tab, self.log_queue, self.clustered_file)
+        prism_pane = ClusterPrismExport(self.prism_export_tab, self.log_queue, self.clustered_file, self.post_norm_adata_filepath)
         prism_pane.grid(row=0, column=0, sticky="nsew")
         prism_pane.columnconfigure(0, weight=1)
         prism_pane.rowconfigure(0, weight=1)
