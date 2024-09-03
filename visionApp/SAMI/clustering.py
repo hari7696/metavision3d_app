@@ -33,13 +33,13 @@ class Clusters:
             logger.info("CLustering:  Harmony flag: {}".format(self.haromony_flag))
             sc.pp.pca(adata)
             if (len(np.unique(adata.obs['region']))>1) and self.haromony_flag == 1:
-                sc.external.pp.harmony_integrate(adata,key='region',max_iter_harmony=2)
+                sc.external.pp.harmony_integrate(adata,key='region',max_iter_harmony=20)
                 all_pcs = adata.obsm['X_pca_harmony'].shape[1]
                 n_pcs = min(20, all_pcs)
                 sc.pp.neighbors(adata,use_rep = 'X_pca_harmony', n_pcs=n_pcs)
             else:
                 all_pcs = adata.obsm['X_pca'].shape[1]
-                n_pcs = min(20, all_pcs)
+                n_pcs = min(20, all_pcs) 
                 sc.pp.neighbors(adata,n_pcs=n_pcs)
                 
             sc.tl.umap(adata, random_state= 7)

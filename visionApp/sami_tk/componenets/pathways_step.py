@@ -428,12 +428,11 @@ class PathwaysStep(ctk.CTkFrame):
 
         try:
             image_location = self.pathway.pathway_network(cluster=cluster,top=top_n,size = size, show=False)
-            logger.info(f"network plot image location: {image_location}")
         except Exception as e:
             logger.error(f"Error in plot_dot: {e}")
             CTkMessagebox(title="Error", message="Something went wrong in pathway calculation", icon="cancel")
 
-
+        logger.info(f"network plot image location: {image_location}")
         # creating a label to display the image
         self.network_image_label = ctk.CTkLabel(self.network_image_frame , text = "", width=600, height=600)
         self.network_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)
