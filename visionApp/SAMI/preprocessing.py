@@ -7,6 +7,7 @@ from .utils import *
 import re
 import logging
 from log_listener import worker_configurer
+import pickle
 logger = logging.getLogger(__name__)
 
 #load .csv data and return .h5ad files
@@ -81,7 +82,13 @@ def pooldata(data_path,pattern, data_saving_path, split=False, log_queue=None):
     # common_elements = list(set(adata_dict['metabolomics'].var.index.to_list()).intersection(adata_dict['lipidomics'].var.index.to_list()))
     # adata_dict['metabolomics']=adata_dict['metabolomics'][:,~adata_dict['metabolomics'].var.index.isin(common_elements)]
 
+    # adata_dict
+    # Pickle the adata_dict
+    # with open(os.path.join(data_saving_path, r'C:\Users\ghari\Documents\OPS\SAMI\adata_dict.pkl'), 'wb') as f:
+    #     pickle.dump(adata_dict, f)
 
+    # manually overriding pixel mis alignment
+    # adata_dict['lipids'].obs = adata_dict['sm'].obs 
     adata=ad.concat(adata_dict,join='inner',axis=1,label='omics')
 
     #reset annotation

@@ -267,6 +267,7 @@ def create_norm_dataset(data_path,pattern):
 
 def create_norm_dataset_gui(df, working_dir, key, rowNorm, transNorm, first_compound, ref_compound = None):
 
+    logger.info(f"column names before normalization: {df.columns}")
     first_compound_idx = df.columns.get_loc(first_compound)
     # print("################", first_compound_idx)
     try:

@@ -29,7 +29,7 @@ class Markers:
         cluster_list=adata.obs[cluster_param].cat.categories.tolist()
         cluster_list = sorted([int(s) for s in cluster_list])
         logger.info("Total clusters: "+str(len(cluster_list)))
-        for i in range(len(cluster_list)):
+        for i in range(len(cluster_list)): #[0]:
             logger.info(f'Finding markers for cluster {i}')
             pvalue_temp=pd.DataFrame(columns=['feature','omics','pvalue','avg_log2FC','abs_avg_log2FC','pct1','pct2','adj_pvalue','cluster','rank'])
             for feature in adata.var.index:
@@ -39,6 +39,8 @@ class Markers:
                 else:
                     a=adata[adata.obs[cluster_param]==str(cluster_list[i])][:,feature].X.copy()
                     b=adata[adata.obs[cluster_param]!=str(cluster_list[i])][:,feature].X.copy()
+                    # b=adata[adata.obs[cluster_param]==str(9)][:,feature].X.copy()
+                    
                 if len(a)!=0 and len(b)!=0:
                     pct1=sum(a!=0)/len(a)
                     pct2=sum(b!=0)/len(b)
@@ -54,6 +56,7 @@ class Markers:
                         pvalue_temp=pd.concat([pvalue_temp,pvalue_feature],ignore_index=True)
                     else:
                         continue
+            # logger.info(f"cluster in comparison CROSSSSSSSSSS CHECKKKKKKKKKKKKKKK {adata[adata.obs[cluster_param]==str(9)].obs[cluster_param].unique()} ")
 
             #results of all the features
             pvalue_result=pd.concat([pvalue_result,pvalue_temp],ignore_index=True)

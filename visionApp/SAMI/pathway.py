@@ -13,14 +13,14 @@ try:
     base_path = sys._MEIPASS
     inno_path = os.path.dirname(base_path)
     R_HOME = os.path.join(inno_path, r"R-4.3.3")
-    path = os.path.join(inno_path, r"R-4.3.3/bin")
+    path = os.path.join(inno_path, r"R-4.3.3\bin\x64")
     os.environ["R_HOME"] = R_HOME
     os.environ["PATH"] += path + ";" + os.environ["R_HOME"]
     logger.info("running in executable mode")
 except Exception as e:
-    os.environ["R_HOME"] = r"/Library/Frameworks/R.framework/Resources"
+    os.environ["R_HOME"] = r"C:\Program Files\R\R-4.3.3"
     os.environ["PATH"] += (
-        r":/Library/Frameworks/R.framework/Resources/bin" + ";" + os.environ["R_HOME"]
+        r"C:\Program Files\R\R-4.3.3\bin\x64" + ";" + os.environ["R_HOME"]
     )
     logger.info("running in dev mode")
     # print(e)
@@ -62,7 +62,7 @@ class Pathway:
             logger.info("running in executable mode")
             logger.info(f"libraries path: {libraries_path}")
         except:
-            libraries_path = "/Library/Frameworks/R.framework/Versions/4.3/Resources/library"
+            libraries_path = "C:/Program Files/R/R-4.3.3/win-library/4.3"
             logger.info("running in dev mode")
             logger.info(f"libraries path: {libraries_path}")
 
@@ -138,6 +138,8 @@ class Pathway:
     
 
     def plot_dot(self,cluster,scale,height,top=None,show=False):
+        logger.info("pathways dot plot called")
+        logger.info("reading_csv {}".format(os.path.join(self.pathways_folder ,f'ora_{self.modality}.csv')))
         ora_data = pd.read_csv(os.path.join(self.pathways_folder ,f'ora_{self.modality}.csv'))
         ora_data['enrichment_ratio'] = ora_data['hits']/ora_data['expected']
         
@@ -226,6 +228,8 @@ class Pathway:
     
     
     def pathway_network(self,cluster,top=None,size =800, show=False):
+        logger.info("pathways network plot called")
+        logger.info("reading_csv {}".format(os.path.join(self.pathways_folder ,f'ora_{self.modality}.csv')))
         ora_data = pd.read_csv(os.path.join(self.pathways_folder ,f'ora_{self.modality}.csv'))
         ora_data['enrichment_ratio'] = ora_data['hits']/ora_data['expected']
         
