@@ -5,6 +5,7 @@ from multiprocessing import Process, Queue
 from SAMI.preprocessing import pooldata, csv2h5ad
 from .timer import TimerApp
 from log_listener import worker_configurer
+from CTkMessagebox import CTkMessagebox
 logger = logging.getLogger(__name__)
 # logger = logging.getLogger(__name__)
 
@@ -135,7 +136,12 @@ class PoolingStep(ctk.CTkFrame):
 
         logger.info("OMICS started")
         # pooling omics data
-        pooldata(data_reading_path, r'^\w+norm\.pq', data_saving_path, split=True, log_queue = log_queue)
+        merge_error_flag = pooldata(data_reading_path, r'^\w+norm\.pq', data_saving_path, split=True, log_queue = log_queue)
+        if merge_error_flag:
+            logger.error("Error in pooling omics data")
+            CTkMessagebox(title="warning", message="Pixel alignment issue occured during pooling, Please check the image alignment", icon="error")
+            return 
+            
 
         files = os.listdir(data_saving_path)
         str = ""
