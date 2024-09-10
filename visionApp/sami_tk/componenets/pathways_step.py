@@ -165,7 +165,7 @@ class PathwaysStep(ctk.CTkFrame):
         logger.info("options panel prepared")
 
     def generate_pathways(self):
-        
+        # self.run_button.configure(state="disabled")
         logger.info("Generating Pathways button hit")
         # this function run the command of generating markers button
         self.selected_file = self.file_selection.get()

@@ -368,6 +368,7 @@ class NormalizationStep(ctk.CTkFrame):
         if self.file_dropdown.get() == "Select Dataset":
             CTkMessagebox(title="Info", message="Please select a dataset on the left panel")
         else:
+            self.run_button.configure(state="disabled")
             self.norm_done_label.configure(text="Normalization is running", text_color="yellow")
             self.timer.reset_timer()
             self.timer.start_timer()
@@ -401,6 +402,7 @@ class NormalizationStep(ctk.CTkFrame):
                     csv_saving_process.start()
                     self.norm_done_label.configure(text="Normalization is completed", font = ("Arial", 14), text_color = "green")
                     self.timer.stop_timer() 
+                    self.run_button.configure(state="normal")
             except:
                 pass
                 logger.error("Error in the normalization thread signal")

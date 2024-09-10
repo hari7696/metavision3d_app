@@ -191,7 +191,7 @@ class MarkerStep(ctk.CTkFrame):
         logger.info("Options panel prepared")   
 
     def generate_markers(self):
-        
+        # self.run_button.configure(state="disabled")
         logger.info("Generating markers button hit")
         # this function run the command of generating markers button
         region1 = self.region1_selection.get().split("||")[-1]

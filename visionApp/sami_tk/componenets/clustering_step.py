@@ -245,6 +245,7 @@ class ClusteringStep(ctk.CTkFrame):
         It starts the clustering process in a separate process
         Once the clustering is done, it triggers the visualization functions"""
         logger.info("perform_clustering Triggered" )
+        self.cluster_button.configure(state="disabled")
         self.timer.reset_timer()
         self.timer.start_timer()
         cluster, self.clustered_file = self.prepare_cluster_module()
@@ -280,6 +281,7 @@ class ClusteringStep(ctk.CTkFrame):
                 logger.info("prism export tab prepared")
                 self.timer.stop_timer()
                 self.time_constraint_label.configure(text="Clustering Done", text_color="green")
+                self.cluster_button.configure(state="normal")
             except Exception as e:
                 logger.error(f"Error in getting the message from the queue {e}")
             finally:
