@@ -80,8 +80,16 @@ class Pathway:
             base_path = os.path.join(sys._MEIPASS , 'config')
         except Exception:
             base_path = os.path.join(*[os.getcwd(), 'visionApp', 'SAMI'])
-
+        
         logger.info("base path of R file: {}".format(base_path))
+                # finding lib folder
+        try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+            lib_folder = os.path.join(sys._MEIPASS , 'lib')
+        except Exception as e:
+            lib_folder = os.path.join(*[os.getcwd(), 'visionApp', 'lib'])
+        finally:
+            logger.info(f"lib folder: {lib_folder}")
 
         r_file =  os.path.join(base_path, 'MetabAnalystR.R')
         r_source(r_file) 
@@ -91,37 +99,70 @@ class Pathway:
         
         if self.modality=='metabolomics_glycomics':
             markers = markers.loc[markers['omics'].isin(['metabolomics','glycomics'])]
+            
+            result_pathR = ro.StrVector([self.pathways_folder])
+            logical_arg = ro.BoolVector([True,False])
+            modalityR = ro.StrVector([self.modality])
+            clustersR = ro.vectors.IntVector(clusters)
+            regionR = ro.StrVector([self.region])
+            with localconverter(ro.default_converter + pandas2ri.converter):
+                markersR = ro.conversion.py2rpy(markers)
+
+            PathwayEnrichment = ro.r['PathwayEnrichment']
+            
+            # PathwayEnrichment(result_path=result_pathR,modality=modalityR,region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[1])
+            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[1],merge=logical_arg[1],
+                                results_folder=self.pathways_folder , lib_folder = lib_folder)
+            
+            # (region,markers,clusters,lipid,merge, results_folder, lib_folder)
+            
+            logger.info("pathway enrichment analysis is done.")
+            #### 2024-08-31 add direction ###
+            pathways = pd.read_csv(os.path.join(self.pathways_folder,f'ora_{self.region}_{self.modality}.csv'))
+            
+            pathways['pathway_avg_log2FC'] = None
+            pathways['regulated'] = None
+            for idx, row in pathways.iterrows():
+                cluster = row['cluster']
+                compounds = row['compounds'].split(',')
+                markers_fc = markers.loc[(markers['cluster']==cluster)&(markers['feature'].isin(compounds))]
+                pathway_fc = round(markers_fc['avg_log2FC'].mean(),4)
+                pathways.at[idx, 'pathway_avg_log2FC'] = pathway_fc
+                pathways.at[idx, 'regulated'] = 'up' if pathway_fc > 0 else 'down'
+                
+            pathways.to_csv(os.path.join(self.pathways_folder,f'ora_{self.region}_{self.modality}.csv'),index=False)
+                    
         else:
             markers = markers.loc[markers['omics']=='lipidomics']
         
-        logical_arg = ro.BoolVector([True,False])
-        clustersR = ro.vectors.IntVector(clusters)
-        regionR = ro.StrVector([self.region])
-        with localconverter(ro.default_converter + pandas2ri.converter):
-            markersR = ro.conversion.py2rpy(markers)
-            
-        PathwayEnrichment = ro.r['PathwayEnrichment']
-        
-        # finding lib folder
-        try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-            lib_folder = os.path.join(sys._MEIPASS , 'lib')
-        except Exception as e:
-            lib_folder = os.path.join(*[os.getcwd(), 'visionApp', 'lib'])
-        finally:
-            logger.info(f"lib folder: {lib_folder}")
+            result_pathR = ro.StrVector([self.pathways_folder])
+            logical_arg = ro.BoolVector([True,False])
+            modalityR = ro.StrVector([self.modality])
+            clustersR = ro.vectors.IntVector(clusters)
+            regionR = ro.StrVector([self.region])
+            with localconverter(ro.default_converter + pandas2ri.converter):
+                markersR = ro.conversion.py2rpy(markers)
 
-        try:
-            if self.modality=='metabolomics_glycomics':
-                PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[1],merge=logical_arg[1],
-                                results_folder=self.pathways_folder , lib_folder = lib_folder)
-                logger.info("Pathway enrichment metabolomics_glycomics")
-            else:
-                PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[0],merge=logical_arg[1], 
+            PathwayEnrichment = ro.r['PathwayEnrichment']
+        
+            # PathwayEnrichment(result_path=result_pathR,modality=modalityR,region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[0])
+            
+            PathwayEnrichment(region=regionR,markers=markersR,clusters=clustersR,lipid=logical_arg[0],merge=logical_arg[1], 
                                 results_folder=self.pathways_folder, lib_folder = lib_folder)
-                logger.info("Pathway enrichment lipidomics")
-        except Exception as e:
-            logger.info(f'Error in pathway enrichment: {e}')
+            #### 2024-08-31 add direction ###
+            pathways = pd.read_csv(os.path.join(self.pathways_folder,f'ora_{self.region}_{self.modality}.csv'))
+            
+            pathways['pathway_avg_log2FC'] = None
+            pathways['regulated'] = None
+            for idx, row in pathways.iterrows():
+                cluster = row['cluster']
+                compounds = row['compounds'].split(',')
+                markers_fc = markers.loc[(markers['cluster']==cluster)&(markers['feature'].isin(compounds))]
+                pathway_fc = round(markers_fc['avg_log2FC'].mean(),4)
+                pathways.at[idx, 'pathway_avg_log2FC'] = pathway_fc
+                pathways.at[idx, 'regulated'] = 'up' if pathway_fc > 0 else 'down'
+                
+            pathways.to_csv(os.path.join(self.pathways_folder,f'ora_{self.region}_{self.modality}.csv'),index=False)
 
         logger.info("Pathway enrichment core completed")
         
@@ -139,8 +180,8 @@ class Pathway:
 
     def plot_dot(self,cluster,scale,height,top=None,show=False):
         logger.info("pathways dot plot called")
-        logger.info("reading_csv {}".format(os.path.join(self.pathways_folder ,f'ora_{self.modality}.csv')))
-        ora_data = pd.read_csv(os.path.join(self.pathways_folder ,f'ora_{self.modality}.csv'))
+        logger.info("reading_csv {}".format(os.path.join(self.pathways_folder ,f'ora_{self.region}_{self.modality}.csv')))
+        ora_data = pd.read_csv(os.path.join(self.pathways_folder ,f'ora_{self.region}_{self.modality}.csv'))
         ora_data['enrichment_ratio'] = ora_data['hits']/ora_data['expected']
         
         if top is None:
@@ -225,12 +266,64 @@ class Pathway:
             return os.path.join(self.pathways_folder,f'{self.region}_{self.modality}_{cluster}.png')
         else:
             return None
+        
+    def plot_bar(self,cluster,top=None,show=False):
+        ora_data = pd.read_csv(os.path.join(self.pathways_folder,f'ora_{self.region}_{self.modality}.csv'))
+        if top is None:
+            up_data = ora_data[(ora_data['regulated'] == 'up')&(ora_data['cluster']==cluster)]
+            down_data = ora_data[(ora_data['regulated'] == 'down')&(ora_data['cluster']==cluster)]
+        else:
+            up_data = ora_data[(ora_data['regulated'] == 'up')&(ora_data['cluster']==cluster)].head(top)
+            down_data = ora_data[(ora_data['regulated'] == 'down')&(ora_data['cluster']==cluster)].head(top)
+
+        fig, ax = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+
+        if up_data.shape[0]!=0:
+
+            ax[0].barh(up_data['pathway'], -np.log10(up_data['Raw.p']), color='red')
+            ax[0].text(1.05, 0.5, 'Up-Regulated', fontsize=15, fontweight='bold', transform=ax[0].transAxes, ha='right', va='center', rotation=270)
+            #ax[0].set_title('Up-Regulated',fontsize=15,fontweight='bold')
+            ax[0].set_ylabel('Pathway',fontsize=15,fontweight='bold')
+            ax[0].invert_yaxis()
+            ax[0].set_yticks(range(len(up_data['pathway'])))
+            ax[0].set_yticklabels(up_data['pathway'], fontsize=15, weight='bold')
+            ax[0].grid(True, which='both', linestyle='--', linewidth=0.5)
+            for label in ax[0].get_xticklabels():
+                label.set_fontsize(12)
+                label.set_fontweight('bold')
+
+        else:
+            fig.delaxes(ax[0])
+
+        if down_data.shape[0]!=0:
+            ax[1].barh(down_data['pathway'], -np.log10(down_data['Raw.p']), color='blue')
+            ax[1].text(1.05, 0.5, 'Down-Regulated', fontsize=15, fontweight='bold', transform=ax[1].transAxes, ha='right', va='center', rotation=270)
+            #ax[1].set_title('Down-Regulated',fontsize=15,fontweight='bold')
+            ax[1].set_xlabel('-log10(p-value)',fontsize=15,fontweight='bold')
+            ax[1].set_ylabel('Pathway',fontsize=15,fontweight='bold')
+            ax[1].invert_yaxis()
+            ax[1].set_yticks(range(len(down_data['pathway'])))
+            ax[1].set_yticklabels(down_data['pathway'], fontsize=15, weight='bold')
+            ax[1].grid(True, which='both', linestyle='--', linewidth=0.5)
+            for label in ax[1].get_xticklabels():
+                label.set_fontsize(12)
+                label.set_fontweight('bold')
+        else:
+            fig.delaxes(ax[1])
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.pathways_folder,f'{self.region}_{self.modality}_{cluster}_barplot.png'))
+        if show == False:
+            plt.close()
+        else:
+            plt.show()
+        return os.path.join(self.pathways_folder,f'{self.region}_{self.modality}_{cluster}_barplot.png')
     
     
     def pathway_network(self,cluster,top=None,size =800, show=False):
         logger.info("pathways network plot called")
-        logger.info("reading_csv {}".format(os.path.join(self.pathways_folder ,f'ora_{self.modality}.csv')))
-        ora_data = pd.read_csv(os.path.join(self.pathways_folder ,f'ora_{self.modality}.csv'))
+        logger.info("reading_csv {}".format(os.path.join(self.pathways_folder ,f'ora_{self.region}_{self.modality}.csv')))
+        ora_data = pd.read_csv(os.path.join(self.pathways_folder ,f'ora_{self.region}_{self.modality}.csv'))
         ora_data['enrichment_ratio'] = ora_data['hits']/ora_data['expected']
         
         if self.modality=='metabolomics_glycomics':
