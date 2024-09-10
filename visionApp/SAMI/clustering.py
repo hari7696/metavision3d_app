@@ -15,7 +15,7 @@ class Clusters:
         self.log_queue = log_queue  
         self.region = region
         self.modality = modality
-        self.resolution = round(resolution,1)
+        self.resolution = resolution
         self.pooled_data_folder = pooled_data_folder
         self.working_folder = working_folder
         self.file_path = os.path.join(*[self.working_folder, 'results', 'clustering'])

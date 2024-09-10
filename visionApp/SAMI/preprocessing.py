@@ -52,6 +52,7 @@ def csv2h5ad(data_path,pattern,data_saving_path, split=False, log_queue=None):
 #merge omics data by coordinates and return .h5ad file
 def pooldata(data_path,pattern, data_saving_path, split=False, log_queue=None):
     # worker_configurer(log_queue)
+    merge=False
     adata_dict={}
     for file in os.listdir(data_path):
         name, ext = os.path.splitext(file)
@@ -91,6 +92,22 @@ def pooldata(data_path,pattern, data_saving_path, split=False, log_queue=None):
     # adata_dict['lipids'].obs = adata_dict['sm'].obs 
     adata=ad.concat(adata_dict,join='inner',axis=1,label='omics')
 
+    if len(adata.obs.index) == 0:
+        merge_error_flag = True
+        logger.warning("mismatch, no common pixels found in the data")
+    
+        if len(adata_dict['lipids'].obs.index) == len(adata_dict['sm'].obs.index):
+            logger.info("pixel count is same in both the datasets, performing a BLIND merge")
+        else:
+            logger.warning("pixel count is different in both the datasets, BLIND merge is not possible")
+            return merge_error_flag
+        adata_dict['lipids'].obs = adata_dict['sm'].obs
+        adata=ad.concat(adata_dict,join='inner',axis=1,label='omics')
+        logger.warning("BLIND merge completed")
+
+
+
+
     #reset annotation
     obs=data_temp.set_index('obsindex')[['region']]
     obs=obs[obs.index.isin(adata.obs.index)]
@@ -105,6 +122,8 @@ def pooldata(data_path,pattern, data_saving_path, split=False, log_queue=None):
         
     adata.write(os.path.join(data_saving_path,f'{split_file[0]}_pool.h5ad'))
     logger.info(f'pooling completed')
+
+    return merge_error_flag
 
 # def handle_naming(id):
 
