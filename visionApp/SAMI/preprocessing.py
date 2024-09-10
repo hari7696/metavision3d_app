@@ -52,7 +52,7 @@ def csv2h5ad(data_path,pattern,data_saving_path, split=False, log_queue=None):
 #merge omics data by coordinates and return .h5ad file
 def pooldata(data_path,pattern, data_saving_path, split=False, log_queue=None):
     # worker_configurer(log_queue)
-    merge=False
+    merge_error_flag=False
     adata_dict={}
     for file in os.listdir(data_path):
         name, ext = os.path.splitext(file)

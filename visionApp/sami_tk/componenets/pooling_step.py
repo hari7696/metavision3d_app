@@ -97,6 +97,7 @@ class PoolingStep(ctk.CTkFrame):
 
 
     def spin_seperate_process_for_pooling(self):
+        self.pooling_button.configure(state="disabled")
         self.timer.reset_timer()
         self.timer.start_timer()
         self.status_label.configure(text= "Omics Pooling started")    
@@ -112,6 +113,7 @@ class PoolingStep(ctk.CTkFrame):
             self.status_label.configure(text= "Omics pooling completed", text_color="green")
             self.files_label.configure(text= messgae)
             self.timer.stop_timer()
+            self.pooling_button.configure(state="normal")
         if self.process.is_alive():
             self.master.after(5000, self.check_queue)
         else:
