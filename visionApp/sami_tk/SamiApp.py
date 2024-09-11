@@ -11,6 +11,7 @@ from .componenets.markers_step import MarkerStep
 from .componenets.pathways_step import PathwaysStep
 from .componenets.grouping_step import GroupingStep
 from .componenets.ScilsExport import ScilsExportStep
+from .componenets.tissue_picker_step import TissuePicker
 import sys
 import queue
 sys.path.append('../SAMI')
@@ -137,6 +138,7 @@ class SAMIApp(ctk.CTkFrame):
             "Grouping",
             "Clustering",
             "Clusters Integration",
+            # "Tissue Pick",
             "Markers",
             "Pathways",
         ]
@@ -148,6 +150,7 @@ class SAMIApp(ctk.CTkFrame):
             "Pooling",
             "Grouping",
             "Clustering",
+            # "Tissue Pick",
             "Markers",
             "Pathways",
             ]
@@ -176,6 +179,7 @@ class SAMIApp(ctk.CTkFrame):
             "Grouping": (GroupingStep, self.file_handler, self.log_queue),
             "Clustering": (ClusteringStep, self.file_handler, self.log_queue),
             "Clusters Integration": (ClusterIntergrationStep, self.file_handler, self.log_queue),
+            # "Tissue Pick" : (TissuePicker, self.file_handler, self.log_queue),
             "Markers": (MarkerStep, self.file_handler, self.log_queue),
             "Pathways": (PathwaysStep, self.file_handler, self.log_queue),
             "ScilsExport": (ScilsExportStep, self.file_handler, self.log_queue)
