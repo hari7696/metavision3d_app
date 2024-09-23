@@ -320,8 +320,8 @@ class PathwaysStep(ctk.CTkFrame):
         top_n = int(self.top_n_entry.get())
         scale = int(self.size_entry_dot.get())
         try:
-            image_location = self.pathway.plot_dot(cluster=cluster,scale=scale,height=10,top=top_n,show=False)
-            self.pathway.plot_bar(cluster=cluster,top=top_n,show=False)
+            image_location = self.pathway.plot_dot(cluster=0,scale=scale,height=10,top=top_n,show=False)
+            self.pathway.plot_bar(cluster=0,top=top_n,show=False)
             logger.info(f"plot dot image location: {image_location}")   
         except Exception as e:
             logger.error(f"Error in plot_dot: {e}")
