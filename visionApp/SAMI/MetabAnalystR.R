@@ -548,6 +548,9 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folde
                            pathway = names(mSet$analSet$ora.hits),
                            compounds = sapply(mSet$analSet$ora.hits,paste,collapse=',')
                           )
+        nm.map <- GetFinalNameMap(mSet, lib_folder = lib_folder)
+        lookup <- setNames(nm.map$query, nm.map$hmdb)
+        hits$compounds <- sapply(hits$compounds, name.map, lookup=lookup) 
         row.names(hits) <- NULL
         row.names(metab_ora) <- NULL
         metab_ora <- merge(metab_ora,hits,by=c('cluster','pathway'),all.x= TRUE,sort=FALSE)
