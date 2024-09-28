@@ -65,6 +65,7 @@ class DisplayFileInformation(ctk.CTkFrame):
         # file selection dropdown
         self.file_name_dropdown = ctk.CTkComboBox(self, width=250, values=list(self.dict_files.keys()), command= self.on_file_name_change)
         self.file_name_dropdown.grid(row=0,column=1,padx=(4,2),pady=2,sticky="ew")
+        self.file_name_dropdown.set("")
 
         # region_selection_
         self.region_selection = ctk.CTkLabel(self, text="Region Selection")
@@ -87,12 +88,13 @@ class DisplayFileInformation(ctk.CTkFrame):
             self.clustermap_button.grid(row=0,column=5,padx=(5,5),pady=2,sticky="ew")
         else:
                         # clustermap button
-            self.clustermap_button = ctk.CTkButton(self, text="", command=self.clusters_comparison,  fg_color='transparent', border_width=0)   
+            self.clustermap_button = ctk.CTkButton(self, text="",  fg_color='transparent', border_width=0)   
             self.clustermap_button.grid(row=0,column=5,padx=(5,5),pady=2,sticky="ew")
             self.clustermap_button.configure(state="disabled")
     
         # a button to display the cluster map
-        # self.temp_button = ctk.CTkButton(self, text="Temp", command=self.temp)
+        # self.temp_button = ctk.CTkButton(self, text="Temp", command=self.temp)clear
+        
         # self.temp_button.grid(row=0, column=6, padx=(2, 0), pady=2, sticky="ew")
 
     def clusters_comparison(self):
@@ -123,26 +125,28 @@ class DisplayFileInformation(ctk.CTkFrame):
         self.lst_unique_regions = list(adata.obs['region'].unique())
         logger.info(f"unique regions: {self.lst_unique_regions}")
         self.lst_clusters = np.sort([int(item) for item in adata.obs['leiden'].unique()])
+        self.highest_cluster = self.lst_clusters[-1]
 
         # on file selection change
         # on file selection change, updating the cluter map default values
+        self.matrix = []
+
         if self.mode == "single":
-            self.matrix = []
             for cluster in self.lst_clusters:
                 rest_clusters = [str(c) for c in self.lst_clusters if c != cluster]
                 rest_clusters = ",".join(rest_clusters)
-                self.matrix.append([cluster, rest_clusters])
+                self.matrix.append([str(cluster), rest_clusters])
         else:
-            self.matrix = []
+
             for cluster in self.lst_clusters:
-                self.matrix.append([cluster, cluster])
+                self.matrix.append([str(cluster), str(cluster)])
 
     def get_values(self):
 
         if self.file_number ==1:
-            return  self.file_name_dropdown.get(), self.region_tab.selected_values, self.clustermap_tab.updated_values
+            return  self.file_name_dropdown.get(), self.region_tab.selected_values, self.clustermap_tab.updated_values, self.highest_cluster
         else:
-            return  self.file_name_dropdown.get(), self.region_tab.selected_values, None
+            return  self.file_name_dropdown.get(), self.region_tab.selected_values, None, self.highest_cluster
 
 
 

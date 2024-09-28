@@ -18,8 +18,9 @@ class Markers:
         self.region = region
         self.log_queue = log_queue
     
-    def findmarkers(self,adata,adj_pval_cutoff,top,adata2=None, workdir=None):  
+    def findmarkers(self,dict_clustermap, adata,adj_pval_cutoff,top,adata2=None, workdir=None):  
         worker_configurer(self.log_queue)
+        initial_id = 101
         logger.info("Markers core started")
         logger.info(f'Finding markers for {self.region}')
         cluster_param='leiden'
@@ -29,17 +30,36 @@ class Markers:
         cluster_list=adata.obs[cluster_param].cat.categories.tolist()
         cluster_list = sorted([int(s) for s in cluster_list])
         logger.info("Total clusters: "+str(len(cluster_list)))
-        for i in range(len(cluster_list)): #[0]:
-            logger.info(f'Finding markers for cluster {i}')
-            pvalue_temp=pd.DataFrame(columns=['feature','omics','pvalue','avg_log2FC','abs_avg_log2FC','pct1','pct2','adj_pvalue','cluster','rank'])
+
+        left_a = dict_clustermap['left']
+        right_b = dict_clustermap['right']
+
+        previos_clusters = []
+        for left_a, right_b in zip(left_a, right_b): #[0]:
+            logger.info(f'Finding markers for cluster {left_a} vs {right_b}')
+
+            # if its a general single 
+            if len(left_a)==1 and left_a[0] not in previos_clusters:
+                cluster_id = left_a[0]
+                previos_clusters.append(cluster_id)
+            else:
+                cluster_id = initial_id
+                initial_id += 1
+
+            
+            pvalue_temp=pd.DataFrame(columns=['feature','omics','pvalue','avg_log2FC','abs_avg_log2FC','pct1','pct2','adj_pvalue','cluster','rank', 'left_a', 'right_b'])
             for feature in adata.var.index:
                 if adata2 is not None and feature in adata2.var.index:
-                    a=adata[adata.obs[cluster_param]==str(cluster_list[i])][:,feature].X.copy()
-                    b=adata2[adata2.obs[cluster_param]==str(cluster_list[i])][:,feature].X.copy()
+                    # logger.info("dual")
+                    a=adata[adata.obs[cluster_param].isin(left_a)][:,feature].X.copy()
+                    b=adata2[adata2.obs[cluster_param].isin(right_b)][:,feature].X.copy()
                 else:
-                    a=adata[adata.obs[cluster_param]==str(cluster_list[i])][:,feature].X.copy()
-                    b=adata[adata.obs[cluster_param]!=str(cluster_list[i])][:,feature].X.copy()
+                    # logger.info("single")
+                    a=adata[adata.obs[cluster_param].isin(left_a)][:,feature].X.copy()
+                    b=adata[adata.obs[cluster_param].isin(right_b)][:,feature].X.copy()
                     # b=adata[adata.obs[cluster_param]==str(9)][:,feature].X.copy()
+
+                # logger.info(f"left shape {a.shape} right shape {b.shape}")
                     
                 if len(a)!=0 and len(b)!=0:
                     pct1=sum(a!=0)/len(a)
@@ -52,14 +72,19 @@ class Markers:
                         avg_log2FC=np.log2(mean_a/mean_b)
                         abs_avg_log2FC=abs(avg_log2FC)
                         omics = adata.var.loc[feature,'omics']
-                        pvalue_feature=pd.DataFrame({'feature':feature,'omics':omics,'pvalue':[pvalue],'avg_log2FC':avg_log2FC,'abs_avg_log2FC':abs_avg_log2FC,'pct1':pct1,'pct2':pct2,'cluster':cluster_list[i]})
+                        pvalue_feature=pd.DataFrame({'feature':feature,'omics':omics,'pvalue':[pvalue],'avg_log2FC':avg_log2FC,
+                                                     'abs_avg_log2FC':abs_avg_log2FC,'pct1':pct1,'pct2':pct2,'cluster':cluster_id, 
+                                                     'left_a': ','.join(left_a), 'right_b': ','.join(right_b)})
+                        # logger.info(f"cluster_id {cluster_id}")
                         pvalue_temp=pd.concat([pvalue_temp,pvalue_feature],ignore_index=True)
                     else:
+                        # logger.info("continue hit")
                         continue
-            # logger.info(f"cluster in comparison CROSSSSSSSSSS CHECKKKKKKKKKKKKKKK {adata[adata.obs[cluster_param]==str(9)].obs[cluster_param].unique()} ")
+                        
 
             #results of all the features
             pvalue_result=pd.concat([pvalue_result,pvalue_temp],ignore_index=True)
+            # logger.info(f"pvalue_result shape: {pvalue_result['cluster'].unique()}")
 
             #results of markers
             result_temp=pvalue_temp.sort_values(by=['pvalue'],ascending=True).reset_index(drop=True)

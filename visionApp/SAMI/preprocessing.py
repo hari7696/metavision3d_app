@@ -89,7 +89,7 @@ def pooldata(data_path,pattern, data_saving_path, split=False, log_queue=None):
     #     pickle.dump(adata_dict, f)
 
     # manually overriding pixel mis alignment
-    adata_dict['lipids'].obs = adata_dict['sm'].obs 
+    # adata_dict['lipids'].obs = adata_dict['sm'].obs 
     adata=ad.concat(adata_dict,join='inner',axis=1,label='omics')
 
     if len(adata.obs.index) == 0:
@@ -184,6 +184,7 @@ def pooldata(data_path,pattern, data_saving_path, split=False, log_queue=None):
 #             adata_sub.write(os.path.join(data_path,f'{unique_id[i]}_pool.h5ad'))
         
 #     adata.write(os.path.join(data_path,f'{split_file[0]}_pool.h5ad'))
+
     
 
     
