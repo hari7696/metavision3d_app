@@ -59,7 +59,7 @@ class VisionApp(ctk.CTk):
                                             )
         self.algo_selection_dropdown.grid(row=0,column=0,padx=(5,5),pady=10, sticky="w")
 
-        self.write_num_children_to_logs()
+        # self.write_num_children_to_logs()
 
     def write_num_children_to_logs(self):
 
