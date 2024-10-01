@@ -142,14 +142,13 @@ class PoolingStep(ctk.CTkFrame):
         self.files_label = ctk.CTkLabel(self.button_frame, text="", font = ("Arial", 15), width = 300, height = 300)
         self.files_label.grid(row=5, column=2, sticky="ew", padx=0, pady=10, )
 
-
-        # adding notes in right frame
-        self.notes_label = ctk.CTkLabel(self.right_frame, text="""You need to select appropritate omics present in correspoinding file\n
-                                        If you select Other, you will issues in Pathways step\n
-                                        If the pixels doesnt align during pooling, it will throw a wraning and wont generate any pooled files\n
-                                        you can still continue the rest of the steps with available data""", font=("Arial", 20))
-
-        self.notes_label.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
+        # adding a ctk text box
+        self.ctk_text = ctk.CTkTextbox(self.right_frame, width=120, height=200)
+        self.ctk_text.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
+        
+        self.ctk_text.insert("0.0", """Notes: \n1. You need to select appropritate omics present in corresponding file\n 2. If you select Other, you will face issues in Pathways step but till markers, you should be able to run\n 3. If the pixels doesnt align during pooling, it will throw a wraning and wont generate any pooled files\n4. you CAN still continue the rest of the steps with available data""")
+        
+        self.ctk_text.configure(state="disabled", font = ("Arial", 16))
 
 
 
