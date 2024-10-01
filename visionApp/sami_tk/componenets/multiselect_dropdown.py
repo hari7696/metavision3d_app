@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 class DropDownMulitSelect(ctk.CTkToplevel):
     def __init__(self, master, options, selected_values_label):
         super().__init__(master)
-        self.title("Select Isobaric Compounds")
+        # self.title("Select Isobaric Compounds")
         self.geometry("350x300")
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
