@@ -138,8 +138,8 @@ class FileOpenbutton(ctk.CTkFrame):
             if 'tissue_id' in df.columns:
                 df = df.rename(columns={'tissue_id': 'region'})
             
-            # if 'roi_named' in df.columns:
-            #     df = df.rename(columns={'roi_named': 'region'})
+            if 'roi_named' in df.columns:
+                df = df.rename(columns={'roi_named': 'region'})
 
 
             df.dropna(subset=['region'], inplace=True)
@@ -170,10 +170,8 @@ class FileOpenbutton(ctk.CTkFrame):
             return df
         except Exception as e:
             logger.error(f"Error in preprocessing: {e}")
-            CTkMessagebox(
-                title="Error",
-                message=f"Error in preprocessing the file: maybe missing {e}. Please check the log file for more details"
-            )
+
+            CTkMessagebox(title="Error", message=f"Error in preprocessing the file: maybe missing {e}. Please check the log file for more details", icon="cancel")
 
     def display_file_loading(self):
         # Displying the loading label

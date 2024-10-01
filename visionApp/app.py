@@ -59,7 +59,7 @@ class VisionApp(ctk.CTk):
                                             )
         self.algo_selection_dropdown.grid(row=0,column=0,padx=(5,5),pady=10, sticky="w")
 
-        # self.write_num_children_to_logs()
+        self.write_num_children_to_logs()
 
     def write_num_children_to_logs(self):
 
@@ -76,7 +76,7 @@ class VisionApp(ctk.CTk):
         total_children = count_all_children(self.parent_frame)
 
         logger.info("Frequent_checker :: Total children {}".format(str(total_children)))
-        self.after(10000, self.write_num_children_to_logs)
+        self.after(60000, self.write_num_children_to_logs)
         
 
     def destroy_children(self):

@@ -144,9 +144,24 @@ class DisplayFileInformation(ctk.CTkFrame):
     def get_values(self):
 
         if self.file_number ==1:
-            return  self.file_name_dropdown.get(), self.region_tab.selected_values, self.clustermap_tab.updated_values, self.highest_cluster
+
+            if self.region_tab is None:
+                regions = self.lst_unique_regions
+            else:
+                regions = self.region_tab.selected_values
+
+            if self.clustermap_tab is None:
+                clusters = self.matrix
+            else:
+                clusters = self.clustermap_tab.updated_values
+
+            return  self.file_name_dropdown.get(), regions, clusters, self.highest_cluster
         else:
-            return  self.file_name_dropdown.get(), self.region_tab.selected_values, None, self.highest_cluster
+            if self.region_tab is None:
+                regions = self.lst_unique_regions
+            else:
+                regions = self.region_tab.selected_values
+            return  self.file_name_dropdown.get(), regions, None, self.highest_cluster
 
 
 

@@ -291,7 +291,7 @@ class PathwaysStep(ctk.CTkFrame):
                                             width = 140
                                             )
         self.cluster_entry.grid(row=0, column=1, sticky="w", padx=5, pady=5)
-        self.cluster_entry.set("1")
+        self.cluster_entry.set(self.num_clusters[0])
 
         # creating a label to select top N clusters
         choose_top_n = ctk.CTkLabel(self.plot_dot_options_panel, text="select top N")
@@ -333,7 +333,7 @@ class PathwaysStep(ctk.CTkFrame):
         top_n = int(self.top_n_entry.get())
         scale = int(self.size_entry_dot.get())
         try:
-            image_location = self.pathway.plot_dot(cluster=0,scale=scale,height=10,top=top_n,show=False)
+            image_location = self.pathway.plot_dot(cluster,scale=scale,height=10,top=top_n,show=False)
             
             logger.info(f"plot dot image location: {image_location}")   
         except Exception as e:
@@ -397,7 +397,7 @@ class PathwaysStep(ctk.CTkFrame):
                                             button_color="#b5b8b0", width= 140
                                             )
         self.network_cluster_entry.grid(row=0, column=1, sticky="w", padx=5, pady=5)
-        self.network_cluster_entry.set("1")
+        self.network_cluster_entry.set(self.num_clusters[0])
 
         # creating a label to select top N clusters
         choose_top_n = ctk.CTkLabel(self.network_options_panel, text="select top N")
