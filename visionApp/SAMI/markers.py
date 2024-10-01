@@ -17,17 +17,20 @@ class Markers:
     def __init__(self, region, log_queue):
         self.region = region
         self.log_queue = log_queue
+        self.list_of_clusters = None
+
     
     def findmarkers(self,dict_clustermap, adata,adj_pval_cutoff,top,adata2=None, workdir=None):  
         worker_configurer(self.log_queue)
-        initial_id = 101
+        initial_id = 70
         logger.info("Markers core started")
         logger.info(f'Finding markers for {self.region}')
         cluster_param='leiden'
-
+        
         pvalue_result=pd.DataFrame()
         marker_result=pd.DataFrame()
         cluster_list=adata.obs[cluster_param].cat.categories.tolist()
+        self.list_of_clusters = cluster_list.copy()
         cluster_list = sorted([int(s) for s in cluster_list])
         logger.info("Total clusters: "+str(len(cluster_list)))
 
@@ -53,12 +56,18 @@ class Markers:
                     # logger.info("dual")
                     a=adata[adata.obs[cluster_param].isin(left_a)][:,feature].X.copy()
                     b=adata2[adata2.obs[cluster_param].isin(right_b)][:,feature].X.copy()
+
+                    # logger.debug(f"left shape {a.shape} right shape {b.shape}")
+                    # logger.debug(f"left: {list(adata[adata.obs[cluster_param].isin(left_a)].obs['region'].unique())} right: {list(adata2[adata2.obs[cluster_param].isin(right_b)].obs['region'].unique())}")
+
                 else:
                     # logger.info("single")
                     a=adata[adata.obs[cluster_param].isin(left_a)][:,feature].X.copy()
                     b=adata[adata.obs[cluster_param].isin(right_b)][:,feature].X.copy()
                     # b=adata[adata.obs[cluster_param]==str(9)][:,feature].X.copy()
-
+                    # logger.debug(f"left: {list(adata[adata.obs[cluster_param].isin(left_a)].obs['region'].unique())} right: {list(adata[adata.obs[cluster_param].isin(right_b)].obs['region'].unique())}")
+                    # logger.debug(f"left shape {a.shape} right shape {b.shape}")
+                
                 # logger.info(f"left shape {a.shape} right shape {b.shape}")
                     
                 if len(a)!=0 and len(b)!=0:
@@ -97,6 +106,8 @@ class Markers:
 
         if not os.path.exists(workdir):
             os.mkdir(workdir)
+
+        
 
         # crude updates
         marker_result['omics'] = marker_result['omics'].replace({'lip':'lipidomics','sm':'metabolomics'})
@@ -206,7 +217,11 @@ class Markers:
         else:
             plt.show()
         return os.path.join(workdir,f'circulartree_{self.region}_{cluster_str}_top_{top_n}.png')
-            
+    
+    def get_clusters(self, work_dir):
+        pvalues = pd.read_csv(os.path.join(work_dir,f'{self.region}_pvalue.csv'))
+        return list(pvalues['cluster'].unique())
+    
     def volcano_plot(self,cluster,show=True, work_dir=None):
         pvalues = pd.read_csv(os.path.join(work_dir,f'{self.region}_pvalue.csv'))
 

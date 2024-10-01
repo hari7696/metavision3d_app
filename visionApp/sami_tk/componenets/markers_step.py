@@ -538,9 +538,14 @@ class MarkerStep(ctk.CTkFrame):
         select_cluster_label.grid(row=0, column=0, sticky="w", padx=5, pady=5)
 
         #entry box to take value
-        self.cluster_selection = ctk.CTkEntry(self.volocano_options_panel, width=50, placeholder_text= "5",)
+        clusters = self.markers.get_clusters(self.makers_working_folder)
+        clusters = [str(item) for item in clusters]
+        self.cluster_selection = ctk.CTkComboBox(self.volocano_options_panel, values=clusters )
         self.cluster_selection.grid(row=0, column=1, sticky="w", padx=5, pady=5)
-        self.cluster_selection.insert(0, "1")
+        self.cluster_selection.set(clusters[0])
+        # self.cluster_selection = ctk.CTkEntry(self.volocano_options_panel, width=50, placeholder_text= "5",)
+        # self.cluster_selection.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+        # self.cluster_selection.insert(0, "1")
 
         # button to run the function
         self.run_button = ctk.CTkButton(self.volocano_options_panel, text="Run", command=self.display_volcano_plot)
@@ -563,6 +568,8 @@ class MarkerStep(ctk.CTkFrame):
         # get the value from top N entry
         cluster = int(self.cluster_selection.get())
         try:
+            
+
             image_location = self.markers.volcano_plot(cluster, show=False, work_dir= self.makers_working_folder)
             logger.info(f"Volcano Image location: {image_location}")    
         except Exception as e:
