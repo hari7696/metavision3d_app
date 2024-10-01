@@ -41,7 +41,7 @@ class FileOpenbutton(ctk.CTkFrame):
             )
         )
 
-        if choice == "Multiple CSV":
+        if choice == "CSV":
             self.f_open_btn = ctk.CTkButton(
                 self, text="Open Folder", command=self.open_multiple_files
             )
@@ -138,12 +138,33 @@ class FileOpenbutton(ctk.CTkFrame):
             if 'tissue_id' in df.columns:
                 df = df.rename(columns={'tissue_id': 'region'})
             
-            if 'roi_named' in df.columns:
-                df = df.rename(columns={'roi_named': 'region'})
+            # if 'roi_named' in df.columns:
+            #     df = df.rename(columns={'roi_named': 'region'})
 
 
             df.dropna(subset=['region'], inplace=True)
             self.tissue_ids[base_filename] = list(df["region"].unique())
+
+            # lets check for the presence of x and y columns
+            if "x" not in df.columns or "y" not in df.columns:
+                raise ValueError("x or y columns missing")
+            
+            if "region" not in df.columns:
+                raise ValueError("tisse_id column missing")
+            
+            # get the index of the columns where the molecules are present
+            # we will use this index to get the molecule names
+            first_molecule_field_name = df.columns[list(df.columns).index("region") + 1]
+            # check if this field data is float or strng
+            logger.info(f"first molecule field name: {first_molecule_field_name, df[first_molecule_field_name].dtype}")
+            if df[first_molecule_field_name].dtype != "float64":
+                raise ValueError("found strings in molecule field")
+            
+            # drop every other column except x, y, region and molecules
+            valid_field_names = ['x', 'y', 'region']
+            valid_field_names.extend(list(df.columns[list(df.columns).index("region") + 1:]))
+            df = df[valid_field_names].copy()
+
             self.molecule_name[base_filename] = list(df.columns[3:])
             logger.info(f"Preprocessed columns: {df.columns}")
             return df

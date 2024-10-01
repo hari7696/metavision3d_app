@@ -38,7 +38,7 @@ class SAMIApp(ctk.CTkFrame):
         file_type_variable = ctk.StringVar(value="File Type")
         self.dropdown_file_type_single_multi = ctk.CTkOptionMenu(
             self.nav_frame,
-            values=["Single CSV", "Multiple CSV", "Scils"],
+            values=[ "CSV", "Scils"],
             command=self.file_open,
             variable=file_type_variable,
         )
