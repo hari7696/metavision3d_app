@@ -115,7 +115,7 @@ class PoolingStep(ctk.CTkFrame):
             self.file_label = ctk.CTkLabel(self.file_options_frame, text=f"{file}", font=("Arial", 15))
             self.file_label.grid(row=i+1, column=0, sticky="ew", padx=5, pady=5)
 
-            combobox = ctk.CTkComboBox(self.file_options_frame, values=["lipidomics", "metabolomics","glycomics", "other"])
+            combobox = ctk.CTkComboBox(self.file_options_frame, values=["lipidomics", "metabolomics","glycomics", "sm", "other"])
             combobox.grid(row=i+1, column=1, sticky="ew", padx=5, pady=5)
 
             self.dict_compound_type[file] = combobox
@@ -144,10 +144,10 @@ class PoolingStep(ctk.CTkFrame):
 
 
         # adding notes in right frame
-        self.notes_label = ctk.CTkLabel(self.right_frame, text="""        Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-        Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
-        Nisi ut aliquip ex ea commodo consequat.""", font=("Arial", 20))
+        self.notes_label = ctk.CTkLabel(self.right_frame, text="""You need to select appropritate omics present in correspoinding file\n
+                                        If you select Other, you will issues in Pathways step\n
+                                        If the pixels doesnt align during pooling, it will throw a wraning and wont generate any pooled files\n
+                                        you can still continue the rest of the steps with available data""", font=("Arial", 20))
 
         self.notes_label.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
 
@@ -160,7 +160,11 @@ class PoolingStep(ctk.CTkFrame):
         
         # getting the dropdown selections
         for file in self.dict_compound_type:
-            self.file_compound_types[file] = self.dict_compound_type[file].get()
+
+            if self.dict_compound_type[file].get() == "sm":
+                self.file_compound_types[file] = "metabolomics"
+            else:
+                self.file_compound_types[file] = self.dict_compound_type[file].get()
 
         logger.info(f"Files and compound types are {self.file_compound_types}")
 
@@ -180,17 +184,18 @@ class PoolingStep(ctk.CTkFrame):
     def check_queue(self):
         if not self.queue.empty():
             messgae = self.queue.get()
-            messgae = messgae[0]
+            files = messgae[0]
             merge_error_flag = messgae[1]
             # print(messgae)
             self.status_label.configure(text= "Omics pooling completed", text_color="green")
-            self.files_label.configure(text= messgae)
+            self.files_label.configure(text= files)
             self.timer.stop_timer()
             self.pooling_button.configure(state="normal")
+            logger.info(f"error flag {merge_error_flag}")
             if len(merge_error_flag) > 0:
                 logger.error("Pixel mismatch error")
                 CTkMessagebox(title="Warning", message="Potential Pixel mismatch issue occured, a custom data handling is required for this data.\
-                              you can continue to next steps.",
+                              you CAN continue to next steps with available files",
                     icon="warning", option_1="OK")
         if self.process.is_alive():
             self.master.after(5000, self.check_queue)
@@ -211,13 +216,16 @@ class PoolingStep(ctk.CTkFrame):
         if not os.path.exists(data_saving_path):
             os.makedirs(data_saving_path)
         logger.info("csv2h5ad started")
-        # csv2h5ad(dict_compound_type, data_reading_path, data_saving_path, split=True, log_queue = log_queue)
+        csv2h5ad(dict_compound_type, data_reading_path, data_saving_path, split=True, log_queue = log_queue)
 
         logger.info("OMICS started")
         # pooling omics data
-        merge_error_flag = pooldata(dict_compound_type, data_reading_path, data_saving_path, split=True, log_queue = log_queue)
+        try:
+            merge_error_flag = pooldata(dict_compound_type, data_reading_path, data_saving_path, split=True, log_queue = log_queue)
+        except:
+            merge_error_flag = ["pixel count is different in both the datasets"]
 
-     
+
 
         files = os.listdir(data_saving_path)
         str = ""
