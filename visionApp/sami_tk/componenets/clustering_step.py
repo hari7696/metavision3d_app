@@ -506,7 +506,7 @@ class SpecificCluster(ctk.CTkFrame):
         # label = ctk.CTkLabel(self.nav_frame, text="Select Cluster :")
         # label.grid(row=0, column=0, padx=(5,0), pady=8, sticky="w")
 
-        _ = tk.StringVar(value='choose cluster to display')
+        # _ = tk.StringVar(value='choose cluster to display')
         # a combo box to select the cluster
         self.clusters = [str(i) for i in range(self.n_clusters)]
         # self.cluster_selection = ctk.CTkComboBox(self.nav_frame,
