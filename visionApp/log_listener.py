@@ -24,7 +24,7 @@ def worker_configurer(queue):
     root = logging.getLogger()
     root.addHandler(h)
     # send all messages, for demo; no other level or filter logic applied.
-    root.setLevel(logging.DEBUG)
+    root.setLevel(logging.INFO)
 
 
 def listener_process(queue, log_dir):
