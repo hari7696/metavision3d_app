@@ -69,6 +69,10 @@ class Markers:
                     # logger.debug(f"left shape {a.shape} right shape {b.shape}")
                 
                 # logger.info(f"left shape {a.shape} right shape {b.shape}")
+
+                # casting the array fro 64 to 32 to save sapce
+                a = a.astype(np.float32)
+                b = b.astype(np.float32)
                     
                 if len(a)!=0 and len(b)!=0:
                     pct1=sum(a!=0)/len(a)
