@@ -38,14 +38,14 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
         id_to_name[ii] = slice
 
     # zarray = np.zeros((nslice, 1500, 1500))
-    highest_x = highest_x + 10
-    highest_y = highest_y + 10
-    if highest_x > 2000:
-        highest_x = 2010
-    if highest_y > 2000:
-        highest_y = 2010
+    # highest_x = highest_x + 10
+    # highest_y = highest_y + 10
+    # if highest_x > 2000:
+    #     highest_x = 2010
+    # if highest_y > 2000:
+    #     highest_y = 2010
 
-    zarray_high_res = np.zeros((nslice, highest_x, highest_y))
+    zarray_high_res = np.zeros((nslice, 2000, 2000))
     zarray_high_res = zarray_high_res.astype(np.float16)
 
     # for key in matrix:
