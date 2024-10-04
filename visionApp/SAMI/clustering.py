@@ -146,17 +146,19 @@ class Clusters:
         colorlist=adata.obs['leiden'].cat.categories.tolist()
         palette=[v if k in map(str,cluster) else '#A0A0A0' for k, v in clusters_colors.items()]
         fig, axs = plt.subplots(1, 1, figsize=(15, 10))
+
         sc.pl.spatial(
-            adata,
-            img_key=None,
-            library_id=None,
-            spot_size=1, #important to add to avoid error
-            color='leiden',
-            legend_loc='none',
-            title=f'{self.region}_{self.modality}_{self.resolution}_{cluster}',
-            size=size,
-            palette=palette,
-            show=False
+        adata,
+        img_key=None,
+        library_id=None,
+        spot_size=1, #important to add to avoid error
+        color='leiden',
+        legend_loc='none',
+         title=f'{self.region}_{self.modality}_{self.resolution}_{cluster}',
+        size=50,
+        palette=palette,
+        ax=axs,
+        show=False
         )
 
         samples = np.unique(adata.obs['region']).tolist()
@@ -300,7 +302,8 @@ class Cluster_Integration:
             title=f'{region}_integrated_{cluster}',
             size=size,
             palette=palette,
-            show=False
+            show=False,
+            ax = axs
         )
 
         samples = np.unique(adata.obs['region']).tolist()
