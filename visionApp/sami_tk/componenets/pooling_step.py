@@ -115,7 +115,7 @@ class PoolingStep(ctk.CTkFrame):
             self.file_label = ctk.CTkLabel(self.file_options_frame, text=f"{file}", font=("Arial", 15))
             self.file_label.grid(row=i+1, column=0, sticky="ew", padx=5, pady=5)
 
-            combobox = ctk.CTkComboBox(self.file_options_frame, values=["lipidomics", "metabolomics","glycomics", "sm", "other"])
+            combobox = ctk.CTkComboBox(self.file_options_frame, values=["lipidomics", "metabolomics","glycomics", "other"])
             combobox.grid(row=i+1, column=1, sticky="ew", padx=5, pady=5)
             combobox.configure(state="readonly")
             self.dict_compound_type[file] = combobox

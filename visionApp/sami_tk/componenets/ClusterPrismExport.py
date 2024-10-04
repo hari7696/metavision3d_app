@@ -249,17 +249,17 @@ class ClusterPrismExport(ctk.CTkFrame):
 
     def check_for_prism_write_completion(self):
 
+        logger.info("checking prism write status")
         if not self.prism_write_queue.empty():
             status = self.prism_write_queue.get()
             if status == "Done":
                 CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
-                logger.info("Prism export complete")
+                logger.info("Prism export complete, meessage recieved")
                 self.export_prism_button.configure(state="normal")
                 self.progress_bar.stop()
                 return True
         else:
             self.after(1000, self.check_for_prism_write_completion)
-            logger.info("checking prism write status")
 
     @staticmethod
     def actual_write_prims_file( tree, source, destination, queue):
@@ -409,7 +409,8 @@ class ClusterPrismExport(ctk.CTkFrame):
             self.check_for_csv_writing_status()
 
     def check_for_csv_writing_status(self):
-
+        
+        logger.info("Checking for csv writing status")
         if not self.raw_writing_status_queue.empty():
             status = self.raw_writing_status_queue.get()
             # logger.info(f"Status is {status}")
@@ -441,7 +442,8 @@ class ClusterPrismExport(ctk.CTkFrame):
             
 
     def check_for_excel_writing_status(self):
-
+        
+        logger.info("Checking for excel writing status")
         if not self.writing_status_queue.empty():
             status = self.writing_status_queue.get()
             logger.info(f"Status is {status}")
