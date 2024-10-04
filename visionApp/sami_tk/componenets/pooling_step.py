@@ -117,7 +117,7 @@ class PoolingStep(ctk.CTkFrame):
 
             combobox = ctk.CTkComboBox(self.file_options_frame, values=["lipidomics", "metabolomics","glycomics", "sm", "other"])
             combobox.grid(row=i+1, column=1, sticky="ew", padx=5, pady=5)
-
+            combobox.configure(state="readonly")
             self.dict_compound_type[file] = combobox
 
         # a frame to display the buttons and other information
