@@ -37,37 +37,45 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
             highest_y = data_temp.shape[1]
         id_to_name[ii] = slice
 
-    zarray = np.zeros((nslice, 1500, 1500))
-    zarray_high_res = np.zeros((nslice, max(2000, highest_x), max(2000, highest_y)))
+    # zarray = np.zeros((nslice, 1500, 1500))
+    highest_x = highest_x + 10
+    highest_y = highest_y + 10
+    if highest_x > 2000:
+        highest_x = 2010
+    if highest_y > 2000:
+        highest_y = 2010
 
-    for key in matrix:
+    zarray_high_res = np.zeros((nslice, highest_x, highest_y))
+    zarray_high_res = zarray_high_res.astype(np.float16)
 
-        scale_factor = min(
-            zarray.shape[1] / matrix[key].shape[0],
-            zarray.shape[2] / matrix[key].shape[1],
-        )
-        # scale_factor = scale_factor * 0.8
-        # print(scale_factor  )
-        # print(matrix[key].shape)
-        # Resize the image array
-        resized_image = resize(
-            matrix[key],
-            (
-                int(matrix[key].shape[0] * scale_factor),
-                int(matrix[key].shape[1] * scale_factor),
-            ),
-            anti_aliasing=False,
-        )
-        # Calculate padding
-        pad_row = (zarray.shape[1] - resized_image.shape[0]) // 2
-        pad_col = (zarray.shape[2] - resized_image.shape[1]) // 2
+    # for key in matrix:
 
-        # Place the resized image into the center of the zero array with padding
-        zarray[
-            key,
-            pad_row : pad_row + resized_image.shape[0],
-            pad_col : pad_col + resized_image.shape[1],
-        ] = resized_image
+    #     scale_factor = min(
+    #         zarray.shape[1] / matrix[key].shape[0],
+    #         zarray.shape[2] / matrix[key].shape[1],
+    #     )
+    #     # scale_factor = scale_factor * 0.8
+    #     # print(scale_factor  )
+    #     # print(matrix[key].shape)
+    #     # Resize the image array
+    #     resized_image = resize(
+    #         matrix[key],
+    #         (
+    #             int(matrix[key].shape[0] * scale_factor),
+    #             int(matrix[key].shape[1] * scale_factor),
+    #         ),
+    #         anti_aliasing=False,
+    #     )
+    #     # Calculate padding
+    #     pad_row = (zarray.shape[1] - resized_image.shape[0]) // 2
+    #     pad_col = (zarray.shape[2] - resized_image.shape[1]) // 2
+
+    #     # Place the resized image into the center of the zero array with padding
+    #     zarray[
+    #         key,
+    #         pad_row : pad_row + resized_image.shape[0],
+    #         pad_col : pad_col + resized_image.shape[1],
+    #     ] = resized_image
 
     for key in matrix:
 
@@ -97,9 +105,8 @@ def create_compound_matrix(data, col="result", roi=False, reverse=False):
             pad_col : pad_col + resized_image.shape[1],
         ] = resized_image
 
-
-
-    return zarray, zarray_high_res, id_to_name
+    zarray_high_res = zarray_high_res.astype(np.float16)
+    return None, zarray_high_res, id_to_name
 
 
 def create_slice_sami(df_all, slice, col="result", roi=False, reverse=False):
@@ -130,11 +137,12 @@ def create_slice_sami(df_all, slice, col="result", roi=False, reverse=False):
     x_indices = np.searchsorted(unique_x, x_values)
     y_indices = np.searchsorted(unique_y, y_values)
 
-    for value, x_ind, y_ind in zip(df_temp[col],  y_indices, x_indices):
+    for value, x_ind, y_ind in zip(df_temp[col].astype(np.float16),  y_indices, x_indices):
         #print(x_ind, y_ind, value)
         if not np.isnan(value):
-            reshaped_matrix[ y_ind, x_ind] = value
+            reshaped_matrix[ y_ind, x_ind] = float(value)
 
+    reshaped_matrix = reshaped_matrix.astype(np.float16)
     return reshaped_matrix
 
 
