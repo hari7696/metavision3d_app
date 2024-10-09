@@ -227,19 +227,25 @@ class ClusteringStep(ctk.CTkFrame):
         "This function is used to perform the clustering"
         # worker_configurer(log_queue)
         response_dict = {}
+        clustering_result = None
         # checking whether the clustering is already performed or not
-        if not os.path.exists(clustered_file):
-            logger.info("didnt any existing file, Performing clustering ")
-            cluster.clustering()
-        else:
-            logger.info("Clustering already done")
+        try:
+            if not os.path.exists(clustered_file):
+                logger.info("didnt any existing file, Performing clustering ")
+                clustering_result = cluster.clustering()
+            else:
+                logger.info("Clustering already done")
 
-        image_location, n_clusters = cluster.plot_umap_cluster(size=50,show=False)
-        response_dict['image_location'] = image_location
-        response_dict['n_clusters'] = n_clusters
+            image_location, n_clusters = cluster.plot_umap_cluster(size=50,show=False)
+            response_dict['image_location'] = image_location
+            response_dict['n_clusters'] = n_clusters
+            queue.put(response_dict)
+
+        except Exception as e:
+            queue.put({'error': str(clustering_result) + str(e)})
 
         # sending a message to the queue that thread is completed
-        queue.put(response_dict)
+
 
     def perform_clustering(self):
         """This function gets triggered when the Run clustering button is clicked
@@ -267,6 +273,13 @@ class ClusteringStep(ctk.CTkFrame):
             try:
                 logger.info("clustering complete message received")
                 message = self.queue.get()
+
+                if 'error' in message.keys():
+                    CTkMessagebox(title="error", message=f"Error in SAMI core: {message['error']}", icon="cancel")
+                    self.time_constraint_label.configure(text="Clustering Failed", text_color="red")
+                    self.cluster_button.configure(state="normal")
+                    return
+
                 self.image_location = message['image_location']
                 logger.info(f"saved cluster Image location is {self.image_location}")
                 
@@ -277,7 +290,6 @@ class ClusteringStep(ctk.CTkFrame):
                 logger.info("visualization prepared")
                 self.df_tracker.loc[len(self.df_tracker)] = self.record
                 self.df_tracker.to_csv(self.df_tracker_path, index=False)
-
                 self.prepare_prism_export_tab()
                 logger.info("prism export tab prepared")
                 self.timer.stop_timer()
@@ -285,6 +297,7 @@ class ClusteringStep(ctk.CTkFrame):
                 self.cluster_button.configure(state="normal")
             except Exception as e:
                 logger.error(f"Error in getting the message from the queue {e}")
+                CTkMessagebox(title="error", message=f"Error in creating the plots: {e}", icon="cancel")
             finally:
                 self.after(10000, self.trigger_visz_functions_on_thread_run)
         if self.clustering_process.is_alive():

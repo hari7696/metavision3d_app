@@ -46,7 +46,7 @@ class Clusters:
             sc.tl.leiden(adata,resolution=self.resolution, random_state= 7)
         except Exception as e:
             logger.error(f"Error in clustering core SAMI: {str(e)}")
-            return
+            return e
 
         if not os.path.exists(self.file_path):
             os.makedirs(self.file_path)
@@ -54,6 +54,8 @@ class Clusters:
 
         adata.write(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
         logger.info("Clustering completed and written the output file")
+
+        return True
     
     
     def plot_umap_cluster(self,size=50,show=False):
