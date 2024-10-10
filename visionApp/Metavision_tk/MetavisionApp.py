@@ -3,6 +3,7 @@ from functools import partial
 import io
 import math
 from optparse import Option
+import sys
 import tkinter as tk
 from tkinter import messagebox
 import customtkinter as ctk
@@ -15,14 +16,16 @@ import os
 import logging
 import time 
 import threading
+from scipy.ndimage import zoom
 
 from colormap import new_cmap1,new_cmap2
 import MetaVision3D.MetaNorm3D as algo_meta3d_norm
-import MetaVision3D.MetaAlign3D as algo_meta3d_align
+from MetaVision3D.MetaAlign3D import MetaAlign3D
 import MetaVision3D.evaluate as algo_meta3d_evaluate
 import MetaVision3D.MetaInterp3D  as algo_meta3d_interp
 import MetaVision3D.MetaAtlas3D as algo_meta3d_atlas
-import MetaVision3D.MetaImpute3D as algo_meta3d_impute
+from MetaVision3D.MetaImpute3D import MetaImpute3D
+from MetaVision3D.MetaAtlas3D import MetaAtlas3D
 import nibabel as nib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image, ImageTk, ImageFilter
@@ -41,8 +44,11 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.nav_frame = nav_frame
         self.columnconfigure(0,weight=1)
 
-        open_file_btn = ctk.CTkButton(nav_frame, text="Select CSV File", command=self.open_file)
-        open_file_btn.grid(row=0,column=2,padx =(5,0), pady=(2,2),sticky="w")
+        self.open_file_frame = ctk.CTkFrame(self.nav_frame)
+        self.open_file_frame.grid(row=0,column=1, padx=5, pady=5)
+        
+        open_file_btn = ctk.CTkButton(self.open_file_frame, text="Select CSV File", command=self.open_file)
+        open_file_btn.grid(row=0,column=0,padx=(5, 50), pady=5,sticky="w")
         self.cmap_switch_var = ctk.StringVar(value="gray")
         logger.info("Metavision class initialized")  
 
@@ -56,25 +62,40 @@ class MetaVision3DApp(ctk.CTkFrame):
         self._3d_tab_exists = False  # Add a flag to track the 3D tab
     
     def open_file(self):
+        # if self.slides_display_frame.winfo_exists():
+        #     for widget in self.slides_display_frame.winfo_children():
+        #         widget.destroy()  
+        # if self.slide_tab.winfo_exists():
+        #     for widget in self.slide_tab.winfo_children():
+        #         widget.destroy()
+        # Destroy the 3D tab if it exists
+        # if self._3d_tab_exists:
+        #     self.tab_view.delete("3D view")
+        #     self._3d_tab_exists = False  # Reset the flag
+        # if hasattr(self, 'norm_plot_frame') and self.norm_plot_frame is not None:
+        #     self.norm_plot_frame.destroy()
+
         self.filepath = filedialog.askopenfilename(
             filetypes=[("CSV Files", "*.csv"), ("All Files", "*.*")]
         )
         if self.filepath:
-            print(self.filepath)
+            # print(self.filepath)
             self.display_file_loading()
+
+            # Extract the file name from the file path
+            file_name = os.path.basename(self.filepath)
+            parts = file_name.split('_')
+            self.group = parts[-1] if len(parts) > 1 else file_name
+            self.group = os.path.splitext(self.group)[0]
+
             threading.Thread(target=self.load_file, args=(self.filepath,), daemon=True).start()
 
-    # def display_file_loading(self):
-    #     self.loading_label = ctk.CTkLabel(self.nav_frame, text="Loading...")
-    #     self.loading_label.grid(row=0, column=3, padx=(5, 0), pady=(10, 10), sticky="w")
-
     def display_file_loading(self):
-        # Destroy previous loading label if it exists
         if hasattr(self, 'loading_label') and self.loading_label is not None:
             self.loading_label.destroy()
 
-        self.loading_label = ctk.CTkLabel(self.nav_frame, text="Loading...")
-        self.loading_label.grid(row=0, column=3, padx=(5, 0), pady=(10, 10), sticky="w")
+        self.loading_label = ctk.CTkLabel(self.open_file_frame, text="Loading...")
+        self.loading_label.grid(row=0, column=1, padx=(5, 0), pady=(10, 10), sticky="w")
 
     def load_file(self, filepath):
         self.df = pd.read_csv(filepath, index_col=False)
@@ -88,9 +109,11 @@ class MetaVision3DApp(ctk.CTkFrame):
 
         # Ensure previous widgets are destroyed before creating new ones
         self.destroy_previous_widgets()
-
         self.create_molecule_dropdown()
         self.create_export_tab()
+
+        if hasattr(self, 'loading_label') and self.loading_label is not None:
+            self.loading_label.destroy()
 
     def destroy_previous_widgets(self):
         if hasattr(self, 'molecule_dropdown') and self.molecule_dropdown is not None:
@@ -112,92 +135,108 @@ class MetaVision3DApp(ctk.CTkFrame):
 
     def create_molecule_dropdown(self):
         if self.molecule_names:
-            print(type(self.molecule_names))
-            self.molecule_dropdown = ctk.CTkComboBox(self.nav_frame, values=["None"] + self.molecule_names if any(isinstance(x, float) and np.isnan(x) for x in self.molecule_names) else self.molecule_names)
-            self.molecule_dropdown.grid(row=0, column=3, padx=5, pady=(10, 10), sticky="w")
+            self.molecule_dropdown_label = ctk.CTkLabel(self.open_file_frame,text="Tissues/Molecules:")
+            self.molecule_dropdown_label.grid(row=0, column=1, padx = (50, 5), pady=5, sticky="w")
+            self.molecule_dropdown = ctk.CTkComboBox(self.open_file_frame, values=["None"] + self.molecule_names if any(isinstance(x, float) and np.isnan(x) for x in self.molecule_names) else self.molecule_names)
+            self.molecule_dropdown.grid(row=0, column=2, padx=(5,50), pady=5, sticky="w")
             # self.process_steps_label = ctk.CTkLabel(self.nav_frame,text="Process Steps:")
             # self.process_steps_label.grid(row=0,column=4,sticky="w",padx=(20,5))
             self.process_steps_frame = ctk.CTkFrame(self.nav_frame)
-            self.process_steps_frame.grid(row=0,column=5)
+            self.process_steps_frame.grid(row=1,column=0, columnspan=6, padx=5, pady=5) 
+            self.process_frame = ctk.CTkFrame(self.process_steps_frame)
+            self.process_frame.grid(row=0,column=0)
             self.process_step_var = ctk.IntVar(value=1)
-            self.visualize_process_rad = ctk.CTkRadioButton(self.process_steps_frame,text ="Visualize",variable= self.process_step_var,value=1)
+            self.visualize_process_rad = ctk.CTkRadioButton(self.process_frame,text ="Visualize",variable= self.process_step_var,value=1)
             self.visualize_process_rad.grid(row=0,column=0,padx=3,pady=3)
-            arrow_label1 = ctk.CTkLabel(self.process_steps_frame,text= '\u27A1',font=("Arial", 20))
+            arrow_label1 = ctk.CTkLabel(self.process_frame,text= '\u27A1',font=("Arial", 20))
             arrow_label1.grid(row=0,column=1,padx=(0,10))
-            self.normalize_process_rad = ctk.CTkRadioButton(self.process_steps_frame,text="Normalize", variable=self.process_step_var,value=2,state="disabled")
+            self.normalize_process_rad = ctk.CTkRadioButton(self.process_frame,text="Normalize", variable=self.process_step_var,value=2,state="disabled")
             self.normalize_process_rad.grid(row=0,column=2,padx=3,pady=3)
-            arrow_label2 = ctk.CTkLabel(self.process_steps_frame,text= '\u27A1',font=("Arial", 20))
+            arrow_label2 = ctk.CTkLabel(self.process_frame,text= '\u27A1',font=("Arial", 20))
             arrow_label2.grid(row=0,column=3,padx=(0,10))
-            self.allign_rad = ctk.CTkRadioButton(self.process_steps_frame,text="Align",variable=self.process_step_var,value=3,state="disabled")
+            self.allign_rad = ctk.CTkRadioButton(self.process_frame,text="Align",variable=self.process_step_var,value=3,state="disabled")
             self.allign_rad.grid(row=0,column=4,padx=(3,0),pady=3)
-            arrow_label3 = ctk.CTkLabel(self.process_steps_frame,text= '\u27A1',font=("Arial", 20))
+            arrow_label3 = ctk.CTkLabel(self.process_frame,text= '\u27A1',font=("Arial", 20))
             arrow_label3.grid(row=0,column=5,padx=(0,10))
 
-            self.interp_rad = ctk.CTkRadioButton(self.process_steps_frame,text="Next Steps", variable=self.process_step_var,value=4,state="disabled")
+            self.interp_rad = ctk.CTkRadioButton(self.process_frame,text="Next Steps", variable=self.process_step_var,value=4,state="disabled")
             self.interp_rad.grid(row=0,column=6,padx=(3,0),pady=3)    
              
             # Dropdown for selecting Impute, Interp, or both
-            self.process_selection = ctk.CTkComboBox(self.process_steps_frame, values=["Select Process", "Impute", "Interpolate", "Both"], command=self.update_interpolation_entry)
+            self.process_selection = ctk.CTkComboBox(self.process_frame, values=["Select Process", "Impute", "Interpolate", "Both"], command=self.update_interpolation_entry)
             self.process_selection.grid(row=0, column=7, padx=3, pady=3)
 
-            self.interp_scale_entry = ctk.CTkEntry(self.process_steps_frame, placeholder_text="Enter extra slices between")
-            self.interp_scale_entry.grid(row=0, column=8)
-            self.interp_scale_entry.insert(0, "2")
-            self.interp_scale_entry.grid_remove()  # Hide by default
+            # Interpolation (Slices) label and entry
+            self.slices_label = ctk.CTkLabel(self.process_frame, text="Slices:")
+            self.slices_label.grid_remove()  # Hide by default
+            
+            self.slices_entry = ctk.CTkEntry(self.process_frame, placeholder_text="Enter number of slices")
+            self.slices_entry.insert(0, "0")
+            self.slices_entry.grid_remove()  # Hide by default
 
-            self.process_button = ctk.CTkButton(self.process_steps_frame, text="Run", command=self.start_selected_process)
-            self.process_button.grid(row=0, column=9, padx=3, pady=3)
+            # Imputation (Radius) label and entry
+            self.radius_label = ctk.CTkLabel(self.process_frame, text="Radius:")
+            self.radius_label.grid_remove()  # Hide by default
+            
+            self.radius_entry = ctk.CTkEntry(self.process_frame, placeholder_text="Enter radius")
+            self.radius_entry.insert(0, "0")
+            self.radius_entry.grid_remove()  # Hide by default        
 
-            self.reset_button = ctk.CTkButton(self.process_steps_frame, text="Reset", command=self.reset_process)
-            self.reset_button.grid(row=0, column=10, padx=3, pady=3)
+            self.process_button = ctk.CTkButton(self.open_file_frame, text="Run", command=self.start_selected_process)
+            self.process_button.grid(row=0, column=3, padx=(50,50), pady=5)
+
+            self.reset_button = ctk.CTkButton(self.open_file_frame, text="Reset", command=self.reset_process)
+            self.reset_button.grid(row=0, column=4, padx = (50,5), pady=5)
 
     def update_interpolation_entry(self, selected_process):
+        
         selected_process = self.process_selection.get()
-        if selected_process in ["Interpolate", "Both"]:
-            self.interp_scale_entry.grid()
-        else:
-            self.interp_scale_entry.grid_remove()
+
+        # Reset all fields first
+        self.slices_label.grid_remove()
+        self.slices_entry.grid_remove()
+        self.radius_label.grid_remove()
+        self.radius_entry.grid_remove()
+
+        # Show the appropriate fields based on the selection
+        if selected_process == "Interpolate":
+            self.slices_label.grid(row=0, column=8, padx=3, pady=3)
+            self.slices_entry.grid(row=0, column=9, padx=3, pady=3)
+        elif selected_process == "Impute":
+            self.radius_label.grid(row=0, column=8, padx=3, pady=3)
+            self.radius_entry.grid(row=0, column=9, padx=3, pady=3)
+        elif selected_process == "Both":
+            self.slices_label.grid(row=0, column=8, padx=3, pady=3)
+            self.slices_entry.grid(row=0, column=9, padx=3, pady=3)
+            self.radius_label.grid(row=0, column=10, padx=3, pady=3)
+            self.radius_entry.grid(row=0, column=11, padx=3, pady=3)
 
     def start_selected_process(self):
-        try:
-            step = self.process_step_var.get()
-            if step ==1:    
-                logger.info("Starting the visualization process")
-                self.visualize_process_rad.configure(state="disabled")
-                self.normalize_process_rad.select()
-                self.start_initial_visualization()
-            elif step ==2:
-                logger.info("Starting the normalization process")
-                self.normalize_process_rad.configure(state="disabled")
-                self.allign_rad.select()
-                self.start_normalization()
-            elif step == 3:
-                # self.allign_rad.configure(state="disabled")
-                logger.info("Starting the alignment process")
-                self.start_allignment()
-                # self.interp_rad.configure(state="normal")
-                # self.handle_process_selection()
-            elif step == 4:
-                logger.info("Starting the selected process: Interpolate/Impute/Both")
-                self.interp_rad.configure(state="disabled")
-                self.handle_process_selection()
-        except Exception as e:
-            logger.error(f"Error in executing the selected : {e}")
+        step = self.process_step_var.get()
+        if step ==1:    
+            logger.info("Starting the visualization process")
+            self.visualize_process_rad.configure(state="disabled")
+            self.normalize_process_rad.select()
+            self.start_initial_visualization()
+        elif step ==2:
+            logger.info("Starting the normalization process")
+            self.normalize_process_rad.configure(state="disabled")
+            self.allign_rad.select()
+            self.start_normalization()
+        elif step == 3:
+            logger.info("Starting the alignment process")
+            self.start_allignment()
+        elif step == 4:
+            logger.info("Starting the selected process: Interpolate/Impute/Both")
+            self.interp_rad.configure(state="disabled")
+            self.handle_process_selection()
 
     def handle_process_selection(self):
         selected_process = self.process_selection.get()
         if selected_process == "Select Process":
             messagebox.showinfo("Success", "Alignment is done. Please select a process if you would like to continue with imputation/interpolation.")
             return
-
-        if selected_process in ["Interpolate", "Both"]:
-            self.interp_scale_entry.grid()
-        else:
-            self.interp_scale_entry.grid_remove()
-        
         self.run_selected_process(selected_process)    
-        # self.process_button.configure(command=lambda: self.run_selected_process(selected_process))
-        # self.process_button.grid(row=0, column=8)
 
     def run_selected_process(self, selected_process):
         if selected_process == "Impute":
@@ -211,68 +250,77 @@ class MetaVision3DApp(ctk.CTkFrame):
             messagebox.showerror("Error", "Invalid process selected. Please select a valid process.")
         self.process_button.configure(state="disabled")
 
-
     def start_initial_visualization(self):
         self.molecule_dropdown.configure(state="disabled")
         self.cmap_cbox.configure(state="normal")
-        self.compound_matrix = algo_meta3d_align.create_compound_matrix(self.df,col=self.molecule_dropdown.get(),reverse=True)
+        selected_moelcule = self.molecule_dropdown.get()
+        meta_visualize = MetaAlign3D(self.group, self.df, selected_moelcule, self.molecule_names[0], reverse=True)   
+        self.compound_matrix = meta_visualize.create_compound_matrix()
         time.sleep(1)
+        logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
         self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
         self.display_norm_plot(self.compound_matrix)
         self.after(500,self.display_animation())
 
     def start_normalization(self):
         self.compound = self.molecule_dropdown.get()
-        print(self.molecule_names[0])
-        meta_norm = algo_meta3d_norm.MetaNorm3D(self.df, self.compound,first_feature=self.molecule_names[0])
+        logger.info(self.compound)
+        meta_norm = algo_meta3d_norm.MetaNorm3D(self.df, first_feature=self.molecule_names[0])
         self.norm_df = meta_norm.totalsum_norm()
         self.data = meta_norm.section_norm()
-        self.compound_matrix = algo_meta3d_align.create_compound_matrix(self.data,reverse=True)
+        selected_moelcule = self.molecule_dropdown.get()
+        meta_normalize = MetaAlign3D(self.group, self.data, selected_moelcule, self.molecule_names[0], reverse=True)   
+        self.compound_matrix = meta_normalize.create_compound_matrix()
         self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
         self.display_norm_plot(self.compound_matrix)
         self.display_animation()
 
     def start_allignment(self):
-        meta_align = algo_meta3d_align.MetaAlign3D(self.data)
-        self.compound_matrix = meta_align.create_compound_matrix(reverse=True)
+        selected_moelcule = self.molecule_dropdown.get()
+        meta_align = MetaAlign3D(self.group, self.data, selected_moelcule, self.molecule_names[0], reverse=True)
+        self.compound_matrix = meta_align.create_compound_matrix()
+        logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
         self.compound_matrix = meta_align.seq_align()
         self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
         self.display_norm_plot(self.compound_matrix)
         self.display_animation()
-        self.generate_3d_file()
         self.create_3d_tab()
         self.allign_rad.configure(state="disabled")  # Disable the "Align" button after alignment
         self.interp_rad.configure(state="normal")
         self.process_step_var.set(4)  # Set to 4 to allow imputation/interpolation selection
 
     def start_imputation(self):
+        radius_text = self.radius_entry.get().strip()
+        if (not radius_text.isdigit()) or int(radius_text) < 0:
+            messagebox.showerror("Error", "Please enter a non-negative integer for Radius")
+            return
+        radius = int(radius_text)
         # Ensure the compound_matrix is available before starting the imputation process
         if self.compound_matrix is None:
             messagebox.showerror("Error", "Compound matrix is not available. Please complete the alignment process first.")
             return
         logger.info("Starting the Imputation process")
-        meta_impute = algo_meta3d_impute.MetaImpute3D(self.compound_matrix)
+        meta_impute = MetaImpute3D(self.compound_matrix, radius)
         self.compound_matrix = meta_impute.seq_impute()
+        logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
         self.display_individual_images(self.cmap_switch_var.get(), self.compound_matrix)
         self.display_norm_plot(self.compound_matrix)
         self.display_animation()
-        self.generate_3d_file()
         self.interp_rad.configure(state="disabled")  
-        # self.create_3d_tab()
-
 
     def start_interp(self):
-        try:
-            int(self.interp_scale_entry.get())
-        except ValueError:
-            messagebox.showerror("Error", "Only Integer values are allowed")
+        slices_text = self.slices_entry.get().strip()
+        if (not slices_text.isdigit()) or int(slices_text) < 0:
+            messagebox.showerror("Error", "Please enter a non-negative integer for Slices")
+            return
+        slices = int(slices_text)
         logger.info("Starting the Interpolation process")
-        meta_interp = algo_meta3d_interp.MetaInterp3D(self.compound_matrix,int(self.interp_scale_entry.get()))
+        meta_interp = algo_meta3d_interp.MetaInterp3D(self.compound_matrix, slices)
         self.compound_matrix = meta_interp.interp()
+        logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
         self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
         self.display_norm_plot(self.compound_matrix)
         self.display_animation()
-        self.generate_3d_file()
         self.interp_rad.configure(state="disabled")
  
     def reset_process(self):
@@ -295,6 +343,20 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.visualize_process_rad.configure(state="normal")
         self.process_step_var.set(1)
         self.process_button.configure(state="normal") # Enable the Run button
+
+        self.process_selection.set("Select Process")
+        self.slices_label.grid_remove()  # Hide by default
+
+        self.slices_entry.delete(0, "end")      
+        self.slices_entry.insert(0, "0")
+        self.slices_entry.grid_remove()  # Hide by default
+
+        # Imputation (Radius) label and entry
+        self.radius_label.grid_remove()  # Hide by default
+        
+        self.radius_entry.delete(0, "end")
+        self.radius_entry.insert(0, "0")
+        self.radius_entry.grid_remove()  # Hide by default    
 
         logger.info("Reset process completed")
 
@@ -330,8 +392,6 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.norm_plot.columnconfigure(0,weight=1)     
         self.animation_tab = self.tab_view.add("Animation")
         self.animation_tab.columnconfigure(0,weight=1)
-        # self.montage_tab = self.tab_view.add("Montage")
-        # self.montage_tab.columnconfigure(0,weight=1)
         self.tab_view.set("Slide")
 
 
@@ -646,36 +706,93 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.cmap_cbox = ctk.CTkComboBox(self.cmap_frame,values=["gray","magma","viridis"],command=lambda choice: self.display_individual_images(choice,self.compound_matrix),variable=self.cmap_switch_var,state="disabled")
         self.cmap_cbox.grid(row=0,column=3,sticky="e",padx=(5,0))
 
-    def generate_3d_file(self):      
-        atlas_data = algo_meta3d_atlas.MetaAtlas3D(self.compound_matrix)
+    def generate_3d_file(self):   
+        self.resolution = 1
+        try:
+            self.thickness = int(self.thickness_entry_var.get().strip())
+            if self.thickness < 0:
+                raise ValueError("Negative value not allowed")
+            logger.info(f"Thickness {self.thickness}")
+        except ValueError:
+            messagebox.showerror("Error", "Only non negative integer values are allowed for Thickness")
+            return
+
+        try:
+            self.gap = int(self.gap_entry_var.get().strip())
+            if self.gap < 0:
+                raise ValueError("Negative value not allowed")
+            logger.info(f"Gap {self.gap}")
+        except ValueError:
+            messagebox.showerror("Error", "Only non negative integer values are allowed for Gap")
+            return
+
+        try:
+            slices_text = self.slices_entry.get().strip()
+            if slices_text == "":
+                self.slices = 0  # Default to 0 if no value is entered
+            else:
+                self.slices = int(slices_text)
+            logger.info(f"Slices {self.slices}")   
+        except ValueError:
+            messagebox.showerror("Error", "Only positive integer values are allowed for Slices")
+            return
+
+        atlas_data = MetaAtlas3D(self.compound_matrix, self.resolution, self.thickness, self.gap, self.slices)
         self.nii_data= atlas_data.create_nii()
-        
+
     def create_3d_tab(self):
         self._3d_tab= self.tab_view.add("3D view")
         self._3d_tab.columnconfigure(0,weight=1)
+
+        self.res_frame = ctk.CTkFrame(self._3d_tab)
+        self.res_frame.grid(row=0,column=0,sticky="w", padx=5, pady=5)
+
+        self.thickness_entry_label = ctk.CTkLabel(self.res_frame,text="Thickness")
+        self.thickness_entry_label.grid(row=0,column=1,padx=5,pady=5,sticky="w")
+        self.thickness_entry_var = ctk.StringVar(value="1")
+        self.thickness_entry = ctk.CTkEntry(self.res_frame,textvariable=self.thickness_entry_var)
+        self.thickness_entry.grid(row=1,column=1,padx=5,pady=5,sticky="w") 
+
+        self.gap_entry_label = ctk.CTkLabel(self.res_frame,text="Gap")
+        self.gap_entry_label.grid(row=0,column=2,padx=5,pady=5,sticky="w")
+        self.gap_entry_var = ctk.StringVar(value="0")
+        self.gap_entry = ctk.CTkEntry(self.res_frame,textvariable=self.gap_entry_var)
+        self.gap_entry.grid(row=1,column=2,padx=5,pady=5,sticky="w") 
+
         self.nii_modes_frame = ctk.CTkFrame(self._3d_tab)
-        self.nii_modes_frame.grid(row=0,column=0,columnspan=2,sticky="w")
+        self.nii_modes_frame.grid(row=1,column=0,sticky="w", padx=5, pady=5)
+
         self.nii_mode_var = ctk.IntVar(value=1)
         rad_mode_1 = ctk.CTkRadioButton(self.nii_modes_frame,text ="Original",variable= self.nii_mode_var,value=1,command=self.change_nii_view_option)
-        rad_mode_1.grid(row=0,column=0,padx=5,pady=5)
+        rad_mode_1.grid(row=0,column=0,padx=5,pady=5,sticky="w")    
         rad_mode_2 = ctk.CTkRadioButton(self.nii_modes_frame, text = "Maximum",variable = self.nii_mode_var,value =2,command = self.change_nii_view_option)
-        rad_mode_2.grid(row=0,column=1,padx=5,pady=5)
-        self.nii_3d_view_button = ctk.CTkButton(self._3d_tab,text="View in 3D",command = self.display_3d)
-        self.nii_3d_view_button.grid(row=1,column=0)
-        self.nii_max_percentile_frame = ctk.CTkFrame(self._3d_tab)
+        rad_mode_2.grid(row=0,column=1,padx=5,pady=5, sticky="w")  
+
+        self.nii_max_percentile_frame = ctk.CTkFrame(self.nii_modes_frame)
+        self.nii_max_percentile_frame.grid(row=1,column=1,sticky="w",padx=5,pady=5)
         self.nii_max_percentile_label = ctk.CTkLabel(self.nii_max_percentile_frame,text="Maximum percentile:")
-        self.nii_max_percentile_label.grid(row=0,column=0)
+        self.nii_max_percentile_label.grid(row=0,column=0,padx=5,pady=5, sticky="w")
         self.nii_max_percentile_var = ctk.StringVar(value ="99.0")
         self.nii_max_percentile =ctk.CTkEntry(self.nii_max_percentile_frame,textvariable=self.nii_max_percentile_var)
-        self.nii_max_percentile.grid(row=0,column=1)
-        self.nii_save_dir_button = ctk.CTkButton(self._3d_tab,text="Select output directory",command=self.open_nii_output_dir_select_dialog)
-        self.nii_save_dir_button.grid(row=2,column=0,padx =5,pady=3,sticky="w")
-        self.selected_nii_output_dir_label = ctk.CTkLabel(self._3d_tab,text="")
-        self.selected_nii_output_dir_label.grid(row=2,column=1,sticky="w",padx=3,pady=3)
-        self.nii_file_entry = ctk.CTkEntry(self._3d_tab,placeholder_text="Enter the 3d file name to save")
-        self.nii_file_entry.grid(row=3,column=0)
-        self.nii_file_save_button = ctk.CTkButton(self._3d_tab,text="Save",command=self.save_nii_file)
-        self.nii_file_save_button.grid(row=3,column=1,sticky="w")
+        self.nii_max_percentile.grid(row=0,column=1,padx=5,pady=5, sticky="w")
+
+        # Initially hide the frame
+        self.nii_max_percentile_frame.grid_forget()
+
+        self.nii_3d_view_button = ctk.CTkButton(self._3d_tab,text="View in 3D",command = self.display_3d)
+        self.nii_3d_view_button.grid(row=2,column=0, padx=5, pady=5, sticky="w")
+
+        self.save_frame = ctk.CTkFrame(self._3d_tab)
+        self.save_frame.grid(row=3,column=0,sticky="w",padx=5,pady=5)
+
+        self.nii_save_dir_button = ctk.CTkButton(self.save_frame,text="Select output folder",command=self.open_nii_output_dir_select_dialog)
+        self.nii_save_dir_button.grid(row=0,column=0,padx =5,pady=5,sticky="w")
+        self.selected_nii_output_dir_label = ctk.CTkLabel(self.save_frame,text="")
+        self.selected_nii_output_dir_label.grid(row=0,column=1,sticky="w",padx=5, pady=5,)
+        self.nii_file_entry = ctk.CTkEntry(self.save_frame,placeholder_text="Enter the 3d file name to save")
+        self.nii_file_entry.grid(row=0,column=2,padx=5, pady=5,sticky="w")
+        self.nii_file_save_button = ctk.CTkButton(self.save_frame,text="Save",command=self.save_nii_file)
+        self.nii_file_save_button.grid(row=0,column=3,sticky="w",padx=5, pady=5)
 
         self._3d_tab_exists = True  # Mark the 3D tab as created
 
@@ -689,52 +806,103 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.nii_3d_view_button.grid_forget()
         if self.nii_mode_var.get() ==1:
             self.nii_max_percentile_frame.grid_forget()
-            self.nii_3d_view_button.grid(row=1,column=0)
+            self.nii_3d_view_button.grid(row=2,column=0, sticky="w")    
         else:
-            self.nii_max_percentile_frame.grid(row=1,column=0)
-            self.nii_3d_view_button.grid(row=1,column=1) 
+            self.nii_max_percentile_frame.grid(row=1,column=1)
+            self.nii_3d_view_button.grid(row=2,column=0, sticky="w") 
 
-    def display_3d(self):
-        if self.nii_mode_var.get()==1:
-            # volume = Volume(self.nii_data.get_fdata())
-            volume_data = self.nii_data.get_fdata()
-            volume_data_flipped = np.flip(volume_data, axis=1)  # Flip along the y-axis
-            volume = Volume(volume_data_flipped)
-            volume.alpha([0,0.01,0.1,0.2,0.3,0.8,0.85,0.9,0.95,1])
-            volume.cmap("magma")
-            self.plotter = Plotter()
-            if not self.plotter.renderers:
-                self.plotter += volume  # Add volume if not already added
-            else:
-                self.plotter.clear()  # Clear existing actors
-            self.plotter += volume  # Re-add the volume or update it
-
-            self.plotter.show(interactive=False)
-            # self.setup_rotation(self.plotter, volume)
-            #self.plotter.show() 
-        else:
-            self.max_nii_data= np.copy(self.nii_data.get_fdata())
-            threshold = np.percentile(self.max_nii_data, float(self.nii_max_percentile_var.get()))
-            mask = self.max_nii_data < threshold
-            self.max_nii_data[mask] = 0
-            self.max_nii_data[~mask] = 1
-            volume_data_flipped = np.flip(self.max_nii_data, axis=1)  # Flip along the y-axis
-            volume = Volume(volume_data_flipped)
-            # volume = Volume(self.max_nii_data)
-            self.plotter1 = Plotter()
-            if not self.plotter1.renderers:
-                self.plotter1 += volume  # Add volume if not already added
-            else:
-                self.plotter1.clear()  # Clear existing actors
-            self.plotter1 += volume  # Re-add the volume or update it
-
-            self.plotter1.show(interactive=False)
-            # self.setup_rotation(self.plotter1, volume)
-            #self.plotter1.show()
-        
     def save_nii_file(self):
+        self.generate_3d_file()
+        self.max_nii_data= np.copy(self.nii_data.get_fdata())
         if self.nii_mode_var.get()==1:
             nib.save(self.nii_data, os.path.join(self.nii_output_directory,str(self.nii_file_entry.get())) + '.nii.gz')
         else:
             self.max_nii_image = nib.Nifti1Image(self.max_nii_data, self.nii_data.affine)
             nib.save(self.max_nii_image,os.path.join(self.nii_output_directory,str(self.nii_file_entry.get())) + '.nii.gz')
+
+    def display_3d(self):
+        self.generate_3d_file()
+
+        # Get the header information
+        affine_matrix = self.nii_data.affine.copy()
+        
+        # Adjust the z-axis scaling (3rd axis) in the affine matrix for slice thickness
+        logger.info(f"Affine matrix: {affine_matrix}")
+        # affine_matrix[2, 2]= (self.thickness+self.gap)/((1+self.slices)*50)
+        affine_matrix[2, 2] *= self.thickness
+        voxel_spacing = (affine_matrix[0, 0], affine_matrix[1, 1], affine_matrix[2, 2])
+        logger.info(f"Affine Matrix after adjustment: {affine_matrix}")
+        
+        if self.nii_mode_var.get() == 1:
+            volume_data = self.nii_data.get_fdata()
+
+            if self.gap > 0:
+                volume_data = self.insert_gaps_between_slices(volume_data,self.gap)
+            
+            # Flip the volume along the y-axis
+            volume_data_flipped = np.flip(volume_data, axis=1)
+            volume = Volume(volume_data_flipped)
+
+            # Set opacity and colormap
+            volume.alpha([0, 0.01, 0.1, 0.2, 0.3, 0.8, 0.85, 0.9, 0.95, 1])
+            volume.cmap("magma")
+
+            # Apply the adjusted affine matrix to the volume - Set the voxels size in the 3 dimensions.
+            volume.spacing(voxel_spacing)
+
+            self.plotter = Plotter()
+            if not self.plotter.renderers:
+                self.plotter += volume
+            else:
+                self.plotter.clear()
+                self.plotter += volume
+
+            self.plotter.show(interactive=False)
+        
+        else:
+            # Load and threshold the volume data
+            self.max_nii_data = np.copy(self.nii_data.get_fdata())
+            threshold = np.percentile(self.max_nii_data, float(self.nii_max_percentile_var.get()))
+            mask = self.max_nii_data < threshold
+            self.max_nii_data[mask] = 0
+            self.max_nii_data[~mask] = 1
+
+            if self.gap > 0:
+                self.max_nii_data = self.insert_gaps_between_slices(self.max_nii_data, self.gap)
+
+            # Flip the volume along the y-axis
+            volume_data_flipped = np.flip(self.max_nii_data, axis=1)
+            volume = Volume(volume_data_flipped)
+
+            # Apply the adjusted affine matrix to the volume
+            volume.spacing(voxel_spacing)
+
+            # Create and display the plot
+            self.plotter1 = Plotter()
+            if not self.plotter1.renderers:
+                self.plotter1 += volume
+            else:
+                self.plotter1.clear()
+                self.plotter1 += volume
+
+            self.plotter1.show(interactive=False)
+
+    def insert_gaps_between_slices(self, volume_data, gap):
+        """
+        Inserts empty slices between each z-slice in the volume data.
+        :param volume_data: The original 3D volume data.
+        :param gap: The number of empty slices to insert between each z-slice.
+        :return: Modified 3D volume data with gaps.
+        """
+        # Get the shape of the original data
+        x_dim, y_dim, z_dim = volume_data.shape
+        
+        # Create a new array with the size adjusted for gaps
+        new_z_dim = z_dim + (z_dim - 1) * gap  
+        new_volume_data = np.zeros((x_dim, y_dim, new_z_dim))
+        
+        # Copy the original slices into the new array with gaps
+        for z in range(z_dim):
+            new_volume_data[:, :, z * (gap + 1)] = volume_data[:, :, z]
+        
+        return new_volume_data

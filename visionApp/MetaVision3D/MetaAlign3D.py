@@ -1,319 +1,99 @@
 # MetaAlign3D module
+import sys
 import numpy as np
 import pandas as pd
 import cv2
 import os
-import matplotlib.pyplot as plt
-from skimage.transform import resize
-from PIL import Image
+from tqdm import tqdm
+from .utils import get_ref_compound,make_directory
 import logging
 logger = logging.getLogger(__name__)
-import sys 
-def create_slice(df_all,slice_number, col='result', reverse = False):
-    nslice = len(df_all.tissue_id.unique())
+
+def image_size(data):
+    x_size_list = []
+    y_size_list = []
+    tissue_id_list = data.tissue_id.unique().tolist()
+    for i in range(len(tissue_id_list)):
+        data_temp = data[data['tissue_id'] == tissue_id_list[i]]
+
+        # loop for counting the unique
+        x_values = data_temp['x'].to_numpy()
+        y_values = data_temp['y'].to_numpy()
+
+        visited_x = np.unique(x_values)
+        visited_y = np.unique(y_values)
+
+        cnt_x = len(visited_x)
+        cnt_y = len(visited_y)
+
+        x_size_temp = ((cnt_x*1.1 + 9) // 10) * 10
+        y_size_temp = ((cnt_y*1.1 + 9) // 10) * 10
+        
+        x_size_list.append(x_size_temp)
+        y_size_list.append(y_size_temp)
+        
+    x_size = np.ceil(max(x_size_list)).astype(int)
+    y_size = np.ceil(max(y_size_list)).astype(int)
+    return x_size,y_size
+    
+    
+def create_slice(df_all,slice_number, compound, reverse = False):
+    tissue_id_list = df_all.tissue_id.unique().tolist()
+    nslice = len(tissue_id_list)
     if reverse:
-        df_temp = df_all[df_all['tissue_id'] == nslice-slice_number]
+        df_temp = df_all[df_all['tissue_id'] == tissue_id_list[nslice-slice_number-1]]
     else:
-        df_temp = df_all[df_all['tissue_id'] == (slice_number+1)]
-    cnt_x = 0
-    cnt_y = 0
+        df_temp = df_all[df_all['tissue_id'] == tissue_id_list[slice_number]]
 
-    # list to hold visited values
-    visited_x = []
-    visited_y = []
 
     # loop for counting the unique
-    x_values = np.around(df_temp['x'].to_numpy(), 0)
-    y_values = np.around(df_temp['y'].to_numpy(), 0)
+    # x_values = np.around(df_temp['x'].to_numpy(), 0)
+    # y_values = np.around(df_temp['y'].to_numpy(), 0)
+    x_values = df_temp['x'].to_numpy()
+    y_values = df_temp['y'].to_numpy()
     
-    for i in range(len(x_values)):
-        if x_values[i] not in visited_x: 
-            visited_x.append(x_values[i])
-            cnt_x += 1
-        if y_values[i] not in visited_y: 
-            visited_y.append(y_values[i])
-            cnt_y += 1
-
-    #print("No.of.unique values :", cnt_x)
-    #print("No.of.unique values :", cnt_y)
-
-    visited_x = np.array(visited_x)
-    visited_y = np.array(visited_y)
+    visited_x = np.unique(x_values)
+    visited_y = np.unique(y_values)
+    
+    cnt_x = len(visited_x)
+    cnt_y = len(visited_y)
 
     sort_x_inds = visited_x.argsort()
     sort_y_inds = visited_y.argsort()
 
     visited_x = visited_x[sort_x_inds]
     visited_y = visited_y[sort_y_inds]
-    
-#     print(visited_x, "\n")
-#     print(visited_y, "\n")
 
     reshaped_matrix = np.zeros((cnt_x, cnt_y))
-    for ii, vi in enumerate(eval(f"df_temp.{col}")):
+    for ii, vi in enumerate(getattr(df_temp,compound)):
         if not np.isnan(vi):
             x_ind = find_nearest(visited_x, x_values[ii])
             y_ind = find_nearest(visited_y, y_values[ii])
             reshaped_matrix[x_ind, y_ind] = vi
+            
         else:
             continue
-    return reshaped_matrix
-
-def create_slice_sami(df_all,slice, col='result', roi=False,reverse = False):
-    '''
-    nslice = len(df_all.tissue_id.unique())
-    # if reverse:
-    #     df_temp = df_all[df_all['tissue_id'] == nslice-slice_number]
-    # else:
-    #     df_temp = df_all[df_all['tissue_id'] == (slice_number+1)]
-    df_temp = df_all[df_all['tissue_id'] == slice]
-    cnt_x = 0
-    cnt_y = 0
-    print("df_temp:",np.count_nonzero(df_temp[col]))
-    # list to hold visited values
-    visited_x = []
-    visited_y = []
-
-    # loop for counting the unique
-    x_values = np.around(df_temp['x'].to_numpy(), 0)
-    y_values = np.around(df_temp['y'].to_numpy(), 0)
     
-    for i in range(len(x_values)):
-        if x_values[i] not in visited_x: 
-            visited_x.append(x_values[i])
-            cnt_x += 1
-        if y_values[i] not in visited_y: 
-            visited_y.append(y_values[i])
-            cnt_y += 1
-
-    print("No.of.unique values :", cnt_x)
-    print("No.of.unique values :", cnt_y)
-
-    visited_x = np.array(visited_x)
-    visited_y = np.array(visited_y)
-
-    sort_x_inds = visited_x.argsort()
-    sort_y_inds = visited_y.argsort()
-
-    visited_x = visited_x[sort_x_inds]
-    visited_y = visited_y[sort_y_inds]
-    
-#     print(visited_x, "\n")
-#     print(visited_y, "\n")
-
-    reshaped_matrix = np.zeros((cnt_x, cnt_y))
-    for ii, vi in enumerate(df_temp[col]):
-        # print("vi:", vi)
-        if not np.isnan(vi):
-            x_ind = find_nearest(visited_x, x_values[ii])
-            y_ind = find_nearest(visited_y, y_values[ii])
-            reshaped_matrix[x_ind, y_ind] = vi
-        else:
-            continue
-    return reshaped_matrix
-    '''
-    # df_temp = df_all[df_all['tissue_id'] == slice]
-    if roi == False:
-        df_temp = df_all[df_all['tissue_id'] == slice]
-    else:
-        print("roiiii")
-        df_temp=df_all[(df_all['tissue_id'] == slice) & df_all['roi'].notna()]
-    print("df_temp:")
-    print("df_temp:")
-
-    # Get unique x and y values (rounded) and ensure they're numpy arrays
-    x_values = np.around(df_temp['x'].to_numpy(), 0)
-    y_values = np.around(df_temp['y'].to_numpy(), 0)
-    unique_x = np.unique(x_values)
-    unique_y = np.unique(y_values)
-    
-    cnt_x, cnt_y = len(unique_x), len(unique_y)
-
-    print("No. of unique x values:", cnt_x)
-    print("No. of unique y values:", cnt_y)
-
-    reshaped_matrix = np.zeros((cnt_x, cnt_y))
-    
-    # Pre-calculate indices if possible
-    x_indices = np.searchsorted(unique_x, x_values)
-    y_indices = np.searchsorted(unique_y, y_values)
-    
-    for value, x_ind, y_ind in zip(df_temp[col], x_indices, y_indices):
-        if not np.isnan(value):
-            reshaped_matrix[x_ind, y_ind] = value
-
-    return reshaped_matrix
-
-def create_slice_sami_skeleton(df_all,slice, col='result', roi=False,reverse = False):
-    if roi == False:
-        df_temp = df_all[df_all['tissue_id'] == slice]
-    else:
-        print("roiiii")
-        df_temp=df_all[(df_all['tissue_id'] == slice) & df_all['roi'].notna()]
-    print("df_temp:")
-
-    # Get unique x and y values (rounded) and ensure they're numpy arrays
-    x_values = np.around(df_temp['x'].to_numpy(), 0)
-    y_values = np.around(df_temp['y'].to_numpy(), 0)
-    unique_x = np.unique(x_values)
-    unique_y = np.unique(y_values)
-    
-    cnt_x, cnt_y = len(unique_x), len(unique_y)
-
-    print("No. of unique x values:", cnt_x)
-    print("No. of unique y values:", cnt_y)
-
-    reshaped_matrix = np.zeros((cnt_x, cnt_y))
-    
-    # Pre-calculate indices if possible
-    x_indices = np.searchsorted(unique_x, x_values)
-    y_indices = np.searchsorted(unique_y, y_values)
-    
-    for value, x_ind, y_ind in zip(df_temp[col], x_indices, y_indices):
-        # if not np.isnan(value):
-        reshaped_matrix[x_ind, y_ind] = 1
-
     return reshaped_matrix
 
 def find_nearest(array, value):
-    
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
     return idx
-    
-    # idx = np.searchsorted(sorted_array, value, side="left")
-    # if idx > 0 and (idx == len(sorted_array) or np.abs(value - sorted_array[idx-1]) < np.abs(value - sorted_array[idx])):
-    #     return idx-1
-    # else:
-    #     return idx
 
-# def create_compound_matrix(data,col='result',reverse=False):
-#     print(len(data))
-#     data = data.dropna(subset=['tissue_id', col])
-#     print(len(data))
-#     print("df initial:",np.count_nonzero(data[col]))
-    
-#     unique_tissue_ids = sorted(data['tissue_id'].unique())
-#     nslice = len(unique_tissue_ids)
-#     print(nslice)
-#     print(np.count_nonzero(data[col]))
-    
-#     matrix = np.zeros((nslice, 200, 250))
-#     # nslice = len(data.tissue_id.unique())
-#     # print(nslice)
-#     # matrix = np.zeros((nslice, 200, 350))
-#     # for ii in range(matrix.shape[0]):
-#     for ii,slice in enumerate(data['tissue_id'].unique()):
-#         data_temp = create_slice(data, slice,col=col, reverse=reverse)
-#         print(np.count_nonzero(data_temp))
-#         x_vals = int((200 - data_temp.shape[0])/2) 
-#         y_vals = int((250 - data_temp.shape[1])/2) #find the (x,y) of the start vertex, '/2' means put the slice in the center
-#         #matrix[ii, int(x_vals/2):int(x_vals/2)+data_temp.shape[0], int(y_vals/2):int(y_vals/2)+data_temp.shape[1]] = data_temp
-#         matrix[ii, x_vals:x_vals+data_temp.shape[0], y_vals:y_vals+data_temp.shape[1]] = data_temp
-#         # plt.imshow(matrix[ii], cmap='gray')
-#         # plt.axis('off')
-#         # plt.show()
-#     return matrix
-
-def create_compound_matrix_sami(data,col='result',roi=False,reverse=False):
-    print(data.columns)
-    data = data.dropna(subset=['tissue_id', col])
-    print(len(data))
-    print("df initial:",np.count_nonzero(data[col]))
-    
-    unique_tissue_ids = data['tissue_id'].unique()
-    nslice = len(unique_tissue_ids)
-    print(nslice)
-    print(np.count_nonzero(data[col]))
-    
-    # matrix = np.zeros((nslice, 200, 250))
-    matrix = {}
-    # nslice = len(data.tissue_id.unique())
-    # print(nslice)
-    # matrix = np.zeros((nslice, 200, 350))
-    # for ii in range(matrix.shape[0]):
-    for ii,slice in enumerate(data['tissue_id'].unique()):
-        data_temp = create_slice_sami(data, slice,col=col, roi=roi,reverse=reverse)
-        print(np.count_nonzero(data_temp))
-        # x_vals = int((200 - data_temp.shape[0])/2) 
-        # y_vals = int((250 - data_temp.shape[1])/2) #find the (x,y) of the start vertex, '/2' means put the slice in the center
-        #matrix[ii, int(x_vals/2):int(x_vals/2)+data_temp.shape[0], int(y_vals/2):int(y_vals/2)+data_temp.shape[1]] = data_temp
-        # matrix[ii, x_vals:x_vals+data_temp.shape[0], y_vals:y_vals+data_temp.shape[1]] = data_temp
-        matrix[ii] = data_temp
-        # print(data_temp.shape)
-        # plt.imshow(matrix[ii], cmap='gray')
-        # plt.axis('off')
-        # plt.show()
-    zarray = np.zeros((nslice,200,350))
-    for key in matrix:
-        print(zarray.shape[0] / matrix[key].shape[0])
-        print()
-        scale_factor = min(zarray.shape[1] / matrix[key].shape[0], zarray.shape[2] / matrix[key].shape[1])
-        print("Sacle",scale_factor)
-    
-        # Resize the image array
-        resized_image = resize(matrix[key], (int(matrix[key].shape[0] * scale_factor), int(matrix[key].shape[1] * scale_factor)), anti_aliasing=False)
-    
-        # Calculate padding
-        pad_row = (zarray.shape[1] - resized_image.shape[0]) // 2
-        pad_col = (zarray.shape[2] - resized_image.shape[1]) // 2
-    
-        # Place the resized image into the center of the zero array with padding
-        zarray[key,pad_row:pad_row+resized_image.shape[0], pad_col:pad_col+resized_image.shape[1]] = resized_image
-        # plt.imshow(zarray[key], cmap='gray')
-        # plt.show()
-    return zarray
-
-def create_compound_matrix_sami_skeleton(data,col='result',roi=False,reverse=False):
-    print(len(data))
-    data = data.dropna(subset=['tissue_id', col])
-    print(len(data))
-    print("df initial:",np.count_nonzero(data[col]))
-    
-    unique_tissue_ids = data['tissue_id'].unique()
-    nslice = len(unique_tissue_ids)
-    print(nslice)
-    print(np.count_nonzero(data[col]))
-    matrix = {}
-    for ii,slice in enumerate(data['tissue_id'].unique()):
-        data_temp = create_slice_sami_skeleton(data, slice,col=col, roi= roi,reverse=reverse)
-        print(np.count_nonzero(data_temp))
-        matrix[ii] = data_temp
-    zarray = np.zeros((nslice,200,350))
-    for key in matrix:
-        # print(zarray.shape[0] / matrix[key].shape[0])
-        # print()
-        scale_factor = min(zarray.shape[1] / matrix[key].shape[0], zarray.shape[2] / matrix[key].shape[1])
-        print("Sacle",scale_factor)
-    
-        # Resize the image array
-        # resized_image = resize(matrix[key], (int(matrix[key].shape[0] * scale_factor), int(matrix[key].shape[1] * scale_factor)), anti_aliasing=False)
-        image = Image.fromarray(matrix[key])
-        new_size = (int(image.width * scale_factor), int(image.height * scale_factor))
-        resized = image.resize(new_size, Image.LANCZOS)
-        resized_image = np.array(resized)
-        # Calculate padding
-        pad_row = (zarray.shape[1] - resized_image.shape[0]) // 2
-        pad_col = (zarray.shape[2] - resized_image.shape[1]) // 2
-    
-        # Place the resized image into the center of the zero array with padding
-        zarray[key,pad_row:pad_row+resized_image.shape[0], pad_col:pad_col+resized_image.shape[1]] = resized_image
-        # plt.imshow(zarray[key], cmap='gray')
-        # plt.show()
-    return zarray
-
-def create_compound_matrix(data,col='result',reverse=False):
+def create_compound_matrix(data,compound,reverse=False):
+    x_size, y_size = image_size(data)
     nslice = len(data.tissue_id.unique())
-    print(nslice)
-    matrix = np.zeros((nslice, 200, 350))
-    for ii in range(matrix.shape[0]):
-        data_temp = create_slice(data, ii,col=col, reverse=reverse)
-        # print(np.count_nonzero(data_temp))
-        x_vals = int((200 - data_temp.shape[0])/2) 
-        y_vals = int((350 - data_temp.shape[1])/2) #find the (x,y) of the start vertex, '/2' means put the slice in the center
-        #matrix[ii, int(x_vals/2):int(x_vals/2)+data_temp.shape[0], int(y_vals/2):int(y_vals/2)+data_temp.shape[1]] = data_temp
+    matrix = np.zeros((nslice, x_size, y_size))
+
+    for ii in tqdm(range(matrix.shape[0])):
+        data_temp = create_slice(data, ii,compound=compound, reverse=reverse)
+        x_vals = np.ceil((x_size - data_temp.shape[0])/2).astype(int) 
+        y_vals = np.ceil((y_size - data_temp.shape[1])/2).astype(int) #find the (x,y) of the start vertex, '/2' means put the slice in the center
         matrix[ii, x_vals:x_vals+data_temp.shape[0], y_vals:y_vals+data_temp.shape[1]] = data_temp
     return matrix
+
+
 
 def motionCorr_apply_maldi(ref_image, moving_image):
     cv_img_1 = cv2.convertScaleAbs(ref_image, alpha=255/ref_image.max())
@@ -351,60 +131,91 @@ def alignment_warp_matrix(moving_image, warp_matrix):
     
     return im_aligned
 
-def get_warp_matrix(ref_matrix):
+def calculate_warp_matrix(ref_matrix):
     matrix_corrected = np.zeros((ref_matrix.shape))
     matrix_corrected[0] = ref_matrix[0]
     warp_matrix_all = np.zeros((matrix_corrected.shape[0] - 1, 2, 3))
-    for ii in range(matrix_corrected.shape[0] - 1):
-        matrix_corrected[ii + 1], warp_matrix_all[ii] = motionCorr_apply_maldi(
-            matrix_corrected[ii], ref_matrix[ii + 1])
-    np.save('visionApp/MetaVision3D/warpmatrix/warp_matrix_all', warp_matrix_all)
+    for ii in tqdm(range(matrix_corrected.shape[0] - 1)):
+        if np.all(ref_matrix[ii + 1] == 0):
+            next_nonzero_index = ii + 2
+            while next_nonzero_index < ref_matrix.shape[0] and np.all(ref_matrix[next_nonzero_index] == 0):
+                next_nonzero_index += 1
+            if next_nonzero_index < ref_matrix.shape[0]:
+                matrix_corrected[ii + 1], warp_matrix_all[ii] = motionCorr_apply_maldi(
+                    matrix_corrected[ii], ref_matrix[next_nonzero_index])
+            else:
+                matrix_corrected[ii + 1] = matrix_corrected[ii]
+                warp_matrix_all[ii] = np.eye(2, 3)
+        else:
+            matrix_corrected[ii + 1], warp_matrix_all[ii] = motionCorr_apply_maldi(
+                matrix_corrected[ii], ref_matrix[ii + 1])
+            
     return warp_matrix_all
         
 
 def seq_align(matrix, warp_matrix_all):
     matrix_corrected = np.zeros((matrix.shape))
     matrix_corrected[0] = matrix[0]
-    for ii in range(matrix_corrected.shape[0]-1):
-        matrix_corrected[ii+1] = alignment_warp_matrix(matrix[ii+1],warp_matrix_all[ii]) 
+    for ii in tqdm(range(matrix_corrected.shape[0]-1)):
+        if np.all(matrix[ii + 1] == 0):
+            matrix_corrected[ii+1] = matrix[ii+1]
+        else:
+            matrix_corrected[ii+1] = alignment_warp_matrix(matrix[ii+1],warp_matrix_all[ii]) 
     return matrix_corrected
 
 
 class MetaAlign3D:
-    def __init__(self,data):
+    def __init__(self, group, data, compound, first_feature='Pyruvate', reverse=False):
+        self.group = group
         self.data = data
+        self.compound = compound
+        self.first_feature = first_feature
+        self.reverse = reverse
         self.matrix=None
-        # current path
-        # print(os.getcwd())
+        self.corrected_matrix=None
+        self.warp_matrix_all=None
+        
         try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
             base_path = os.path.join(sys._MEIPASS , 'config')
         except Exception:
             base_path = 'visionApp/MetaVision3D/warpmatrix'
-
-        self.warp_matrix_file = os.path.join(base_path, 'warp_matrix_all.npy')
-        if os.path.exists(self.warp_matrix_file):
+            self.warp_matrix_file = os.path.join(base_path, f'warp_matrix_{self.group}.npy')
+        if os.path.exists(self.warp_matrix_file):            
+        # if os.path.exists(f'./warpmatrix/warp_matrix_{self.group}.npy'):
+            logger.info('Warp matrix exists. Using existing warp matrix to do alignment.')
+            # self.warp_matrix_all = np.load(f'./warpmatrix/warp_matrix_{self.group}.npy')
             self.warp_matrix_all = np.load(self.warp_matrix_file)
-        # if os.path.exists(r'C:\Users\dprav\OneDrive\Desktop\MetaAPP\MetaVision3D\warpmatrix\warp_matrix_all.npy'):
-        #     self.warp_matrix_all = np.load(r'C:\Users\dprav\OneDrive\Desktop\MetaAPP\MetaVision3D\warpmatrix\warp_matrix_all.npy')
+            
         else:
-            logger.info("Warp matrix file not found")
-             
-    def create_compound_matrix(self,col='result',reverse=False):
+            print('Warp matrix does not exist. Using the most prevalent compound to calculate warp matrix.')
+            # find most prevalent compound as reference compound
+            ref_compound = get_ref_compound(self.data,first_feature=self.first_feature)
+            # calculate warp matrix
+            ref_compound_matrix = create_compound_matrix(self.data, ref_compound, reverse=self.reverse)
+            self.warp_matrix_all = calculate_warp_matrix(ref_compound_matrix)
+            # make_directory('visionApp/MetaVision3D/warpmatrix')
+            make_directory(base_path)
+            # np.save(f'visionApp/MetaVision3D/warpmatrix/warp_matrix_{self.group}', self.warp_matrix_all)
+            np.save(self.warp_matrix_file, self.warp_matrix_all)
+            logger.info(f'Warp matrix is created based on {ref_compound}.')
+            
+    def create_compound_matrix(self):
+        x_size, y_size = image_size(self.data)
         nslice = len(self.data.tissue_id.unique())
-        self.matrix = np.zeros((nslice, 200, 350))
-        for ii in range(self.matrix.shape[0]):
-            data_temp = create_slice(self.data, ii,col=col,reverse=reverse)
-            x_vals = int((200 - data_temp.shape[0])/2) 
-            y_vals = int((350 - data_temp.shape[1])/2) #find the (x,y) of the start vertex, '/2' means put the slice in the center
+        self.matrix = np.zeros((nslice, x_size, y_size))
+        for ii in tqdm(range(self.matrix.shape[0])):
+            data_temp = create_slice(self.data, ii, compound=self.compound, reverse=self.reverse)
+            x_vals = int((x_size - data_temp.shape[0])/2) 
+            y_vals = int((y_size - data_temp.shape[1])/2) #find the (x,y) of the start vertex, '/2' means put the slice in the center
             self.matrix[ii, x_vals:x_vals+data_temp.shape[0], y_vals:y_vals+data_temp.shape[1]] = data_temp
         return self.matrix
     
     def seq_align(self):
-        matrix_corrected = np.zeros((self.matrix.shape))
-        matrix_corrected[0] = self.matrix[0]
-        for ii in range(matrix_corrected.shape[0]-1):
-            matrix_corrected[ii+1] = alignment_warp_matrix(self.matrix[ii+1],self.warp_matrix_all[ii]) 
-        return matrix_corrected
-
-
+        self.matrix_corrected = np.zeros((self.matrix.shape))
+        self.matrix_corrected[0] = self.matrix[0]
+        for ii in tqdm(range(self.matrix_corrected.shape[0]-1)):
+            if np.all(self.matrix[ii + 1] == 0):
+                self.matrix_corrected[ii+1] = self.matrix[ii+1]
+            else:
+                self.matrix_corrected[ii+1] = alignment_warp_matrix(self.matrix[ii+1],self.warp_matrix_all[ii]) 
+        return self.matrix_corrected
