@@ -42,7 +42,9 @@ def impute(neighbors):
     mask = neighbors != 0
     sum_without_zeros = np.sum(neighbors * mask, axis=0)
     count_non_zeros = np.sum(mask, axis=0)
-    imputation = np.divide(sum_without_zeros, count_non_zeros, where=count_non_zeros != 0)
+    imputation = np.zeros_like(sum_without_zeros)
+    non_zero_indices = count_non_zeros != 0 
+    imputation[non_zero_indices] = np.divide(sum_without_zeros[non_zero_indices], count_non_zeros[non_zero_indices])
     return imputation
 
 def seq_impute(imgs):
@@ -65,13 +67,14 @@ def fully_impute(imgs):
     return fully_imputed_matrix
 
 class MetaImpute3D:
-    def __init__(self,matrix):
+    def __init__(self,matrix,radius):
         self.matrix = matrix
+        self.radius = radius
         
     def seq_impute(self):
         matrix_corrected_imputation = self.matrix.copy()
         for target_img in range(len(self.matrix)):
-            target, neighbors, before, after = find_neighbors(matrix_corrected_imputation,target_img,radius=2)
+            target, neighbors, before, after = find_neighbors(matrix_corrected_imputation,target_img,radius=self.radius)
             impute_mask = find_impute_mask(target,neighbors,before,after)
             imputation = impute(neighbors)
             matrix_corrected_imputation[target_img][impute_mask] = imputation[impute_mask]
