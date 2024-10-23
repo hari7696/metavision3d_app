@@ -27,6 +27,7 @@ class PathwaysStep(ctk.CTkFrame):
         self.queue = Queue()
         self.plot_dot_image_label = None
         self.network_image_label = None
+        self.pathway_direction_image_label = None
         # self.sami_type = file_handler.file_type
         if not os.path.exists(self.pathways_folder):
             os.makedirs(self.pathways_folder)
@@ -62,6 +63,15 @@ class PathwaysStep(ctk.CTkFrame):
         self.markers_root_tab.rowconfigure(0, weight = 1)
         self.markers_root_tab.rowconfigure(1, weight = 20)
         self.markers_root_tab.rowconfigure(1, weight = 5)
+
+        # adding new tablayout for pathway directions
+        self.pathway_directions_tab = self.vis_tabs.add("Pathway Directions")
+        self.pathway_directions_tab.columnconfigure(0, weight=1)
+        self.pathway_directions_tab.rowconfigure(0, weight = 1)
+
+        # adding a frame in the pathway directions tab
+        self.pathway_directions_frame = ctk.CTkFrame(self.pathway_directions_tab, bg_color="transparent")
+        self.pathway_directions_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
         #options panel
         self.options_panel = ctk.CTkFrame(self.markers_root_tab, bg_color="transparent")
@@ -165,7 +175,7 @@ class PathwaysStep(ctk.CTkFrame):
         logger.info("options panel prepared")
 
     def generate_pathways(self):
-        
+        # self.run_button.configure(state="disabled")
         logger.info("Generating Pathways button hit")
         # this function run the command of generating markers button
         self.selected_file = self.file_selection.get()
@@ -182,7 +192,8 @@ class PathwaysStep(ctk.CTkFrame):
         print("region: ", region)
         # checking the number of clusters in the selected file, need this number for the visualization prep
         temp_df = os.path.join(self.makers_folder, self.selected_file)
-        self.num_clusters = pd.read_csv(temp_df)['cluster'].nunique()
+        self.num_clusters = list(np.sort(pd.read_csv(temp_df)['cluster'].unique()))
+        self.num_clusters = [str(value) for value in self.num_clusters]
 
         # for class referece
         self.pathway = Pathway(region, self.omics, self.region_specific_pathways_folder, self.makers_folder)
@@ -225,8 +236,10 @@ class PathwaysStep(ctk.CTkFrame):
                     self.update()
                     self.prepare_plot_dot()
                     self.prepare_network_plot()
+                    self.prepare_bar_plot()
                     self.after(500, self.display_plot_dot())
                     self.after(500, self.display_network_plot())
+                    self.after(500, self.display_pathways_direction_plot())
                     self.after(1000, CTkMessagebox(title="Info", message="Pathways are generated, Please check the R output tab at the bottom for more details"))
                     logger.info("pathways visualizations done")
         except Exception as e:
@@ -268,17 +281,17 @@ class PathwaysStep(ctk.CTkFrame):
         # self.cluster_entry = ctk.CTkEntry(self.plot_dot_options_panel, width=50, placeholder_text= "5",)
         # self.cluster_entry.grid(row=0, column=1, sticky="w", padx=5, pady=5)
         # self.cluster_entry.insert(0, "1")
-        values = np.arange(0, self.num_clusters+1)
-        values = [str(value) for value in values]
+ 
+        # values = [str(value) for value in values]
         _ = ctk.StringVar(value='choose cluster')
         self.cluster_entry = ctk.CTkComboBox(master= self.plot_dot_options_panel,
-                                            values=values,
+                                            values=self.num_clusters,
                                             variable=_,
                                             button_color="#b5b8b0",
                                             width = 140
                                             )
         self.cluster_entry.grid(row=0, column=1, sticky="w", padx=5, pady=5)
-        self.cluster_entry.set("1")
+        self.cluster_entry.set(self.num_clusters[0])
 
         # creating a label to select top N clusters
         choose_top_n = ctk.CTkLabel(self.plot_dot_options_panel, text="select top N")
@@ -320,7 +333,8 @@ class PathwaysStep(ctk.CTkFrame):
         top_n = int(self.top_n_entry.get())
         scale = int(self.size_entry_dot.get())
         try:
-            image_location = self.pathway.plot_dot(cluster=cluster,scale=scale,height=10,top=top_n,show=False)
+            image_location = self.pathway.plot_dot(cluster,scale=scale,height=10,top=top_n,show=False)
+            
             logger.info(f"plot dot image location: {image_location}")   
         except Exception as e:
             logger.error(f"Error in plot_dot: {e}")
@@ -374,16 +388,16 @@ class PathwaysStep(ctk.CTkFrame):
         # self.cluster_entry = ctk.CTkEntry(self.plot_dot_options_panel, width=50, placeholder_text= "5",)
         # self.cluster_entry.grid(row=0, column=1, sticky="w", padx=5, pady=5)
         # self.cluster_entry.insert(0, "1")
-        values = np.arange(0, self.num_clusters+1)
-        values = [str(value) for value in values]
+        # values = np.arange(0, self.num_clusters+1)
+        # values = [str(value) for value in values]
         _ = ctk.StringVar(value='choose cluster')
         self.network_cluster_entry = ctk.CTkComboBox(master= self.network_options_panel,
-                                            values=values,
+                                            values=self.num_clusters,
                                             variable=_,
                                             button_color="#b5b8b0", width= 140
                                             )
         self.network_cluster_entry.grid(row=0, column=1, sticky="w", padx=5, pady=5)
-        self.network_cluster_entry.set("1")
+        self.network_cluster_entry.set(self.num_clusters[0])
 
         # creating a label to select top N clusters
         choose_top_n = ctk.CTkLabel(self.network_options_panel, text="select top N")
@@ -428,12 +442,11 @@ class PathwaysStep(ctk.CTkFrame):
 
         try:
             image_location = self.pathway.pathway_network(cluster=cluster,top=top_n,size = size, show=False)
-            logger.info(f"network plot image location: {image_location}")
         except Exception as e:
             logger.error(f"Error in plot_dot: {e}")
             CTkMessagebox(title="Error", message="Something went wrong in pathway calculation", icon="cancel")
 
-
+        logger.info(f"network plot image location: {image_location}")
         # creating a label to display the image
         self.network_image_label = ctk.CTkLabel(self.network_image_frame , text = "", width=600, height=600)
         self.network_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)
@@ -444,6 +457,110 @@ class PathwaysStep(ctk.CTkFrame):
         self.network_image_label.image = ctk_image2
         self.status_label_network_plot.configure(text="", text_color="yellow")
         self.update()
+
+    def prepare_bar_plot(self):
+
+        logger.info("preparing bar plot")
+
+        for child in self.pathway_directions_frame.winfo_children():
+            child.destroy() 
+
+        self.pathway_directions_frame.columnconfigure(0, weight=1)
+        self.pathway_directions_frame.rowconfigure(0, weight=1)
+        self.pathway_directions_frame.rowconfigure(1, weight=9)
+
+        # plot dot options panel
+        self.path_dir_options_panel = ctk.CTkFrame(self.pathway_directions_frame, bg_color="transparent")
+        self.path_dir_options_panel.grid(row=0, column=0, sticky="new", padx=5, pady=5)
+        # self.circular_options_panel.columnconfigure(0, weight=1)
+        # self.circular_options_panel.columnconfigure(1, weight=1)
+        # self.circular_options_panel.columnconfigure(2, weight=1)
+        # self.circular_options_panel.rowconfigure(0, weight=1)
+
+        # plot_frame
+        self.path_dir_image_frame = ctk.CTkFrame(self.pathway_directions_frame, bg_color="transparent")
+        self.path_dir_image_frame.grid(row=1, column=0, sticky="new", padx=5, pady=5)
+        self.path_dir_image_frame.columnconfigure(0, weight=1)
+        self.path_dir_image_frame.rowconfigure(0, weight=1)
+
+        # creating a label to select cluster
+        choose_cluster_label = ctk.CTkLabel(self.path_dir_options_panel, text="choose cluster")
+        choose_cluster_label.grid(row=0, column=0, sticky="w", padx=5, pady=5)
+
+        #entry box to take value
+        # self.cluster_entry = ctk.CTkEntry(self.plot_dot_options_panel, width=50, placeholder_text= "5",)
+        # self.cluster_entry.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+        # self.cluster_entry.insert(0, "1")
+        # values = np.arange(0, self.num_clusters+1)
+        # values = [str(value) for value in values]
+        _ = ctk.StringVar(value='choose cluster')
+        self.path_dir_cluster_entry = ctk.CTkComboBox(master= self.path_dir_options_panel,
+                                            values=self.num_clusters,
+                                            variable=_,
+                                            button_color="#b5b8b0", width= 140
+                                            )
+        self.path_dir_cluster_entry.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+        self.path_dir_cluster_entry.set(self.num_clusters[0])
+
+        # creating a label to select top N clusters
+        choose_top_n = ctk.CTkLabel(self.path_dir_options_panel, text="select top N")
+        choose_top_n.grid(row=0, column=2, sticky="w", padx=5, pady=5)
+
+        #entry box to take value
+        self.path_dir_n_entry = ctk.CTkEntry(self.path_dir_options_panel, width=50, placeholder_text= "5",)
+        self.path_dir_n_entry.grid(row=0, column=3, sticky="w", padx=5, pady=5)
+        self.path_dir_n_entry.insert(0, "5")
+
+        # entry box to take size
+        # self.size_label = ctk.CTkLabel(self.network_options_panel, text="Dot size ")
+        # self.size_label.grid(row=0, column=4, sticky="w", padx=5, pady=5)
+
+        # self.size_entry = ctk.CTkEntry(self.network_options_panel, width=50, placeholder_text= "5",)
+        # self.size_entry.grid(row=0, column=5, sticky="w", padx=5, pady=5)
+        # self.size_entry.insert(0, "8")
+
+
+        # button to run the function
+        self.run_button_path_dir= ctk.CTkButton(self.path_dir_options_panel, text="Run", command=self.display_pathways_direction_plot)
+        self.run_button_path_dir.grid(row=0, column=6, sticky="w", padx=(20,0), pady=5)
+
+        # adding a status label
+        self.status_label_path_dir = ctk.CTkLabel(self.path_dir_options_panel, text="", text_color="yellow", width = 150)
+        self.status_label_path_dir.grid(row=0,column=7,padx=(5,5),pady=2,sticky="w")
+
+        
+    def display_pathways_direction_plot(self):
+
+        logger.info("displaying network plot image")
+
+        self.status_label_path_dir.configure(text="Loading...", text_color="yellow")
+        self.update()
+        if self.pathway_direction_image_label is not None:
+            self.pathway_direction_image_label.destroy()
+
+        # get the value from top N entry
+        cluster = int(self.path_dir_cluster_entry.get())
+        top_n = int(self.path_dir_n_entry.get())
+        # size = int(self.size_entry.get())*100
+
+        try:
+            image_location = self.pathway.plot_bar(cluster=cluster,top=top_n,show=False)
+        except Exception as e:
+            logger.error(f"Error in directions plot: {e}")
+            CTkMessagebox(title="Error", message="Something went wrong in pathway calculation", icon="cancel")
+
+        logger.info(f"bar plot image location: {image_location}")
+        # creating a label to display the image
+        self.pathway_direction_image_label = ctk.CTkLabel(self.path_dir_image_frame , text = "", width=600, height=600)
+        self.pathway_direction_image_label.grid(row=1, column=0, sticky="new", padx=5, pady=5)
+
+        ctk_image3 = ctk.CTkImage(light_image=Image.open(image_location),
+                                     dark_image=None, size = (800,600))
+        self.pathway_direction_image_label.configure(image=ctk_image3)
+        self.pathway_direction_image_label.image = ctk_image3
+        self.status_label_path_dir.configure(text="", text_color="yellow")
+        self.update()
+
 
     def display_r_output(self):
 
