@@ -15,7 +15,7 @@ class Clusters:
         self.log_queue = log_queue  
         self.region = region
         self.modality = modality
-        self.resolution = round(resolution,1)
+        self.resolution = resolution
         self.pooled_data_folder = pooled_data_folder
         self.working_folder = working_folder
         self.file_path = os.path.join(*[self.working_folder, 'results', 'clustering'])
@@ -33,20 +33,20 @@ class Clusters:
             logger.info("CLustering:  Harmony flag: {}".format(self.haromony_flag))
             sc.pp.pca(adata)
             if (len(np.unique(adata.obs['region']))>1) and self.haromony_flag == 1:
-                sc.external.pp.harmony_integrate(adata,key='region',max_iter_harmony=2)
+                sc.external.pp.harmony_integrate(adata,key='region',max_iter_harmony=20)
                 all_pcs = adata.obsm['X_pca_harmony'].shape[1]
                 n_pcs = min(20, all_pcs)
                 sc.pp.neighbors(adata,use_rep = 'X_pca_harmony', n_pcs=n_pcs)
             else:
                 all_pcs = adata.obsm['X_pca'].shape[1]
-                n_pcs = min(20, all_pcs)
+                n_pcs = min(20, all_pcs) 
                 sc.pp.neighbors(adata,n_pcs=n_pcs)
                 
             sc.tl.umap(adata, random_state= 7)
             sc.tl.leiden(adata,resolution=self.resolution, random_state= 7)
         except Exception as e:
             logger.error(f"Error in clustering core SAMI: {str(e)}")
-            return
+            return e
 
         if not os.path.exists(self.file_path):
             os.makedirs(self.file_path)
@@ -54,6 +54,8 @@ class Clusters:
 
         adata.write(os.path.join(self.file_path,f'{self.region}_{self.modality}_{self.resolution}.h5ad'))
         logger.info("Clustering completed and written the output file")
+
+        return True
     
     
     def plot_umap_cluster(self,size=50,show=False):
@@ -146,17 +148,19 @@ class Clusters:
         colorlist=adata.obs['leiden'].cat.categories.tolist()
         palette=[v if k in map(str,cluster) else '#A0A0A0' for k, v in clusters_colors.items()]
         fig, axs = plt.subplots(1, 1, figsize=(15, 10))
+
         sc.pl.spatial(
-            adata,
-            img_key=None,
-            library_id=None,
-            spot_size=1, #important to add to avoid error
-            color='leiden',
-            legend_loc='none',
-            title=f'{self.region}_{self.modality}_{self.resolution}_{cluster}',
-            size=size,
-            palette=palette,
-            show=False
+        adata,
+        img_key=None,
+        library_id=None,
+        spot_size=1, #important to add to avoid error
+        color='leiden',
+        legend_loc='none',
+         title=f'{self.region}_{self.modality}_{self.resolution}_{cluster}',
+        size=50,
+        palette=palette,
+        ax=axs,
+        show=False
         )
 
         samples = np.unique(adata.obs['region']).tolist()
@@ -300,7 +304,8 @@ class Cluster_Integration:
             title=f'{region}_integrated_{cluster}',
             size=size,
             palette=palette,
-            show=False
+            show=False,
+            ax = axs
         )
 
         samples = np.unique(adata.obs['region']).tolist()
