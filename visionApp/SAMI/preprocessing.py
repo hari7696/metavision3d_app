@@ -18,6 +18,7 @@ def csv2h5ad(dict_compound_type, data_reading_path, data_saving_path, split=True
         logger.info(f'csv2h5ad processing {file}')
         data_temp = pd.read_parquet(os.path.join(data_reading_path, file))
         data_temp =data_temp.rename(columns={'tissue_id':'region'})
+        data_temp['region'] = data_temp['region'].astype(str)
         # x	y	region	G00014, compounds starts from 3rd column
         feat_cols = data_temp.columns[3:]
         data_temp = data_temp[data_temp[feat_cols].sum(axis=1)!=0]
@@ -55,6 +56,7 @@ def pooldata(dict_compound_type, data_reading_path, data_saving_path, split=True
         # print("converting", os.path.join(data_path, file))
         data_temp = pd.read_parquet(os.path.join(data_reading_path, file))
         data_temp =data_temp.rename(columns={'tissue_id':'region'})
+        data_temp['region'] = data_temp['region'].astype(str)
         feat_cols = data_temp.columns[3:]
         data_temp = data_temp[data_temp[feat_cols].sum(axis=1)!=0]
         nodefeats = data_temp[feat_cols]
