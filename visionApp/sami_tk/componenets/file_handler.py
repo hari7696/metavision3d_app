@@ -109,7 +109,22 @@ class FileOpenbutton(ctk.CTkFrame):
         for file in file_path:
 
             base_filename = os.path.basename(file)
-            temp_df = pd.read_csv(os.path.join(self.working_folder, base_filename))
+            try:
+                temp_df = pd.read_csv(os.path.join(self.working_folder, base_filename))
+            except UnicodeDecodeError:
+                encodings = ['utf-8', 'latin1', 'iso-8859-1']
+                for encoding in encodings:
+                    try:
+                        temp_df = pd.read_csv(os.path.join(self.working_folder, base_filename), encoding=encoding)
+                        break
+                    except UnicodeDecodeError:
+                        continue
+                else:
+                    logger.error(f"Failed to read {base_filename} with available encodings")
+                    CTkMessagebox(title="Error", message=f"Failed to read {base_filename} with available encodings", icon="cancel")
+                    return
+
+
             logger.info(f"file read: {base_filename}")
             base_filename = base_filename.replace(".csv", "")
             self.input_data_raw[base_filename] = self.preprocess(temp_df, base_filename)
