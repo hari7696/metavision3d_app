@@ -149,6 +149,8 @@ class MarkerStep(ctk.CTkFrame):
     
     def create_file_option_widgets(self, choice):
 
+        self.get_files()
+
         if hasattr(self, "file_option_frame"):
             for child in self.file_option_frame.winfo_children():
                 child.destroy()
