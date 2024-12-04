@@ -314,52 +314,63 @@ class NormalizationStep(ctk.CTkFrame):
             timeout_seconds=600,
             waiting_for="File reading",
         )
+        try:
+            ref_compound = None
+            if self.algo_selection_dropdown.get() == "CompNorm":
+                if self.algo_selection_dropdown3.get() == "None":
+                    CTkMessagebox(title="Info", message="Please select a compound to normalize with")
+                    return
+                ref_compound = self.algo_selection_dropdown3.get()
 
-        ref_compound = None
-        if self.algo_selection_dropdown.get() == "CompNorm":
-            if self.algo_selection_dropdown3.get() == "None":
-                CTkMessagebox(title="Info", message="Please select a compound to normalize with")
-                return
-            ref_compound = self.algo_selection_dropdown3.get()
+            # waiting till the input files 
+            record = [pd.Timestamp.now(), self.file_dropdown.get(), 
+                    self.algo_selection_dropdown.get(), 
+                    self.algo_selection_dropdown2.get(), 
+                    self.algo_selection_dropdown3.get()]
+            self.tracker_df.loc[len(self.tracker_df)] = record
+            self.tracker_df.to_csv(self.tracker_file, index=False)
 
-        # waiting till the input files 
-        record = [pd.Timestamp.now(), self.file_dropdown.get(), 
-                  self.algo_selection_dropdown.get(), 
-                  self.algo_selection_dropdown2.get(), 
-                  self.algo_selection_dropdown3.get()]
-        self.tracker_df.loc[len(self.tracker_df)] = record
-        self.tracker_df.to_csv(self.tracker_file, index=False)
+            # running normalization
+            self.normalized_data[self.file_dropdown.get()] = create_norm_dataset_gui(self.file_handler.input_data_raw[self.file_dropdown.get()],
+                                                                self.file_handler.working_folder,
+                                                                self.file_dropdown.get(),
+                                                                    rowNorm = self.algo_selection_dropdown.get(),
+                                                                    transNorm = self.algo_selection_dropdown2.get(),
+                                                                    first_compound= self.file_handler.molecule_name[self.file_dropdown.get()][0],
+                                                                    ref_compound = ref_compound
+                                                                )
+            del self.compound_matrix_high_res
+            self.compound_matrix, self.compound_matrix_high_res, self.dict_id_to_tissue_name = create_compound_matrix(
+                self.file_handler.input_data_raw[self.file_dropdown.get()],
+                self.normalized_data[self.file_dropdown.get()].columns[3],
+                roi=False,
+                reverse=True,
+            )
 
-        # running normalization
-        self.normalized_data[self.file_dropdown.get()] = create_norm_dataset_gui(self.file_handler.input_data_raw[self.file_dropdown.get()],
-                                                               self.file_handler.working_folder,
-                                                               self.file_dropdown.get(),
-                                                                rowNorm = self.algo_selection_dropdown.get(),
-                                                                transNorm = self.algo_selection_dropdown2.get(),
-                                                                first_compound= self.file_handler.molecule_name[self.file_dropdown.get()][0],
-                                                                ref_compound = ref_compound
-                                                               )
+            # updating the molecule dropdown with the normalized data columns. if the compnorm is selected, in that case, the dropdown will be updated with the molecules,
+            #because in the compnorm, we drop the reference compound
+            self.molecule_dropdown.configure(values= self.normalized_data[self.file_dropdown.get()].columns[3:])
+            self.molecule_dropdown.set(self.normalized_data[self.file_dropdown.get()].columns[3])
 
-        self.compound_matrix, self.compound_matrix_high_res, self.dict_id_to_tissue_name = create_compound_matrix(
-            self.file_handler.input_data_raw[self.file_dropdown.get()],
-            self.normalized_data[self.file_dropdown.get()].columns[3],
-            roi=False,
-            reverse=True,
-        )
-
-        # updating the molecule dropdown with the normalized data columns. if the compnorm is selected, in that case, the dropdown will be updated with the molecules,
-        #because in the compnorm, we drop the reference compound
-        self.molecule_dropdown.configure(values= self.normalized_data[self.file_dropdown.get()].columns[3:])
-        self.molecule_dropdown.set(self.normalized_data[self.file_dropdown.get()].columns[3])
-
-        self.norm_compound_matrix, self.normalised_compound_matrix_high_res, _ = create_compound_matrix( 
-                                                            self.normalized_data[self.file_dropdown.get()],
-                                                            self.normalized_data[self.file_dropdown.get()].columns[3],
-                                                            roi=False,
-                                                            reverse=True,
-                                                            )
+            if hasattr(self, 'normalised_compound_matrix_high_res' ):
+                del self.normalised_compound_matrix_high_res
+            
+            # logger.info(f"Normalization matrix shape : {self.normalised_compound_matrix_high_res.shape}")
+            self.norm_compound_matrix, self.normalised_compound_matrix_high_res, _ = create_compound_matrix( 
+                                                                self.normalized_data[self.file_dropdown.get()],
+                                                                self.normalized_data[self.file_dropdown.get()].columns[3],
+                                                                roi=False,
+                                                                reverse=True,
+                                                                )
         
-        self.queue.put("Normalization_done")
+            self.queue.put("Normalization_done")
+        except Exception as e:
+            logger.error("Error in the normalization : {}".format(e))
+            self.queue.put("Normalization_done")
+        finally:
+            self.queue.put("Normalization_done")
+
+
         
         # writing a ctk label to show the normalization is done
 
@@ -368,10 +379,11 @@ class NormalizationStep(ctk.CTkFrame):
         if self.file_dropdown.get() == "Select Dataset":
             CTkMessagebox(title="Info", message="Please select a dataset on the left panel")
         else:
+            self.run_button.configure(state="disabled")
             self.norm_done_label.configure(text="Normalization is running", text_color="yellow")
             self.timer.reset_timer()
             self.timer.start_timer()
-            #creating a thread to run the normalization
+            #creating a thread to run the normalization 
             logger.info("Normalization is triggered")
             threading.Thread(target=self.run_normalization, args=(), daemon=True).start()
             self.check_for_normalization_thread_signal()
@@ -396,16 +408,24 @@ class NormalizationStep(ctk.CTkFrame):
                     file_name = os.path.join(*[self.file_handler.working_folder, 'normalised_data', file_name])
                     logger.info(f"file name : {file_name}")
                     logger.info("separate python process is spinned to write the normalized data in csv")
-                    csv_saving_process = Process(target=self.save_normalized_files_in_csv,
-                                                args=(file_name,self.normalized_data[self.file_dropdown.get()], self.log_queue ), daemon=True)
-                    csv_saving_process.start()
+                    # csv_saving_process = Process(target=self.save_normalized_files_in_csv,
+                    #                             args=(file_name,self.normalized_data[self.file_dropdown.get()], self.log_queue ), daemon=True)
+                    # csv_saving_process.start()
                     self.norm_done_label.configure(text="Normalization is completed", font = ("Arial", 14), text_color = "green")
+
                     self.timer.stop_timer() 
+                    self.run_button.configure(state="normal")
+                    self.norm_done_label.update()
+                    self.after(300, self.update())
+                    self.after(300, self.norm_done_label.update())
             except:
                 pass
                 logger.error("Error in the normalization thread signal")
             finally:
                 self.after(1000, self.check_for_normalization_thread_signal)
+                self.run_button.configure(state="normal")
+                self.timer.stop_timer() 
+                # self.timer.reset_timer()
         else:
             # Schedule the next queue check
             self.after(1000, self.check_for_normalization_thread_signal)

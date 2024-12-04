@@ -43,6 +43,9 @@ class ClusterPrismExport(ctk.CTkFrame):
         logger.info("ClusterPrismExport started")
         self.set_templates_dir()
         self.prepare_widgets()
+        self.writing_status_queue = Queue()
+        self.prism_write_queue = Queue()
+        self.raw_writing_status_queue = Queue()
 
     def set_templates_dir(self):
 
@@ -85,7 +88,7 @@ class ClusterPrismExport(ctk.CTkFrame):
         self.df_clusters = self.hd5adtodf()
 
         self.lst_compounds = self.df_clusters.columns[4:]
-        logger.info(f"Compounds are {self.lst_compounds}")
+        # logger.info(f"Compounds are {self.lst_compounds}")
         self.lst_cluster_ids  = list(np.sort((self.df_clusters['cluster_id'].astype(int).unique())))
         # logger.info(f"Clusters are {self.lst_cluster_ids}")
         # logger.info(f"Regions are {self.lst_regions}")
@@ -145,7 +148,7 @@ class ClusterPrismExport(ctk.CTkFrame):
         
         self.button_frame = ctk.CTkFrame(self.prism_frame)
         self.button_frame.grid(row=4, column=0, columnspan = 8 ,sticky="nsew", pady=(5,5), padx=(5,5))
-        for i in range(8):
+        for i in range(12):
             self.button_frame.columnconfigure(i, weight=1)
         self.button_frame.rowconfigure(0, weight=1)
         
@@ -155,8 +158,8 @@ class ClusterPrismExport(ctk.CTkFrame):
         # self.harmony_var.deselect()
 
         # Export to excel button
-        self.export_button = ctk.CTkButton(self.button_frame, text="Export to Excel", command=self.export_to_excel)
-        self.export_button.grid(row=2, column=1, padx=(5,0), pady=8, sticky="w")
+        self.export_excel_button = ctk.CTkButton(self.button_frame, text="Export to Excel", command=lambda: self.export_to_excel("general"))
+        self.export_excel_button.grid(row=2, column=1, padx=(5,0), pady=8, sticky="w")
 
         # Format 
         # label
@@ -168,8 +171,19 @@ class ClusterPrismExport(ctk.CTkFrame):
         self.prsim_format.grid(row=2, column=3, padx=(10,0), pady=8, sticky="w")
         
         #prism export button
-        self.export_button = ctk.CTkButton(self.button_frame, text="Export to Prism", command=self.export_to_prism)
-        self.export_button.grid(row=2, column=4, padx=(5,0), pady=8, sticky="w")
+        self.export_prism_button = ctk.CTkButton(self.button_frame, text="Export to Prism", command=self.export_to_prism)
+        self.export_prism_button.grid(row=2, column=4, padx=(5,0), pady=8, sticky="w")
+
+        # adding a button for full raw export
+        self.export_full_raw_button = ctk.CTkButton(self.button_frame, text="Export Full Raw", command=self.raw_export_csv)
+        self.export_full_raw_button.grid(row=2, column=5, padx=(5,0), pady=8, sticky="w")
+
+
+        # progress bar
+        self.progress_bar = ctk.CTkProgressBar(self.button_frame, width = 100, mode = "indeterminate")
+        self.progress_bar.grid(row=2, column=6, padx=(0, 0), pady=(10, 10), sticky="e")
+
+
 
     def update_df(self):
         logger.info("Updating the dataframe")
@@ -177,6 +191,8 @@ class ClusterPrismExport(ctk.CTkFrame):
         
     def export_to_prism(self):
         
+        self.export_prism_button.configure(state="disabled")
+        self.progress_bar.start()
         file_path = filedialog.asksaveasfilename(defaultextension=".pzfx")
         if file_path:
             filtered_df = self.filter_dataframe()
@@ -194,8 +210,15 @@ class ClusterPrismExport(ctk.CTkFrame):
                     ct = ColumnTable(temp_dict_df)
                     if not file_path.endswith('.pzfx'):
                         file_path = file_path + '.pzfx'
-                    ct.to_xml( os.path.join(self.templates_dir,  "group{}.pzfx".format(str(self.prism_metric))), file_path)
-                    CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
+                    
+                    group_num = self.prism_metric   
+                    if group_num >15 or group_num < 2:
+                        group_num = 15
+
+                    source =  os.path.join(self.templates_dir,  "group{}.pzfx".format(str(group_num)))
+                    destination = file_path
+                    self.write_prims_file(ct, source, destination)
+                    # CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
                     
                 elif format == "Group":
                     for table_name, df in temp_dict_df.items():
@@ -203,11 +226,46 @@ class ClusterPrismExport(ctk.CTkFrame):
                         temp_dict_df[table_name] = self.prepare_df_for_nested_prism(df)
                     logger.info("Dataframes are prepared")
                     nt = NestedTable(temp_dict_df)
-                    nt.to_xml( os.path.join(self.templates_dir, "nested_template.pzfx"), file_path)
-                    CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
+
+                    self.write_prims_file(nt, os.path.join(self.templates_dir, "nested_template.pzfx") ,file_path )
+                    # nt.to_xml( os.path.join(self.templates_dir, "nested_template.pzfx"), file_path)
+                    # CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
             except Exception as e :
                 logger.error(f"Error in prism export: {e}")
-                CTkMessagebox(title="Message", message=f"Prism export failed, Call Hari : {e} ", icon="error", option_1 = "Ok")
+                CTkMessagebox(title="Message", message=f"Prism export failed, take a scrrenshort and save it : {e} ", icon="warning", option_1 = "Ok")
+            finally:
+                self.export_prism_button.configure(state="normal")
+                self.progress_bar.stop()
+
+
+    def write_prims_file(self, tree, source, destination):
+
+        writing_process = Process(target=self.actual_write_prims_file, args=(tree, source, destination, self.prism_write_queue))
+        logger.info("started the prism write process")
+        self.progress_bar.start()
+        writing_process.start()
+        self.check_for_prism_write_completion()
+
+
+    def check_for_prism_write_completion(self):
+
+        logger.info("checking prism write status")
+        if not self.prism_write_queue.empty():
+            status = self.prism_write_queue.get()
+            if status == "Done":
+                CTkMessagebox(title="Message", message="Prism export complete", icon="info", option_1 = "Ok")
+                logger.info("Prism export complete, meessage recieved")
+                self.export_prism_button.configure(state="normal")
+                self.progress_bar.stop()
+                return True
+        else:
+            self.after(1000, self.check_for_prism_write_completion)
+
+    @staticmethod
+    def actual_write_prims_file( tree, source, destination, queue):
+        tree.to_xml(source, destination)
+        queue.put("Done")
+
     
     @staticmethod       
     def prepare_df_for_columnar_prism(df):
@@ -277,21 +335,57 @@ class ClusterPrismExport(ctk.CTkFrame):
             
         
     def add_table(self):    
+
+        self.add_table_button.configure(state="disabled")
         
         df, selected_clusters , selected_regions, selected_compounds = self.filter_dataframe()
         self.prism_metric = max(self.prism_metric , len(selected_clusters) * len(selected_regions))
+
+        str_selected_clusters = ", ".join(map(str, selected_clusters))
+        if len(selected_clusters) > 20:
+            str_selected_clusters = ", ".join(map(str, selected_clusters[:20])) + "......."
+        str_selected_regions = ", ".join(map(str, selected_regions))
+        if len(selected_regions) > 20:
+            str_selected_regions = ", ".join(map(str, selected_regions[:20])) + "......."
+        str_selected_compounds = ", ".join(map(str, selected_compounds))
+        if len(selected_compounds) > 20:
+            str_selected_compounds = ", ".join(map(str, selected_compounds[:20])) + "......."   
+        
+        # entry checks
+        if self.table_name.get() == "":
+            CTkMessagebox(title="Message", message="Please enter a table name", icon="warning", option_1 = "Ok")
+            self.add_table_button.configure(state="normal")
+            return
+        
+        if len(selected_clusters) == 0:
+            CTkMessagebox(title="Message", message="Please select atleast one cluster", icon="warning", option_1 = "Ok")
+            self.add_table_button.configure(state="normal")
+            return
+        
+        if len(selected_regions) == 0:
+            CTkMessagebox(title="Message", message="Please select atleast one region", icon="warning", option_1 = "Ok")
+            self.add_table_button.configure(state="normal")
+            return
+        
+        if len(selected_compounds) == 0:
+            CTkMessagebox(title="Message", message="Please select atleast one compound", icon="warning", option_1 = "Ok")
+            self.add_table_button.configure(state="normal")
+            return
+
         self.prism_table_value.append([self.table_name.get(),
-                                        ", ".join(map(str, selected_clusters)), 
-                                        ", ".join(map(str, selected_regions)),
-                                        ", ".join(map(str, selected_compounds))])
+                                       str_selected_clusters,
+                                       str_selected_regions,
+                                       str_selected_compounds])
         self.dict_df[self.table_name.get()] = df 
         
         if hasattr(self, 'table'):
             self.table.destroy()
         self.table = CTkTable(master=self.scrollable_table_frame, row=0, column=0, values = self.prism_table_value, wraplength = 150)
         self.table.grid(row=0, column=0, sticky="nsew")
+        self.add_table_button.configure(state="normal")
         
     def clear_table(self):
+        self.add_table_button.configure(state="normal")
         self.dict_df = {}
         self.prism_table_value = []
         self.prism_metric = 0
@@ -299,22 +393,85 @@ class ClusterPrismExport(ctk.CTkFrame):
             self.table.destroy()
         self.table = CTkTable(master=self.scrollable_table_frame, row=0, column=0, values = [" "], wraplength = 300)
         self.table.grid(row=0, column=0, sticky="nsew")
+        self.table.update()
+        self.after(300, self.update())
+        self.after(300, self.table.update())
+
+    def raw_export_csv(self):
+        logger.info("Exporting full raw data")
+        file_path2 = filedialog.asksaveasfilename(defaultextension=".csv")
+        if file_path2:
+            self.export_full_raw_button.configure(state="disabled")
+            self.progress_bar.start()
+            raw_writing_process = Process(target=self.write_csv, args=(self.df_clusters, file_path2, self.raw_writing_status_queue))
+            raw_writing_process.start()
+            logger.info("Starting the csv writing process")
+            self.check_for_csv_writing_status()
+
+    def check_for_csv_writing_status(self):
         
+        logger.info("Checking for csv writing status")
+        if not self.raw_writing_status_queue.empty():
+            status = self.raw_writing_status_queue.get()
+            # logger.info(f"Status is {status}")
+            if status == "Done":
+                CTkMessagebox(title="Message", message="CSV export complete", icon="info", option_1 = "Ok")
+                logger.info("CSV export complete")
+                self.export_full_raw_button.configure(state="normal")
+                self.progress_bar.stop()
+                return True
+        else:
+            self.after(1000, self.check_for_csv_writing_status)
 
-    def export_to_excel(self):
+    @staticmethod
+    def write_csv(df, file_path, status_queue):
+        df.to_csv(file_path, index=False)
+        status_queue.put("Done")
+        
+    def export_to_excel(self, type):
 
-        temp_df = pd.concat(self.dict_df.values(), axis = 0)
+        # temp_df = pd.concat(self.dict_df.values(), axis = 0)
         file_path = filedialog.asksaveasfilename(defaultextension=".xlsx")
         if file_path:
-            temp_df.to_excel(file_path, index=False)
+            self.progress_bar.start()
+            writing_process = Process(target=self.write_excel, args=(self.dict_df, file_path, self.writing_status_queue))
+            logger.info("Starting the excel writing process")
+            self.check_for_excel_writing_status()
+            writing_process.start()
+            self.export_excel_button.configure(state="disabled")
+            
+
+    def check_for_excel_writing_status(self):
+        
+        logger.info("Checking for excel writing status")
+        if not self.writing_status_queue.empty():
+            status = self.writing_status_queue.get()
+            logger.info(f"Status is {status}")
+            if status == "Done":
+                self.progress_bar.stop()
+                CTkMessagebox(title="Message", message="Excel export complete", icon="info", option_1 = "Ok")
+                logger.info("Excel export complete")
+                self.export_excel_button.configure(state="normal")
+                return True
+        else:
+            self.after(1000, self.check_for_excel_writing_status)
+
+    @staticmethod
+    def write_excel(dict_df, file_path, status_queue):
+        with pd.ExcelWriter(file_path) as writer: 
+            for key, value in dict_df.items():
+                value.to_excel(writer, index=False, sheet_name = key)
+        status_queue.put("Done")
 
     def filter_dataframe(self):
         selected_compounds = []
         filtered_df = self.df_clusters.copy(deep=True)
         selected_clusters = self.scrollable_frame_clusters.get_selected_files().copy()
         selected_clusters = [int(cluster) for cluster in selected_clusters]
-        selected_compounds = self.scrollable_frame_compounds.get_selected_files().copy()
-        selected_regions = self.scrollable_frame_regions.get_selected_files().copy()
+        selected_compounds = list(self.scrollable_frame_compounds.get_selected_files().copy())
+        selected_regions = list(self.scrollable_frame_regions.get_selected_files().copy())
+        # logger.info(f"Selected clusters are {selected_compounds}")
+        # logger.info(f"Selected regions are {selected_regions}")
         selected_compounds.append('cluster_id')
         selected_compounds.append('region')
         # logger.info(f"Selected compounds before are {selected_compounds}")

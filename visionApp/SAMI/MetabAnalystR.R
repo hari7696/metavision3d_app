@@ -1,3 +1,18 @@
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+
+check_and_install <- function(package) {
+  if (!require(package, character.only = TRUE)) {
+    install.packages(package)
+    if (!require(package, character.only = TRUE)) {
+      stop(paste("Package", package, "could not be installed"))
+    }
+  }
+}
+
+check_and_install("qs")
+
+library(qs)
+
 .set.mSet <- function(mSetObj=NA){
   return(mSetObj);
 }
@@ -490,14 +505,22 @@ fast.write.csv <- function(dat, file, row.names=TRUE){
       write.csv(dat, file, row.names=row.names); 
     });
 }
+name.map <- function(compounds,lookup){
+  compounds_list <- unlist(strsplit(compounds,","))
+  
+  compound_codes <- sapply(compounds_list, function(x) lookup[x])
+  paste(compound_codes, collapse=',')
+}
 
 
 PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folder, lib_folder){
   sink(file =  paste(results_folder, 'R_output.txt', sep = '/'), append = FALSE)
-
+  cat("HEROooooooooooo")
+  cat(lib_folder,'\n')
   cat(Sys.getenv("R_LIBS_USER"),'\n')
   ora <- NULL
   nonmatch_list <- NULL
+  # dir_path <- results_folder
 
   if (lipid==FALSE){
     for (i in 1:length(clusters)){
@@ -525,6 +548,9 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folde
                            pathway = names(mSet$analSet$ora.hits),
                            compounds = sapply(mSet$analSet$ora.hits,paste,collapse=',')
                           )
+        nm.map <- GetFinalNameMap(mSet, lib_folder = lib_folder)
+        lookup <- setNames(nm.map$query, nm.map$hmdb)
+        hits$compounds <- sapply(hits$compounds, name.map, lookup=lookup) 
         row.names(hits) <- NULL
         row.names(metab_ora) <- NULL
         metab_ora <- merge(metab_ora,hits,by=c('cluster','pathway'),all.x= TRUE,sort=FALSE)
@@ -535,39 +561,26 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folde
         }
       )
     }
-    if (merge==TRUE){
-
-      csv_file <- paste(results_folder, 'ora_metgly_merge.csv', sep = '/')
-      # if (file.exists(csv_file)){
-      if (FALSE){
-        existing <- read.csv(csv_file)
-        combined <- rbind(existing,ora)
-        write.csv(combined, csv_file ,row.names=FALSE)
-      } else{
-        write.csv(ora,csv_file ,row.names=FALSE)
-      }
-    }else{
-      csv_file2 <- paste(results_folder, 'ora_metabolomics_glycomics.csv', sep = '/')
-      # if (file.exists(csv_file2)){
-      if (FALSE){
-        existing <- read.csv(csv_file2)
-        combined <- rbind(existing,ora)
-        write.csv(combined, csv_file2 ,row.names=FALSE)
-      } else{
-        write.csv(ora, csv_file2,row.names=FALSE)
-      }
-    }
+    csv_file <- paste(results_folder ,paste0('ora_',region,'_metabolomics_glycomics.csv'), sep = "/")
+    write.csv(ora,csv_file,row.names=FALSE)
+    # if (file.exists(csv_file)){
+    #   existing <- read.csv(csv_file)
+    #   combined <- rbind(existing,ora)
+    #   write.csv(combined,csv_file,row.names=FALSE)
+    # } else{
+    #   write.csv(ora,csv_file,row.names=FALSE)
+    # }
     nonmatch_list <- unique(nonmatch_list)
     nonmatch <- data.frame(nonmatch=unlist(nonmatch_list))
-    csv_file3 <- paste(results_folder, 'nonmatch_metabolomics_glycomics.csv', sep = '/')
-    # if (file.exists(csv_file3)){
-    if (FALSE){
-      existing <- read.csv(csv_file3)
-      combined <- rbind(existing,nonmatch)
-      write.csv(combined,csv_file3,row.names=FALSE)
-    } else{
-      write.csv(nonmatch,csv_file3,row.names = FALSE)
-  }
+    csv_file <- paste(results_folder, 'nonmatch_metabolomics_glycomics.csv', sep = '/')
+    write.csv(nonmatch,csv_file,row.names = FALSE)  
+  #   if (file.exists(csv_file)){
+  #     existing <- read.csv(csv_file)
+  #     combined <- rbind(existing,nonmatch)
+  #     write.csv(combined,csv_file,row.names=FALSE)
+  #   } else{
+  #     write.csv(nonmatch,csv_file,row.names = FALSE)
+  # }
   } else {
     for (i in 1:length(clusters)){
       cat('cluster:',clusters[i],';\n')        
@@ -594,6 +607,11 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folde
                    pathway = names(mSet$analSet$ora.hits),
                    compounds = sapply(mSet$analSet$ora.hits,paste,collapse=',')
                   )
+        
+        nm.map <- GetFinalNameMap(mSet)
+        lookup <- setNames(nm.map$query, nm.map$hmdb)
+        hits$compounds <- sapply(hits$compounds, name.map, lookup=lookup) 
+        
         row.names(hits) <- NULL
         row.names(lipid_ora) <- NULL
         lipid_ora <- merge(lipid_ora,hits,by=c('cluster','pathway'),all.x= TRUE,sort=FALSE)
@@ -604,39 +622,27 @@ PathwayEnrichment <- function(region,markers,clusters,lipid,merge, results_folde
         }
       )
     } 
-    if (merge==TRUE){
-      
-      csv_file <- paste(results_folder, 'ora_lipid_merge.csv', sep = '/')
-      # if (file.exists(csv_file)){
-      if (FALSE){
-        existing <- read.csv(csv_file)
-        combined <- rbind(existing,ora)
-        write.csv(combined,csv_file,row.names = FALSE)
-      } else{
-        write.csv(ora,csv_file,row.names = FALSE)
-      }
-    }else{
-      csv_file2 <- paste(results_folder, 'ora_lipidomics.csv', sep = '/')
-      # if (file.exists(csv_file)){
-        if (FALSE){
-        existing <- read.csv(csv_file2)
-        combined <- rbind(existing,ora)
-        write.csv(combined,csv_file2,row.names = FALSE)
-      } else{
-        write.csv(ora,csv_file2,row.names = FALSE)
-      }
-    }
+    csv_file <- paste(results_folder ,paste0('ora_',region,'_lipidomics.csv'), sep = "/")
+    write.csv(ora,csv_file,row.names = FALSE)
+    # if (file.exists(csv_file)){
+    #   existing <- read.csv(csv_file)
+    #   combined <- rbind(existing,ora)
+    #   write.csv(combined,csv_file,row.names = FALSE)
+    # } else{
+    #   write.csv(ora,csv_file,row.names = FALSE)
+    # }
+    
     nonmatch_list <- unique(nonmatch_list)
     nonmatch <- data.frame(nonmatch=unlist(nonmatch_list))
-    csv_file3 <- paste(results_folder, 'nonmatch_lipidomics.csv', sep = '/')
+    csv_file <- paste(results_folder , paste0('nonmatch_',region,'_lipidomics.csv'), sep = "/")
+    write.csv(nonmatch,csv_file,row.names = FALSE)
     # if (file.exists(csv_file)){
-    if (FALSE){
-      existing <- read.csv(csv_file)
-      combined <- rbind(existing,nonmatch)
-      write.csv(combined,csv_file3,row.names = FALSE)
-    } else{
-      write.csv(nonmatch,csv_file3,row.names = FALSE)
-    }
+    #   existing <- read.csv(csv_file)
+    #   combined <- rbind(existing,nonmatch)
+    #   write.csv(combined,csv_file,row.names = FALSE)
+    # } else{
+    #   write.csv(nonmatch,csv_file,row.names = FALSE)
+    # }
   }
 
 sink(file = NULL)

@@ -77,6 +77,7 @@ class VisionApp(ctk.CTk):
 
         # logger.info("Frequent_checker :: Total children {}".format(str(total_children)))
         # self.after(10000, self.write_num_children_to_logs)
+
         
 
     def destroy_children(self):
