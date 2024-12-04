@@ -165,7 +165,7 @@ def seq_align(matrix, warp_matrix_all):
 
 
 class MetaAlign3D:
-    def __init__(self, group, data, compound, first_feature='Pyruvate', reverse=False):
+    def __init__(self, group, data, compound, first_feature='Pyruvate', filepath = None, reverse=False):
         self.group = group
         self.data = data
         self.compound = compound
@@ -174,12 +174,18 @@ class MetaAlign3D:
         self.matrix=None
         self.corrected_matrix=None
         self.warp_matrix_all=None
+        self.filepath = filepath
         
-        try:
-            base_path = os.path.join(sys._MEIPASS , 'config')
-        except Exception:
-            base_path = 'visionApp/MetaVision3D/warpmatrix'
-            self.warp_matrix_file = os.path.join(base_path, f'warp_matrix_{self.group}.npy')
+        # try:
+        #     # when running executable file
+        #     base_path = os.path.join(sys._MEIPASS , 'config')
+        # except Exception:
+        #     # when running python script
+        #     base_path =  os.path.dirname(self.filepath)
+        base_path =  os.path.dirname(self.filepath)
+        self.warp_matrix_file = os.path.join(base_path, f'warp_matrix_{self.group}.npy')
+        logger.info(f'Warp matrix file is: {self.warp_matrix_file}')
+
         if os.path.exists(self.warp_matrix_file):            
         # if os.path.exists(f'./warpmatrix/warp_matrix_{self.group}.npy'):
             logger.info('Warp matrix exists. Using existing warp matrix to do alignment.')
@@ -190,6 +196,8 @@ class MetaAlign3D:
             print('Warp matrix does not exist. Using the most prevalent compound to calculate warp matrix.')
             # find most prevalent compound as reference compound
             ref_compound = get_ref_compound(self.data,first_feature=self.first_feature)
+            # ref_compound = "LPE.24.5."
+            logger.info(f'The most prevalent compound is {ref_compound}.')
             # calculate warp matrix
             ref_compound_matrix = create_compound_matrix(self.data, ref_compound, reverse=self.reverse)
             self.warp_matrix_all = calculate_warp_matrix(ref_compound_matrix)
@@ -197,7 +205,7 @@ class MetaAlign3D:
             make_directory(base_path)
             # np.save(f'visionApp/MetaVision3D/warpmatrix/warp_matrix_{self.group}', self.warp_matrix_all)
             np.save(self.warp_matrix_file, self.warp_matrix_all)
-            logger.info(f'Warp matrix is created based on {ref_compound}.')
+            logger.info(f'Warp matrix is created based on {ref_compound} and saved for group {self.group} in {base_path}.')
             
     def create_compound_matrix(self):
         x_size, y_size = image_size(self.data)
