@@ -2,40 +2,45 @@
 import numpy as np
 import pandas as pd
 
-def totalsum_norm(df, first_feature_index):
+def totalsum_norm(df, first_feature):
+    first_feature_index = np.where(df.columns==first_feature)[0][0]
     row_sum = df.iloc[:, first_feature_index:].sum(axis=1)
-    df.iloc[:, first_feature_index:] = df.iloc[:, first_feature_index:].divide(row_sum, axis=0).fillna(0)
+    non_zero_row_indices = np.where(row_sum != 0)[0]
+    df.iloc[non_zero_row_indices, first_feature_index:] = df.iloc[non_zero_row_indices,first_feature_index:].divide(row_sum.iloc[non_zero_row_indices],axis=0).fillna(0)
     return df
 
-def section_norm(df, compound, first_feature_index):
-    data = df[df.columns[:first_feature_index].tolist() + [compound]]
-    norm_factor = data.groupby('tissue_id')[compound].median().median() / data.groupby('tissue_id')[compound].median()
-    norm_factor.name = 'norm_factor'
-    data = data.merge(norm_factor, on='tissue_id')
-    data['result'] = np.array(data[compound]) * np.array(data['norm_factor'])
-    return data
+def section_norm(df, first_feature):
+    compounds = df.columns.tolist()[np.where(df.columns==first_feature)[0][0]:]
+    denominator = df.groupby('tissue_id')[compounds].median()
+    numerator = denominator.median()
+    scale_factor = numerator.div(denominator).replace([np.nan,np.inf],1)
+    df_merged = df.merge(scale_factor, on='tissue_id', suffixes=('', '_adj'))
+    for compound in compounds:
+        df_merged[compound] *= df_merged[f'{compound}_adj']
+    df_merged.drop(columns=[f'{compound}_adj' for compound in compounds], inplace=True)
+    return df_merged
+    
 
 class MetaNorm3D:
-    def __init__(self, df, compound, first_feature='LPA_16_0_'):
+    def __init__(self, df, first_feature):
         self.df = df
         self.data = None
-        self.compound = compound
         self.first_feature = first_feature
-        self.first_feature_index = np.where(df.columns==first_feature)[0][0]
 
     def totalsum_norm(self):
-        row_sum = self.df.iloc[:, self.first_feature_index:].sum(axis=1)
-        self.df.iloc[:, self.first_feature_index:] = self.df.iloc[:, self.first_feature_index:].divide(row_sum, axis=0).fillna(0)
+        first_feature_index = np.where(self.df.columns==self.first_feature)[0][0]
+        row_sum = self.df.iloc[:, first_feature_index:].sum(axis=1)
+        non_zero_row_indices = np.where(row_sum != 0)[0]
+        self.df.iloc[non_zero_row_indices, first_feature_index:] = self.df.iloc[non_zero_row_indices,first_feature_index:].divide(row_sum.iloc[non_zero_row_indices],axis=0).fillna(0)
         return self.df
-
-    def section_norm(self):
-        self.data = self.df[self.df.columns[:self.first_feature_index].tolist() + [self.compound]]
-        norm_factor = self.data.groupby('tissue_id')[self.compound].median().median() / self.data.groupby('tissue_id')[self.compound].median()
-        norm_factor.name = 'norm_factor'
-        self.data = self.data.merge(norm_factor, on='tissue_id')
-        self.data['result'] = np.array(self.data[self.compound]) * np.array(self.data['norm_factor'])
-        return self.data
-
-
-        
     
+    def section_norm(self):
+        compounds = self.df.columns.tolist()[np.where(self.df.columns==self.first_feature)[0][0]:]
+        denominator = self.df.groupby('tissue_id')[compounds].median()
+        numerator = denominator.median()
+        scale_factor = numerator.div(denominator).replace([np.nan,np.inf],1)
+        self.df = self.df.merge(scale_factor, on='tissue_id', suffixes=('', '_adj'))
+        for compound in compounds:
+            self.df[compound] *= self.df[f'{compound}_adj']
+        self.df.drop(columns=[f'{compound}_adj' for compound in compounds], inplace=True)
+        return self.df
