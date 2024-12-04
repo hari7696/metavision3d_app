@@ -12,6 +12,10 @@ from PIL import Image
 from ..utils import adata_filter
 from .display_image import ImageDisaplay
 from log_listener import worker_configurer
+from .markers_utilities import DisplayFileInformation
+from pandas.core.common import flatten
+from CTkMessagebox import CTkMessagebox
+import ast 
 logger = logging.getLogger(__name__)
 # logger = logging.getLogger(__name__)
 
@@ -97,6 +101,8 @@ class MarkerStep(ctk.CTkFrame):
                     # print(file, dirpath)
                     # if os.path.dirname(dirpath) != "clustering":
                     new_dir_ref = os.path.basename(dirpath)
+                    if new_dir_ref != "clustering":
+                        new_dir_ref = "Integrated"
                     file_ = new_dir_ref + "||" + file
                     self.files_to_path_dict[file_] = os.path.join(dirpath, file)
                     self.files.append(file_)
@@ -104,149 +110,293 @@ class MarkerStep(ctk.CTkFrame):
     def refresh(self):
         "whenever the tab swtich happens this function updates the files available in dropdowns"
         self.get_files()
-        self.region1_selection.configure(values=self.files)
+        # self.region1_selection.configure(values=self.files)
 
-        if self.sami_type == "multi":
-            self.region2_selection.configure(values=self.files)
+        # if self.sami_type == "multi":
+        #     self.region2_selection.configure(values=self.files)
 
         logger.info("Refreshing markers tab")
 
     def prepare_options_panel(self):
         
 
-        for i in range(0,15):
-            self.options_panel.columnconfigure(i, weight=1)
+        # for i in range(0,15):
+        #     self.options_panel.columnconfigure(i, weight=1)
 
         self.get_files()
 
-        # region selection 1
-        region1_label = ctk.CTkLabel(self.options_panel, text="Select Region 1 :" )
-        region1_label.grid(row=0,column=0,padx=(2,0),pady=2,sticky="ew")    
-        _ = tk.StringVar(value='choose file')
-        self.region1_selection = ctk.CTkComboBox(master= self.options_panel,
-                                            values=self.files,
-                                            variable=_,
+        #options panel layout 2 colums, 3 rows
+        self.options_panel.columnconfigure(0, weight=1)
+        self.options_panel.columnconfigure(1, weight=9)
+        self.options_panel.rowconfigure(0, weight=1)
+
+
+        # creating a frame
+        sami_type_frame = ctk.CTkFrame(self.options_panel)
+        sami_type_frame.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
+
+        # select type of markers, (single vs dual)
+        markers_type_label = ctk.CTkLabel(sami_type_frame, text="Type: ")
+        markers_type_label.grid(row=0, column=0, sticky="ew", padx=5, pady=5, rowspan=3)
+        # dropdown to select the type of markers
+        self.markers_type_selection = ctk.CTkComboBox(master= sami_type_frame,
+                                            values=["single", "dual"],
                                             button_color="#b5b8b0",
-                                            width = 150
+                                            width = 150, command=self.create_file_option_widgets
                                             )
-        self.region1_selection.grid(row=0,column=1,padx=(2,0),pady=2,sticky="ew")
+        self.markers_type_selection.set("")
+        self.markers_type_selection.grid(row=0, column=1, sticky="ew", padx=5, pady=5, rowspan=3)
+    
+    def create_file_option_widgets(self, choice):
 
-        if self.sami_type == "multi":
-            # region selection 2
-            region2_label = ctk.CTkLabel(self.options_panel, text="Select Region 2 :" )
-            region2_label.grid(row=0,column=2,padx=(2,0),pady=2,sticky="ew")
-            _ = tk.StringVar(value='choose file')
-            self.region2_selection = ctk.CTkComboBox(master= self.options_panel,
-                                                values=self.files,
-                                                variable=_,
-                                                button_color="#b5b8b0",
-                                                width = 150
-                                                )
-            self.region2_selection.grid(row=0,column=3,padx=(2,0),pady=2,sticky="ew")
+        self.get_files()
 
-        # Taking the value abundance from user using CTkEntry
-        abundance_label = ctk.CTkLabel(self.options_panel, text="Abundance:")
-        abundance_label.grid(row=0,column=4,padx=(2,0),pady=2,sticky="ew")
+        if hasattr(self, "file_option_frame"):
+            for child in self.file_option_frame.winfo_children():
+                child.destroy()
+        else:
+            # creating another frame for option
+            self.file_option_frame = ctk.CTkFrame(self.options_panel)    
+            self.file_option_frame.grid(row=0, column=1, sticky="ew", padx=2, pady=2)
+            self.file_option_frame.rowconfigure(0, weight=1)
+            self.file_option_frame.columnconfigure(0, weight=1)
 
-        self.abundance_entry = ctk.CTkEntry(self.options_panel, width=20, placeholder_text= "0.1")
+            
+
+        if choice == "single":
+
+            # initiaing custom tkinter object
+            file_number =1
+            self.region1_obj = DisplayFileInformation(self.file_option_frame, self.files_to_path_dict, file_number, choice, self.log_queue) 
+            self.region1_obj.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
+
+        elif choice == "dual":
+
+            file_number =1
+            self.region1_obj = DisplayFileInformation(self.file_option_frame, self.files_to_path_dict, file_number, choice, self.log_queue) 
+            self.region1_obj.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
+
+            file_number =2
+            self.region2_obj = DisplayFileInformation(self.file_option_frame, self.files_to_path_dict, file_number, choice, self.log_queue) 
+            self.region2_obj.grid(row=1, column=0, sticky="ew", padx=2, pady=2)
+
+        ###### Row2 ########
+
+        # a separate frame for row 2
+        self.row_2frame = ctk.CTkFrame(self.file_option_frame)    
+        self.row_2frame.grid(row=2, column=0, sticky="ew", padx=2, pady=2)
+        self.row_2frame.rowconfigure(0, weight=1)
+        for i in range(0, 10):
+            self.row_2frame.columnconfigure(i, weight=1)
+
+        # # Taking the value abundance from user using CTkEntry
+        abundance_label = ctk.CTkLabel(self.row_2frame, text="Abundance:")
+        abundance_label.grid(row=0,column=0,padx=(2,0),pady=2,sticky="ew")
+
+        self.abundance_entry = ctk.CTkEntry(self.row_2frame, width=20, placeholder_text= "0.1")
         self.abundance_entry.insert(0, "0.1")
-        self.abundance_entry.grid(row=0,column=5,padx=(2,0),pady=2,sticky="ew")
+        self.abundance_entry.grid(row=0,column=1,padx=(2,0),pady=2,sticky="ew")
 
         #taking the prevalence value from user using CTkEntry
-        prevalence_label = ctk.CTkLabel(self.options_panel, text="Prevalence:")
-        prevalence_label.grid(row=0,column=6,padx=(2,0),pady=2,sticky="ew")
+        prevalence_label = ctk.CTkLabel(self.row_2frame, text="Prevalence:")
+        prevalence_label.grid(row=0,column=2,padx=(2,0),pady=2,sticky="ew")
 
-        self.prevalance_entry = ctk.CTkEntry(self.options_panel, width=20, placeholder_text= "0.1")
+        self.prevalance_entry = ctk.CTkEntry(self.row_2frame, width=20, placeholder_text= "0.1")
         self.prevalance_entry.insert(0, "0.1")
-        self.prevalance_entry.grid(row=0,column=7,padx=(2,0),pady=2,sticky="ew")
+        self.prevalance_entry.grid(row=0,column=3,padx=(2,0),pady=2,sticky="ew")
 
         #taking adj_pval_cutoff value from user using CTkEntry
-        adj_pval_cutoff_label = ctk.CTkLabel(self.options_panel, text="Adj Pval Cutoff:")
-        adj_pval_cutoff_label.grid(row=0,column=8,padx=(2,0),pady=2,sticky="ew")
+        adj_pval_cutoff_label = ctk.CTkLabel(self.row_2frame, text="Adj Pval Cutoff:")
+        adj_pval_cutoff_label.grid(row=0,column=4,padx=(2,0),pady=2,sticky="ew")
 
-        self.adj_pval_cutoff_entry = ctk.CTkEntry(self.options_panel, width=20, placeholder_text= "0.05")
+        self.adj_pval_cutoff_entry = ctk.CTkEntry(self.row_2frame, width=20, placeholder_text= "0.05")
         self.adj_pval_cutoff_entry.insert(0, "0.05")
-        self.adj_pval_cutoff_entry.grid(row=0,column=9,padx=(2,0),pady=2,sticky="ew")
+        self.adj_pval_cutoff_entry.grid(row=0,column=5,padx=(2,0),pady=2,sticky="ew")
 
         # taking the value of top_n_molecules from user using CTkEntry
-        top_n_molecules_label = ctk.CTkLabel(self.options_panel, text="Top N Molecules:")
-        top_n_molecules_label.grid(row=0,column=10,padx=(2,0),pady=2,sticky="ew")
+        top_n_molecules_label = ctk.CTkLabel(self.row_2frame, text="Top N Molecules:")
+        top_n_molecules_label.grid(row=0,column=6,padx=(2,0),pady=2,sticky="ew")
 
-        self.top_n_molecules_entry = ctk.CTkEntry(self.options_panel, width=20, placeholder_text= "50")
+        self.top_n_molecules_entry = ctk.CTkEntry(self.row_2frame, width=20, placeholder_text= "50")
         self.top_n_molecules_entry.insert(0, "50")  
-        self.top_n_molecules_entry.grid(row=0,column=11,padx=(2,0),pady=2,sticky="ew")
+        self.top_n_molecules_entry.grid(row=0,column=7,padx=(2,0),pady=2,sticky="ew")
+
+        ######### ROW 3 #########
+
+        # a separate frame for row 3
+        self.row_3frame = ctk.CTkFrame(self.file_option_frame)
+        self.row_3frame.grid(row=3, column=0, sticky="ew", padx=2, pady=2)
+        self.row_3frame.rowconfigure(0, weight=1)
+        for i in range(0, 10):
+            self.row_3frame.columnconfigure(i, weight=1)
+
+        # a label to ask for the output filename
+        self.output_filename_label = ctk.CTkLabel(self.row_3frame, text="Output Filename:")
+        self.output_filename_label.grid(row=0,column=0,padx=(5,5),pady=2,sticky="ew")
+
+        # entry box to take the output filename
+        self.output_filename_entry = ctk.CTkEntry(self.row_3frame, width=50, placeholder_text= "name_of_file")
+        self.output_filename_entry.grid(row=0,column=1,padx=(5,5),pady=2,sticky="ew", columnspan=2)
 
         # adding a Run button to run the markers generation
-        self.run_button = ctk.CTkButton(self.options_panel, text="Generate Markers", command=self.generate_markers)
-        self.run_button.grid(row=0,column=12,padx=(5,5),pady=2,sticky="ew")
+        self.run_button = ctk.CTkButton(self.row_3frame, text="Generate Markers", command=self.generate_markers)
+        self.run_button.grid(row=0,column=3,padx=(5,5),pady=2,sticky="ew")
         
         # timer button
-        self.timer = TimerApp(self.options_panel)
-        self.timer.grid(row=0,column=13,padx=(5,5),pady=2,sticky="w")
+        self.timer = TimerApp(self.row_3frame)
+        self.timer.grid(row=0,column=4,padx=(5,5),pady=2,sticky="ew")
 
         # time constraint
-        self.time_constraint_label = ctk.CTkLabel(self.options_panel, text="", text_color="yellow")
-        self.time_constraint_label.grid(row=0,column=14,padx=(2,0),pady=2,sticky="w")
+        self.time_constraint_label = ctk.CTkLabel(self.row_3frame, text="", text_color="yellow")
+        self.time_constraint_label.grid(row=0,column=5,padx=(5,5),pady=2,sticky="ew")
 
-        logger.info("Options panel prepared")   
+        logger.info("Options panel prepared")
+
+    @staticmethod
+    def validate_entry(entry, highest):
+        try:
+           if entry != "":
+                entry = int(entry)
+                if entry <= highest:
+                     return True
+                else:
+                     return False
+               
+        except:
+            return False
+
+    def prep_parameter_data(self):
+        
+        if self.markers_type_selection.get() == "single":
+            self.selected_file1, self.lst1_regions, self.clustermap, self.highest_cluster  = self.region1_obj.get_values()
+        else:
+            self.selected_file1, self.lst1_regions, self.clustermap, self.highest_cluster  = self.region1_obj.get_values()
+            self.selected_file2, self.lst2_regions, _, self.highest_cluster  = self.region2_obj.get_values()
+
+        # processing the clustermap
+        # clustermap, its a list of lists . sample :- [['0', '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28'], 
+        # ['1', '1,2,3'], ['2', ''], ['3', '1,2,3,'], ['4', '0,1,2,3,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28']]
+        self.dict_clustermap = {}
+        left_list = []
+        right_list = []
+        for item in self.clustermap:
+            
+            logger.info(f"item: {item}")
+            left = item[0].split(",")
+            right = item[1].split(",")
+
+            left = [item for item in left if self.validate_entry(item, self.highest_cluster)]
+            right = [item for item in right if self.validate_entry(item, self.highest_cluster)]
+            
+            left = list(flatten(left))
+            right = list(flatten(right))
+
+            # if either left or right is empty we are skipping that row
+            if min(len(left),len(right))  == 0:
+                continue
+            left_list.append(left)
+            right_list.append(right)
+
+        self.dict_clustermap['left'] = left_list
+        self.dict_clustermap['right'] = right_list
+        
+
+        logger.info(f"lst1_regions: {self.lst1_regions}")
+        # logger.info(f"lst2_regions: {self.lst2_regions}")
+        logger.info(f"clustermap : {self.clustermap}")
+        logger.info(f"highest_cluster: {self.highest_cluster}") 
+        logger.info(f"processed clustermap: {self.dict_clustermap}")
+        logger.info(f" len of left lst  : {len(left_list)}")
+        logger.info(f" len of right lst  : {len(right_list)}")
+
 
     def generate_markers(self):
-        
+        self.prep_parameter_data()
+        # self.run_button.configure(state="disabled")
         logger.info("Generating markers button hit")
         # this function run the command of generating markers button
-        region1 = self.region1_selection.get().split("||")[-1]
-        region1_path = self.region1_selection.get()
-        if self.sami_type == "multi":
-            region2 = self.region2_selection.get().split("||")[-1]
-            region2_path = self.region2_selection.get()
+        # region1 = self.selected_file1.split("||")[-1]
+        # if self.markers_type_selection.get() == "dual":
+        #     region2 = self.selected_file2.split("||")[-1]
 
         abundance = float(self.abundance_entry.get())
         prevalence = float(self.prevalance_entry.get())
         adj_pval_cutoff = float(self.adj_pval_cutoff_entry.get())
         top_n_molecules = int(self.top_n_molecules_entry.get())
+        reference_name = self.output_filename_entry.get()
+        if reference_name == "":
+            CTkMessagebox(title="info", message="Please provide a name for the output file")
+            return
+
+
         logger.info(f"Num molecules: {top_n_molecules}")
         self.timer.start_timer()
         self.time_constraint_label.configure(text="Note : Markers generation takes 10+ minutes", text_color="yellow")
         
 
-        adata1_path = os.path.join(self.working_folder, self.files_to_path_dict[region1_path]) 
-        if self.sami_type == "multi":
-            adata2_path = os.path.join(self.working_folder, self.files_to_path_dict[region2_path])
-            reference_name = '_'.join(region1.replace('.h5ad' , "").split('_')[:-1]) + '_with_' + '_'.join(region2.replace('.h5ad', "").split('_')[:-1])
+        adata1_path = os.path.join(self.working_folder, self.files_to_path_dict[self.selected_file1]) 
+        if self.markers_type_selection.get() == "dual":
+            adata2_path = os.path.join(self.working_folder, self.files_to_path_dict[self.selected_file2])
         else:
             adata2_path = None
-            reference_name = '_'.join(region1.replace('.h5ad', "").split('_')[:-1]) + '_single'
         logger.info(f"adata1_path: {adata1_path}")
         logger.info(f"adata2_path: {adata2_path}")
         logger.info(f"top_n_molecules: {top_n_molecules}")
         # creating a process to run the markers generation
 
         logger.info("Starting markers process")
-        maker_process = Process(target=self.markers_actual_run, args=(adata1_path, adata2_path, abundance,
-                                                                       prevalence, adj_pval_cutoff, top_n_molecules, self.queue, reference_name,
-                                                                       self.makers_working_folder, self.log_queue),  name = "SAMI:Markers_step")
+
+        if self.markers_type_selection.get() == "single":
+            maker_process = Process(target=self.markers_actual_run, args=(adata1_path, adata2_path, abundance,
+                                                                        prevalence, adj_pval_cutoff, top_n_molecules, self.queue, reference_name,
+                                                                        self.makers_working_folder, self.log_queue, self.lst1_regions, None, self.dict_clustermap
+                                                                        ),  name = "SAMI:Markers_step")
+            
+        else:
+            maker_process = Process(target=self.markers_actual_run, args=(adata1_path, adata2_path, abundance,
+                                                            prevalence, adj_pval_cutoff, top_n_molecules, self.queue, reference_name,
+                                                            self.makers_working_folder, self.log_queue, self.lst1_regions, self.lst2_regions,  self.dict_clustermap
+                                                            ),  name = "SAMI:Markers_step")
         maker_process.start()
         self.markers = Markers(reference_name, None)
+        logger.info("Markers process started")
 
     @staticmethod
-    def markers_actual_run(adata1_path, adata2_path, abundance, prevalence, adj_pval_cutoff, top_n_molecules, queue, reference_name, makers_working_folder, log_queue):
+    def markers_actual_run(adata1_path, adata2_path, abundance, prevalence, adj_pval_cutoff, top_n_molecules, queue, reference_name, 
+                           makers_working_folder, log_queue, lst1_regions, lst2_regions, dict_clustermap):
 
-        # worker_configurer(log_queue)
-        adata1 = sc.read(adata1_path) # case 
-        adata_filtered1 = adata_filter(adata1, abundance,prevalence)
-        logger.info(f"adata1 shape: {adata_filtered1.shape}")
-        if adata2_path is not None:
-            adata2 = sc.read(adata2_path) # control
-            adata_filtered2 = adata_filter(adata2,0.1,0.1)
-        else:
-            adata_filtered2 = None
-            logger.info(f"adata2 shape: None")
 
-        markers = Markers(reference_name, log_queue)  # reference name is the name of the file where it will save with markers
-        markers.findmarkers(adata_filtered1,adj_pval_cutoff,top_n_molecules, adata_filtered2,makers_working_folder )
+        try:
+            # worker_configurer(log_queue)
+            adata1 = sc.read(adata1_path) # case 
+            # filtering out selected regions
+            adata1 = adata1[adata1.obs['region'].isin(lst1_regions)]
+            logger.info(f"adata regions: {adata1.obs['region'].unique()}")
+            adata_filtered1 = adata_filter(adata1, abundance,prevalence)
 
-        queue.put("markers_done")
-        logger.info("markers done")
+            logger.info(f"adata1 shape: {adata_filtered1.shape}")
+            mode = "single"
+            if adata2_path is not None:
+                adata2 = sc.read(adata2_path) # control
+                # filtering out selected regions
+                adata2 = adata2[adata2.obs['region'].isin(lst2_regions)]
+                logger.info(f"adata2 regions: {adata2.obs['region'].unique()}")
+
+                adata_filtered2 = adata_filter(adata2,abundance,prevalence)
+                mode = "dual"
+            else:
+                adata_filtered2 = None
+                logger.info(f"adata2 shape: None")
+
+            markers = Markers(reference_name, log_queue)  # reference name is the name of the file where it will save with markers
+            markers.findmarkers(dict_clustermap, adata_filtered1,adj_pval_cutoff,top_n_molecules, adata_filtered2,makers_working_folder )
+
+            queue.put("markers_done")
+            logger.info("markers done")
+        except Exception as e:
+            logger.error(f"Error in markers_actual_run: {e}")
+            queue.put("markers_error")
+            # logger.info("markers done")
 
 
     
@@ -268,6 +418,8 @@ class MarkerStep(ctk.CTkFrame):
                     self.after(500, self.display_circular_plot())
                     self.after(500, self.display_volcano_plot())
                     logger.info("Markers generation complete and visualizations prepared")
+                elif signal == "markers_error":
+                    CTkMessagebox(title="Error", message="Something went wrong in Markers calculation", icon="cancel")
             # Schedule the next queue check
         except Exception as e:
             logger.error(f"Error: {e}")
@@ -388,9 +540,14 @@ class MarkerStep(ctk.CTkFrame):
         select_cluster_label.grid(row=0, column=0, sticky="w", padx=5, pady=5)
 
         #entry box to take value
-        self.cluster_selection = ctk.CTkEntry(self.volocano_options_panel, width=50, placeholder_text= "5",)
+        clusters = self.markers.get_clusters(self.makers_working_folder)
+        clusters = [str(item) for item in clusters]
+        self.cluster_selection = ctk.CTkComboBox(self.volocano_options_panel, values=clusters )
         self.cluster_selection.grid(row=0, column=1, sticky="w", padx=5, pady=5)
-        self.cluster_selection.insert(0, "1")
+        self.cluster_selection.set(clusters[0])
+        # self.cluster_selection = ctk.CTkEntry(self.volocano_options_panel, width=50, placeholder_text= "5",)
+        # self.cluster_selection.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+        # self.cluster_selection.insert(0, "1")
 
         # button to run the function
         self.run_button = ctk.CTkButton(self.volocano_options_panel, text="Run", command=self.display_volcano_plot)
@@ -413,6 +570,8 @@ class MarkerStep(ctk.CTkFrame):
         # get the value from top N entry
         cluster = int(self.cluster_selection.get())
         try:
+            
+
             image_location = self.markers.volcano_plot(cluster, show=False, work_dir= self.makers_working_folder)
             logger.info(f"Volcano Image location: {image_location}")    
         except Exception as e:

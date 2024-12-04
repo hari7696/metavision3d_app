@@ -41,7 +41,7 @@ class FileOpenbutton(ctk.CTkFrame):
             )
         )
 
-        if choice == "Multiple CSV":
+        if choice == "CSV":
             self.f_open_btn = ctk.CTkButton(
                 self, text="Open Folder", command=self.open_multiple_files
             )
@@ -109,7 +109,22 @@ class FileOpenbutton(ctk.CTkFrame):
         for file in file_path:
 
             base_filename = os.path.basename(file)
-            temp_df = pd.read_csv(os.path.join(self.working_folder, base_filename))
+            try:
+                temp_df = pd.read_csv(os.path.join(self.working_folder, base_filename))
+            except UnicodeDecodeError:
+                encodings = ['utf-8', 'latin1', 'iso-8859-1']
+                for encoding in encodings:
+                    try:
+                        temp_df = pd.read_csv(os.path.join(self.working_folder, base_filename), encoding=encoding)
+                        break
+                    except UnicodeDecodeError:
+                        continue
+                else:
+                    logger.error(f"Failed to read {base_filename} with available encodings")
+                    CTkMessagebox(title="Error", message=f"Failed to read {base_filename} with available encodings", icon="cancel")
+                    return
+
+
             logger.info(f"file read: {base_filename}")
             base_filename = base_filename.replace(".csv", "")
             self.input_data_raw[base_filename] = self.preprocess(temp_df, base_filename)
@@ -144,15 +159,34 @@ class FileOpenbutton(ctk.CTkFrame):
 
             df.dropna(subset=['region'], inplace=True)
             self.tissue_ids[base_filename] = list(df["region"].unique())
+
+            # lets check for the presence of x and y columns
+            if "x" not in df.columns or "y" not in df.columns:
+                raise ValueError("x or y columns missing")
+            
+            if "region" not in df.columns:
+                raise ValueError("tisse_id column missing")
+            
+            # get the index of the columns where the molecules are present
+            # we will use this index to get the molecule names
+            first_molecule_field_name = df.columns[list(df.columns).index("region") + 1]
+            # check if this field data is float or strng
+            logger.info(f"first molecule field name: {first_molecule_field_name, df[first_molecule_field_name].dtype}")
+            if df[first_molecule_field_name].dtype != "float64":
+                raise ValueError("found strings in molecule field")
+            
+            # drop every other column except x, y, region and molecules
+            valid_field_names = ['x', 'y', 'region']
+            valid_field_names.extend(list(df.columns[list(df.columns).index("region") + 1:]))
+            df = df[valid_field_names].copy()
+
             self.molecule_name[base_filename] = list(df.columns[3:])
             logger.info(f"Preprocessed columns: {df.columns}")
             return df
         except Exception as e:
             logger.error(f"Error in preprocessing: {e}")
-            CTkMessagebox(
-                title="Error",
-                message=f"Error in preprocessing the file: maybe missing {e}. Please check the log file for more details"
-            )
+
+            CTkMessagebox(title="Error", message=f"Error in preprocessing the file: maybe missing {e}. Please check the log file for more details", icon="cancel")
 
     def display_file_loading(self):
         # Displying the loading label
