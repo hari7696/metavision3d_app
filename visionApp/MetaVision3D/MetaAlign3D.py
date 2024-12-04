@@ -165,6 +165,7 @@ def seq_align(matrix, warp_matrix_all):
 
 
 class MetaAlign3D:
+   
     def __init__(self, group, data, compound, first_feature='Pyruvate', filepath = None, reverse=False):
         self.group = group
         self.data = data
@@ -185,7 +186,6 @@ class MetaAlign3D:
         base_path =  os.path.dirname(self.filepath)
         self.warp_matrix_file = os.path.join(base_path, f'warp_matrix_{self.group}.npy')
         logger.info(f'Warp matrix file is: {self.warp_matrix_file}')
-
         if os.path.exists(self.warp_matrix_file):            
         # if os.path.exists(f'./warpmatrix/warp_matrix_{self.group}.npy'):
             logger.info('Warp matrix exists. Using existing warp matrix to do alignment.')
@@ -199,14 +199,18 @@ class MetaAlign3D:
             # ref_compound = "LPE.24.5."
             logger.info(f'The most prevalent compound is {ref_compound}.')
             # calculate warp matrix
-            ref_compound_matrix = create_compound_matrix(self.data, ref_compound, reverse=self.reverse)
-            self.warp_matrix_all = calculate_warp_matrix(ref_compound_matrix)
-            # make_directory('visionApp/MetaVision3D/warpmatrix')
-            make_directory(base_path)
-            # np.save(f'visionApp/MetaVision3D/warpmatrix/warp_matrix_{self.group}', self.warp_matrix_all)
-            np.save(self.warp_matrix_file, self.warp_matrix_all)
-            logger.info(f'Warp matrix is created based on {ref_compound} and saved for group {self.group} in {base_path}.')
-            
+            try:
+                ref_compound_matrix = create_compound_matrix(self.data, ref_compound, reverse=self.reverse)
+                self.warp_matrix_all = calculate_warp_matrix(ref_compound_matrix)
+                # make_directory('visionApp/MetaVision3D/warpmatrix')
+                make_directory(base_path)
+                # np.save(f'visionApp/MetaVision3D/warpmatrix/warp_matrix_{self.group}', self.warp_matrix_all)
+                np.save(self.warp_matrix_file, self.warp_matrix_all)
+                logger.info(f'Warp matrix is created based on {ref_compound} and saved for group {self.group} in {base_path}.')
+            except Exception as e:
+                logger.error(f'Error in creating warp matrix: {e}')
+                self.warp_matrix_all = None
+
     def create_compound_matrix(self):
         x_size, y_size = image_size(self.data)
         nslice = len(self.data.tissue_id.unique())
