@@ -82,11 +82,16 @@ class MetaVision3DApp(ctk.CTkFrame):
             # print(self.filepath)
             self.display_file_loading()
 
+            self.file_directory = os.path.dirname(self.filepath)
+            logger.info(f"Selected directory: {self.file_directory}")
+
             # Extract the file name from the file path
-            file_name = os.path.basename(self.filepath)
-            parts = file_name.split('_')
-            self.group = parts[-1] if len(parts) > 1 else file_name
-            self.group = os.path.splitext(self.group)[0]
+            self.file_name = os.path.basename(self.filepath)
+            logger.info(f"Selected file: {self.file_name}")
+
+            # parts = file_name.split('_')
+            # self.group = parts[-1] if len(parts) > 1 else file_name
+            self.group = os.path.splitext(self.file_name)[0]
 
             threading.Thread(target=self.load_file, args=(self.filepath,), daemon=True).start()
 
@@ -254,7 +259,7 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.molecule_dropdown.configure(state="disabled")
         self.cmap_cbox.configure(state="normal")
         selected_moelcule = self.molecule_dropdown.get()
-        meta_visualize = MetaAlign3D(self.group, self.df, selected_moelcule, self.molecule_names[0], reverse=True)   
+        meta_visualize = MetaAlign3D(self.group, self.df, selected_moelcule, self.molecule_names[0],  self.filepath, reverse=True)   
         self.compound_matrix = meta_visualize.create_compound_matrix()
         time.sleep(1)
         logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
@@ -269,7 +274,7 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.norm_df = meta_norm.totalsum_norm()
         self.data = meta_norm.section_norm()
         selected_moelcule = self.molecule_dropdown.get()
-        meta_normalize = MetaAlign3D(self.group, self.data, selected_moelcule, self.molecule_names[0], reverse=True)   
+        meta_normalize = MetaAlign3D(self.group, self.data, selected_moelcule, self.molecule_names[0], self.filepath, reverse=True)   
         self.compound_matrix = meta_normalize.create_compound_matrix()
         self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
         self.display_norm_plot(self.compound_matrix)
@@ -277,7 +282,7 @@ class MetaVision3DApp(ctk.CTkFrame):
 
     def start_allignment(self):
         selected_moelcule = self.molecule_dropdown.get()
-        meta_align = MetaAlign3D(self.group, self.data, selected_moelcule, self.molecule_names[0], reverse=True)
+        meta_align = MetaAlign3D(self.group, self.data, selected_moelcule, self.molecule_names[0], self.filepath, reverse=True)
         self.compound_matrix = meta_align.create_compound_matrix()
         logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
         self.compound_matrix = meta_align.seq_align()
