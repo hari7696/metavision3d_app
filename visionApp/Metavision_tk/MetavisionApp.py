@@ -222,7 +222,9 @@ class MetaVision3DApp(ctk.CTkFrame):
             logger.info("Starting the visualization process")
             self.visualize_process_rad.configure(state="disabled")
             self.normalize_process_rad.select()
+            logger.info("before calling start_initial_visualization")
             self.start_initial_visualization()
+            logger.info("after calling start_initial_visualization")
         elif step ==2:
             logger.info("Starting the normalization process")
             self.normalize_process_rad.configure(state="disabled")
@@ -259,12 +261,17 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.molecule_dropdown.configure(state="disabled")
         self.cmap_cbox.configure(state="normal")
         selected_moelcule = self.molecule_dropdown.get()
+        logger.info(f"Selected Molecule: {selected_moelcule}")
         meta_visualize = MetaAlign3D(self.group, self.df, selected_moelcule, self.molecule_names[0],  self.filepath, reverse=True)   
+        logger.info("After calling MetaAlign3D inside start_initial_visualization")
         self.compound_matrix = meta_visualize.create_compound_matrix()
+        logger.info(f"After creating self.compound_matrix")
         time.sleep(1)
         logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
         self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
+        logger.info(f"Displaying_individual_images")
         self.display_norm_plot(self.compound_matrix)
+        logger.info(f"Displaying_norm_plot")
         self.after(500,self.display_animation())
 
     def start_normalization(self):
