@@ -1,10 +1,12 @@
+#MetaAlign3D.py
+
 # MetaAlign3D module
 import sys
 import numpy as np
 import pandas as pd
 import cv2
 import os
-from tqdm import tqdm
+# from tqdm import tqdm
 from .utils import get_ref_compound,make_directory
 import logging
 logger = logging.getLogger(__name__)
@@ -86,7 +88,7 @@ def create_compound_matrix(data,compound,reverse=False):
     nslice = len(data.tissue_id.unique())
     matrix = np.zeros((nslice, x_size, y_size))
 
-    for ii in tqdm(range(matrix.shape[0])):
+    for ii in (range(matrix.shape[0])):
         data_temp = create_slice(data, ii,compound=compound, reverse=reverse)
         x_vals = np.ceil((x_size - data_temp.shape[0])/2).astype(int) 
         y_vals = np.ceil((y_size - data_temp.shape[1])/2).astype(int) #find the (x,y) of the start vertex, '/2' means put the slice in the center
@@ -135,7 +137,8 @@ def calculate_warp_matrix(ref_matrix):
     matrix_corrected = np.zeros((ref_matrix.shape))
     matrix_corrected[0] = ref_matrix[0]
     warp_matrix_all = np.zeros((matrix_corrected.shape[0] - 1, 2, 3))
-    for ii in tqdm(range(matrix_corrected.shape[0] - 1)):
+    for ii in (range(matrix_corrected.shape[0] - 1)):
+        logger.info(f'Calculating warp matrix for slice {ii+1}...')
         if np.all(ref_matrix[ii + 1] == 0):
             next_nonzero_index = ii + 2
             while next_nonzero_index < ref_matrix.shape[0] and np.all(ref_matrix[next_nonzero_index] == 0):
@@ -156,7 +159,8 @@ def calculate_warp_matrix(ref_matrix):
 def seq_align(matrix, warp_matrix_all):
     matrix_corrected = np.zeros((matrix.shape))
     matrix_corrected[0] = matrix[0]
-    for ii in tqdm(range(matrix_corrected.shape[0]-1)):
+    for ii in (range(matrix_corrected.shape[0]-1)):
+        logger.info(f'Aligning slice {ii+1}...')
         if np.all(matrix[ii + 1] == 0):
             matrix_corrected[ii+1] = matrix[ii+1]
         else:
@@ -165,7 +169,6 @@ def seq_align(matrix, warp_matrix_all):
 
 
 class MetaAlign3D:
-   
     def __init__(self, group, data, compound, first_feature='Pyruvate', filepath = None, reverse=False):
         self.group = group
         self.data = data
@@ -176,46 +179,40 @@ class MetaAlign3D:
         self.corrected_matrix=None
         self.warp_matrix_all=None
         self.filepath = filepath
-        
-        # try:
-        #     # when running executable file
-        #     base_path = os.path.join(sys._MEIPASS , 'config')
-        # except Exception:
-        #     # when running python script
-        #     base_path =  os.path.dirname(self.filepath)
+
         base_path =  os.path.dirname(self.filepath)
         self.warp_matrix_file = os.path.join(base_path, f'warp_matrix_{self.group}.npy')
         logger.info(f'Warp matrix file is: {self.warp_matrix_file}')
+
         if os.path.exists(self.warp_matrix_file):            
-        # if os.path.exists(f'./warpmatrix/warp_matrix_{self.group}.npy'):
             logger.info('Warp matrix exists. Using existing warp matrix to do alignment.')
-            # self.warp_matrix_all = np.load(f'./warpmatrix/warp_matrix_{self.group}.npy')
             self.warp_matrix_all = np.load(self.warp_matrix_file)
             
         else:
-            print('Warp matrix does not exist. Using the most prevalent compound to calculate warp matrix.')
+            logger.info('Warp matrix does not exist. Using the most prevalent compound to calculate warp matrix.')
             # find most prevalent compound as reference compound
             ref_compound = get_ref_compound(self.data,first_feature=self.first_feature)
-            # ref_compound = "LPE.24.5."
             logger.info(f'The most prevalent compound is {ref_compound}.')
             # calculate warp matrix
             try:
+                logger.info('Creating compound matrix...')
                 ref_compound_matrix = create_compound_matrix(self.data, ref_compound, reverse=self.reverse)
+                logger.info('Creating warp matrix...')
                 self.warp_matrix_all = calculate_warp_matrix(ref_compound_matrix)
-                # make_directory('visionApp/MetaVision3D/warpmatrix')
                 make_directory(base_path)
-                # np.save(f'visionApp/MetaVision3D/warpmatrix/warp_matrix_{self.group}', self.warp_matrix_all)
                 np.save(self.warp_matrix_file, self.warp_matrix_all)
                 logger.info(f'Warp matrix is created based on {ref_compound} and saved for group {self.group} in {base_path}.')
             except Exception as e:
                 logger.error(f'Error in creating warp matrix: {e}')
                 self.warp_matrix_all = None
-
+            
     def create_compound_matrix(self):
         x_size, y_size = image_size(self.data)
         nslice = len(self.data.tissue_id.unique())
         self.matrix = np.zeros((nslice, x_size, y_size))
-        for ii in tqdm(range(self.matrix.shape[0])):
+        logger.info(f"Size of the matrix: {self.matrix.shape}")
+        for ii in (range(self.matrix.shape[0])):
+            logger.info(f"Creating slice {ii}...")
             data_temp = create_slice(self.data, ii, compound=self.compound, reverse=self.reverse)
             x_vals = int((x_size - data_temp.shape[0])/2) 
             y_vals = int((y_size - data_temp.shape[1])/2) #find the (x,y) of the start vertex, '/2' means put the slice in the center
@@ -225,7 +222,8 @@ class MetaAlign3D:
     def seq_align(self):
         self.matrix_corrected = np.zeros((self.matrix.shape))
         self.matrix_corrected[0] = self.matrix[0]
-        for ii in tqdm(range(self.matrix_corrected.shape[0]-1)):
+        for ii in (range(self.matrix_corrected.shape[0]-1)):
+            logger.info(f'Aligning slice {ii+1}...')
             if np.all(self.matrix[ii + 1] == 0):
                 self.matrix_corrected[ii+1] = self.matrix[ii+1]
             else:

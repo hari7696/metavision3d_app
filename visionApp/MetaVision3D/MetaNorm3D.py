@@ -1,8 +1,13 @@
+#MetaNorm3D
+
 # MetaNorm3D module
 import numpy as np
 import pandas as pd
+import logging
+logger = logging.getLogger(__name__)
 
 def totalsum_norm(df, first_feature):
+    logger.info('Normalizing data by total sum....')
     first_feature_index = np.where(df.columns==first_feature)[0][0]
     row_sum = df.iloc[:, first_feature_index:].sum(axis=1)
     non_zero_row_indices = np.where(row_sum != 0)[0]
@@ -10,6 +15,7 @@ def totalsum_norm(df, first_feature):
     return df
 
 def section_norm(df, first_feature):
+    logger.info('Normalizing data by section....')
     compounds = df.columns.tolist()[np.where(df.columns==first_feature)[0][0]:]
     denominator = df.groupby('tissue_id')[compounds].median()
     numerator = denominator.median()
@@ -28,6 +34,7 @@ class MetaNorm3D:
         self.first_feature = first_feature
 
     def totalsum_norm(self):
+        logger.info('Normalizing data by total sum....')
         first_feature_index = np.where(self.df.columns==self.first_feature)[0][0]
         row_sum = self.df.iloc[:, first_feature_index:].sum(axis=1)
         non_zero_row_indices = np.where(row_sum != 0)[0]
@@ -35,6 +42,7 @@ class MetaNorm3D:
         return self.df
     
     def section_norm(self):
+        logger.info('Normalizing data by section....')
         compounds = self.df.columns.tolist()[np.where(self.df.columns==self.first_feature)[0][0]:]
         denominator = self.df.groupby('tissue_id')[compounds].median()
         numerator = denominator.median()

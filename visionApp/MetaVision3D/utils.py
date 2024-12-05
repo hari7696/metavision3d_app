@@ -1,8 +1,10 @@
+#utils.py
+
 # utils
 import pandas as pd
 import numpy as np
 import os
-from tqdm import tqdm
+# from tqdm import tqdm
 from skimage import filters, morphology, img_as_float,exposure,measure
 
 def get_ref_compound(df,first_feature='LPA_16_0_'):
@@ -44,7 +46,7 @@ def delete_inferior_tissues(df,inferior_tissues_id,first_feature='LPA_16_0',reve
 def get_shell_mask(shell_matrix, gaussian_sigma=1, closing_disk_radius=5):
     nslice = shell_matrix.shape[0]
     mask = np.zeros_like(shell_matrix,dtype=np.uint8)
-    for i in tqdm(range(nslice)):
+    for i in (range(nslice)):
         img = shell_matrix[i]
         
         #shell
@@ -72,7 +74,7 @@ def create_shell_dataframe(shell_df, shell_mask, reverse = False):
     nslice = len(tissue_id_list)
     
     slice_shell_df_list=[]
-    for slice_number in tqdm(range(nslice)):
+    for slice_number in (range(nslice)):
         if reverse:
             df_temp = shell_df[shell_df['tissue_id'] == tissue_id_list[nslice-slice_number-1]]
         else:
