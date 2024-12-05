@@ -1,4 +1,4 @@
-
+# MetaVisionApp.py
 from functools import partial
 import io
 import math
@@ -106,7 +106,7 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.df = pd.read_csv(filepath, index_col=False)
         self.df = self.df.rename(columns={'region': 'tissue_id'})
         self.tissue_ids = self.df['tissue_id'].unique().tolist()
-        print(self.tissue_ids)
+        logger.info(f"Tissue id's: {self.tissue_ids}")
         self.molecule_names = self.df.columns[1:].tolist()
         self.is_roi=False
         remove_values = ["spotId", "raster", "x", "y", "z", "Date", "Class", "tissue_id","roi"]
@@ -176,7 +176,7 @@ class MetaVision3DApp(ctk.CTkFrame):
             self.slices_label.grid_remove()  # Hide by default
             
             self.slices_entry = ctk.CTkEntry(self.process_frame, placeholder_text="Enter number of slices")
-            self.slices_entry.insert(0, "0")
+            self.slices_entry.insert(0, "1")
             self.slices_entry.grid_remove()  # Hide by default
 
             # Imputation (Radius) label and entry
@@ -184,7 +184,7 @@ class MetaVision3DApp(ctk.CTkFrame):
             self.radius_label.grid_remove()  # Hide by default
             
             self.radius_entry = ctk.CTkEntry(self.process_frame, placeholder_text="Enter radius")
-            self.radius_entry.insert(0, "0")
+            self.radius_entry.insert(0, "1")
             self.radius_entry.grid_remove()  # Hide by default        
 
             self.process_button = ctk.CTkButton(self.open_file_frame, text="Run", command=self.start_selected_process)
@@ -219,20 +219,23 @@ class MetaVision3DApp(ctk.CTkFrame):
     def start_selected_process(self):
         step = self.process_step_var.get()
         if step ==1:    
-            logger.info("Starting the visualization process")
+            logger.info("Starting the first step - visualization process")
             self.visualize_process_rad.configure(state="disabled")
             self.normalize_process_rad.select()
-            logger.info("before calling start_initial_visualization")
+            logger.info("Calling the start_initial_visualization process")
             self.start_initial_visualization()
-            logger.info("after calling start_initial_visualization")
+            logger.info("start_initial_visualization is completed")
         elif step ==2:
             logger.info("Starting the normalization process")
             self.normalize_process_rad.configure(state="disabled")
             self.allign_rad.select()
+            logger.info("Calling the start_normalization process")
             self.start_normalization()
+            logger.info("start_normalization is completed")
         elif step == 3:
             logger.info("Starting the alignment process")
             self.start_allignment()
+            logger.info("start_allignment is completed")
         elif step == 4:
             logger.info("Starting the selected process: Interpolate/Impute/Both")
             self.interp_rad.configure(state="disabled")
@@ -263,9 +266,9 @@ class MetaVision3DApp(ctk.CTkFrame):
         selected_moelcule = self.molecule_dropdown.get()
         logger.info(f"Selected Molecule: {selected_moelcule}")
         meta_visualize = MetaAlign3D(self.group, self.df, selected_moelcule, self.molecule_names[0],  self.filepath, reverse=True)   
-        logger.info("After calling MetaAlign3D inside start_initial_visualization")
+        logger.info("MetaAlign3D is completed in start_initial_visualization")
         self.compound_matrix = meta_visualize.create_compound_matrix()
-        logger.info(f"After creating self.compound_matrix")
+        logger.info(f"self.compound_matrix is created")
         time.sleep(1)
         logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
         self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
@@ -277,26 +280,43 @@ class MetaVision3DApp(ctk.CTkFrame):
     def start_normalization(self):
         self.compound = self.molecule_dropdown.get()
         logger.info(self.compound)
+        logger.info("Calling MetaNorm3D in start_normalization process")
         meta_norm = algo_meta3d_norm.MetaNorm3D(self.df, first_feature=self.molecule_names[0])
+        logger.info("MetaNorm3D is completed in start_normalization process")
         self.norm_df = meta_norm.totalsum_norm()
+        logger.info(f"totalsum norm df head: {self.norm_df.head}")
         self.data = meta_norm.section_norm()
+        logger.info(f"section norm df head: {self.data.head()}")
         selected_moelcule = self.molecule_dropdown.get()
-        meta_normalize = MetaAlign3D(self.group, self.data, selected_moelcule, self.molecule_names[0], self.filepath, reverse=True)   
+        logger.info(f"Calling MetaAlign3D in start_normalization process")
+        meta_normalize = MetaAlign3D(self.group, self.data, selected_moelcule, self.molecule_names[0], self.filepath, reverse=True) 
+        logger.info("MetaAlign3D is completed in start_normalization process")  
         self.compound_matrix = meta_normalize.create_compound_matrix()
+        logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
         self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
+        logger.info(f"Displaying_individual_images")
         self.display_norm_plot(self.compound_matrix)
+        logger.info(f"Displaying_norm_plot")
         self.display_animation()
+        logger.info(f"Displaying_animation")
 
     def start_allignment(self):
         selected_moelcule = self.molecule_dropdown.get()
+        logger.info(f"Calling MetaAlign3D in start_allignment process")
         meta_align = MetaAlign3D(self.group, self.data, selected_moelcule, self.molecule_names[0], self.filepath, reverse=True)
+        logger.info("MetaAlign3D is completed in start_allignment process")
         self.compound_matrix = meta_align.create_compound_matrix()
-        logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
         self.compound_matrix = meta_align.seq_align()
+        logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")    
         self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
+        logger.info(f"Displaying_individual_images")
         self.display_norm_plot(self.compound_matrix)
+        logger.info(f"Displaying_norm_plot")
         self.display_animation()
+        logger.info(f"Displaying_animation")
         self.create_3d_tab()
+        logger.info(f"3D tab created")
+
         self.allign_rad.configure(state="disabled")  # Disable the "Align" button after alignment
         self.interp_rad.configure(state="normal")
         self.process_step_var.set(4)  # Set to 4 to allow imputation/interpolation selection
@@ -308,16 +328,20 @@ class MetaVision3DApp(ctk.CTkFrame):
             return
         radius = int(radius_text)
         # Ensure the compound_matrix is available before starting the imputation process
-        if self.compound_matrix is None:
-            messagebox.showerror("Error", "Compound matrix is not available. Please complete the alignment process first.")
-            return
+        # if self.compound_matrix is None:
+        #     messagebox.showerror("Error", "Compound matrix is not available. Please complete the alignment process first.")
+        #     return
         logger.info("Starting the Imputation process")
         meta_impute = MetaImpute3D(self.compound_matrix, radius)
+        logger.info("MetaImpute3D is completed in start_imputation process")
         self.compound_matrix = meta_impute.seq_impute()
         logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
         self.display_individual_images(self.cmap_switch_var.get(), self.compound_matrix)
+        logger.info(f"Displaying_individual_images")
         self.display_norm_plot(self.compound_matrix)
+        logger.info(f"Displaying_norm_plot")
         self.display_animation()
+        logger.info(f"Displaying_animation")
         self.interp_rad.configure(state="disabled")  
 
     def start_interp(self):
@@ -328,22 +352,29 @@ class MetaVision3DApp(ctk.CTkFrame):
         slices = int(slices_text)
         logger.info("Starting the Interpolation process")
         meta_interp = algo_meta3d_interp.MetaInterp3D(self.compound_matrix, slices)
+        logger.info("MetaInterp3D is completed in start_interp process")
         self.compound_matrix = meta_interp.interp()
         logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
         self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
+        logger.info(f"Displaying_individual_images")
         self.display_norm_plot(self.compound_matrix)
+        logger.info(f"Displaying_norm_plot")
         self.display_animation()
+        logger.info(f"Displaying_animation")
         self.interp_rad.configure(state="disabled")
  
     def reset_process(self):
+        logger.info("Resetting the process")
         for widget in self.slides_display_frame.winfo_children():
             widget.destroy()  
         for widget in self.slide_tab.winfo_children():
             widget.destroy()
+        logger.info("Destroying the widgets in the slide tab")
         # Destroy the 3D tab if it exists
         if self._3d_tab_exists:
             self.tab_view.delete("3D view")
             self._3d_tab_exists = False  # Reset the flag
+        logging.info("Destroying the 3D tab")
         if hasattr(self, 'norm_plot_frame') and self.norm_plot_frame is not None:
             self.norm_plot_frame.destroy()
         self.ani_ax.clear()
@@ -360,14 +391,14 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.slices_label.grid_remove()  # Hide by default
 
         self.slices_entry.delete(0, "end")      
-        self.slices_entry.insert(0, "0")
+        self.slices_entry.insert(0, "1")
         self.slices_entry.grid_remove()  # Hide by default
 
         # Imputation (Radius) label and entry
         self.radius_label.grid_remove()  # Hide by default
         
         self.radius_entry.delete(0, "end")
-        self.radius_entry.insert(0, "0")
+        self.radius_entry.insert(0, "1")
         self.radius_entry.grid_remove()  # Hide by default    
 
         logger.info("Reset process completed")
@@ -522,7 +553,7 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.selected_output_dir_label.configure(text = self.output_directory)
 
     def export_files(self):
-        print(self.export_file_option.get())
+        # print(self.export_file_option.get())
         selected_molecules = []
         selected_tissues = []
         for cbox in self.molecule_checkboxes:
@@ -531,7 +562,7 @@ class MetaVision3DApp(ctk.CTkFrame):
         for cbox in self.tissue_checkboxes:
             if cbox.get()==1:
                 selected_tissues.append(cbox.cget("text"))
-        print(selected_tissues)
+        logger.info(selected_tissues)
 
         if self.export_norm_option.get()==1:
             filtered_df = self.df[self.df['tissue_id'].isin(selected_tissues)]
@@ -540,7 +571,6 @@ class MetaVision3DApp(ctk.CTkFrame):
 
         if self.export_file_option.get() == 2:
             for tissue in selected_tissues:
-                print("here1")
                 # Filter the dataframe for each tissue
                 tissue_df = filtered_df[filtered_df['tissue_id'] == tissue] 
 
@@ -548,14 +578,14 @@ class MetaVision3DApp(ctk.CTkFrame):
                 export_df = tissue_df[['tissue_id'] + selected_molecules]    
 
                 # Create a folder for the tissue if it doesn't exist
-                print(self.output_directory)
-                print(self.output_folder_entry.get())
+                logger.info(f"Output directory:{self.output_directory}")
+                # print(self.output_folder_entry.get())
                 tissue_folder = os.path.join(os.path.join(self.output_directory,self.output_folder_entry.get()), str(tissue))
                 if not os.path.exists(tissue_folder):
                     os.makedirs(tissue_folder)
                 
                 for molecule in selected_molecules:
-                    print("here2")
+                    # print("here2")
                     # Select only the columns for the current molecule and the tissue_ids
                     export_df = tissue_df[['tissue_id', molecule]]
                     
@@ -645,7 +675,7 @@ class MetaVision3DApp(ctk.CTkFrame):
         label.bind("<Button-1>", partial(self.on_label_click, id=id))
 
     def on_label_click(self,event,id):
-        print(id) 
+        logger.info(f"Selected slide: {id}") 
         fig = Figure(figsize=(6.5, 5))
         ax = fig.add_subplot(111)
 
