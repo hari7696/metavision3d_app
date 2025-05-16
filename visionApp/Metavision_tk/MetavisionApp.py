@@ -45,10 +45,13 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.columnconfigure(0,weight=1)
 
         self.open_file_frame = ctk.CTkFrame(self.nav_frame)
-        self.open_file_frame.grid(row=0,column=1, padx=5, pady=5)
+        self.open_file_frame.grid(row=0,column=1, padx=5, pady=5, sticky="ew")
+        self.open_file_frame.columnconfigure(8,weight=1)
         
+        # open_file_btn = ctk.CTkButton(self.open_file_frame, text="Select CSV File", command=self.open_file)
         open_file_btn = ctk.CTkButton(self.open_file_frame, text="Select CSV File", command=self.open_file)
-        open_file_btn.grid(row=0,column=0,padx=(5, 50), pady=5,sticky="w")
+        open_file_btn.grid(row=0,column=0,padx=10, pady=5,sticky="w")
+        # open_file_btn.grid(row=0,column=0,padx=(5, 50), pady=5,sticky="w")
         self.cmap_switch_var = ctk.StringVar(value="gray")
         logger.info("Metavision class initialized")  
 
@@ -141,86 +144,82 @@ class MetaVision3DApp(ctk.CTkFrame):
     def create_molecule_dropdown(self):
         if self.molecule_names:
             self.molecule_dropdown_label = ctk.CTkLabel(self.open_file_frame,text="Tissues/Molecules:")
-            self.molecule_dropdown_label.grid(row=0, column=1, padx = (50, 5), pady=5, sticky="w")
+            self.molecule_dropdown_label.grid(row=0, column=1, padx=10, pady=5, sticky="w")
+            
             self.molecule_dropdown = ctk.CTkComboBox(self.open_file_frame, values=["None"] + self.molecule_names if any(isinstance(x, float) and np.isnan(x) for x in self.molecule_names) else self.molecule_names)
-            self.molecule_dropdown.grid(row=0, column=2, padx=(5,50), pady=5, sticky="w")
-            # self.process_steps_label = ctk.CTkLabel(self.nav_frame,text="Process Steps:")
-            # self.process_steps_label.grid(row=0,column=4,sticky="w",padx=(20,5))
+            self.molecule_dropdown.grid(row=0, column=2, padx=10, pady=5, sticky="w")
             
-            self.process_steps_frame = ctk.CTkFrame(self.nav_frame)
-            self.process_steps_frame.grid(row=1,column=0, columnspan=6, padx=5, pady=5) 
-            self.process_frame = ctk.CTkFrame(self.process_steps_frame)
-            self.process_frame.grid(row=0,column=0)
-            
-            # self.process_step_var = ctk.IntVar(value=1)
-            # self.visualize_process_rad = ctk.CTkRadioButton(self.process_frame,text ="Visualize",variable= self.process_step_var,value=1)
-            # self.visualize_process_rad.grid(row=0,column=0,padx=3,pady=3)
-            # arrow_label1 = ctk.CTkLabel(self.process_frame,text= '\u27A1',font=("Arial", 20))
-            # arrow_label1.grid(row=0,column=1,padx=(0,10))
-            # self.normalize_process_rad = ctk.CTkRadioButton(self.process_frame,text="Normalize", variable=self.process_step_var,value=2,state="disabled")
-            # self.normalize_process_rad.grid(row=0,column=2,padx=3,pady=3)
-            # arrow_label2 = ctk.CTkLabel(self.process_frame,text= '\u27A1',font=("Arial", 20))
-            # arrow_label2.grid(row=0,column=3,padx=(0,10))
-            # self.allign_rad = ctk.CTkRadioButton(self.process_frame,text="Align",variable=self.process_step_var,value=3,state="disabled")
-            # self.allign_rad.grid(row=0,column=4,padx=(3,0),pady=3)
-            # arrow_label3 = ctk.CTkLabel(self.process_frame,text= '\u27A1',font=("Arial", 20))
-            # arrow_label3.grid(row=0,column=5,padx=(0,10))
-
-            # self.interp_rad = ctk.CTkRadioButton(self.process_frame,text="Next Steps", variable=self.process_step_var,value=4,state="disabled")
-            # self.interp_rad.grid(row=0,column=6,padx=(3,0),pady=3)
-             
-            # Dropdown for selecting Impute, Interp, or both
-            self.process_selection = ctk.CTkComboBox(self.process_frame, values=["Select Process", "Impute", "Interpolate", "Both"], command=self.update_interpolation_entry)
-            self.process_selection.grid(row=0, column=7, padx=3, pady=3)
-
+            # Process selection dropdown
+            self.process_selection = ctk.CTkComboBox(self.open_file_frame, values=["Select Process", "Impute", "Interpolate", "Both"], command=self.update_interpolation_entry)
+            self.process_selection.grid(row=0, column=3, padx=10, pady=5)
+    
             # Interpolation (Slices) label and entry
-            self.slices_label = ctk.CTkLabel(self.process_frame, text="Slices:")
+            self.slices_label = ctk.CTkLabel(self.open_file_frame, text="Slices:")
             self.slices_label.grid_remove()  # Hide by default
             
-            self.slices_entry = ctk.CTkEntry(self.process_frame, placeholder_text="Enter number of slices")
+            self.slices_entry = ctk.CTkEntry(self.open_file_frame, placeholder_text="Enter number of slices", width=100)
             self.slices_entry.insert(0, "1")
             self.slices_entry.grid_remove()  # Hide by default
-
+    
             # Imputation (Radius) label and entry
-            self.radius_label = ctk.CTkLabel(self.process_frame, text="Radius:")
+            self.radius_label = ctk.CTkLabel(self.open_file_frame, text="Radius:")
             self.radius_label.grid_remove()  # Hide by default
             
-            self.radius_entry = ctk.CTkEntry(self.process_frame, placeholder_text="Enter radius")
+            self.radius_entry = ctk.CTkEntry(self.open_file_frame, placeholder_text="Enter radius", width=100)
             self.radius_entry.insert(0, "1")
             self.radius_entry.grid_remove()  # Hide by default        
-
+    
+            # Run button positioned at the rightmost side
             self.process_button = ctk.CTkButton(self.open_file_frame, text="Run", command=self.run_pipeline)
-            self.process_button.grid(row=0, column=3, padx=(50,50), pady=5, sticky="e")
-
-            # self.reset_button = ctk.CTkButton(self.open_file_frame, text="Reset", command=self.reset_process)
-            # self.reset_button.grid(row=0, column=4, padx = (50,5), pady=5)
+            self.process_button.grid(row=0, column=9, padx=10, pady=5, sticky="e")
 
     def update_interpolation_entry(self, selected_process):
-        
         selected_process = self.process_selection.get()
-
+    
         # Reset all fields first
         self.slices_label.grid_remove()
         self.slices_entry.grid_remove()
         self.radius_label.grid_remove()
         self.radius_entry.grid_remove()
-
+    
         # Show the appropriate fields based on the selection
         if selected_process == "Interpolate":
-            self.slices_label.grid(row=0, column=8, padx=3, pady=3)
-            self.slices_entry.grid(row=0, column=9, padx=3, pady=3)
+            self.slices_label.grid(row=0, column=4, padx=5, pady=5)
+            self.slices_entry.grid(row=0, column=5, padx=5, pady=5)
         elif selected_process == "Impute":
-            self.radius_label.grid(row=0, column=8, padx=3, pady=3)
-            self.radius_entry.grid(row=0, column=9, padx=3, pady=3)
+            self.radius_label.grid(row=0, column=4, padx=5, pady=5)
+            self.radius_entry.grid(row=0, column=5, padx=5, pady=5)
         elif selected_process == "Both":
-            self.slices_label.grid(row=0, column=8, padx=3, pady=3)
-            self.slices_entry.grid(row=0, column=9, padx=3, pady=3)
-            self.radius_label.grid(row=0, column=10, padx=3, pady=3)
-            self.radius_entry.grid(row=0, column=11, padx=3, pady=3)
+            self.slices_label.grid(row=0, column=4, padx=5, pady=5)
+            self.slices_entry.grid(row=0, column=5, padx=5, pady=5)
+            self.radius_label.grid(row=0, column=6, padx=5, pady=5)
+            self.radius_entry.grid(row=0, column=7, padx=(5, 100), pady=5)
 
     def run_pipeline(self):
         # step = self.process_step_var.get()
+        logger.info("Resetting the process")
+        for widget in self.slides_display_frame.winfo_children():
+            widget.destroy()  
+        for widget in self.slide_tab.winfo_children():
+            widget.destroy()
+        
+        if self._3d_tab_exists:
+            self.tab_view.delete("3D view")
+            self._3d_tab_exists = False  # Reset the flag
+        logging.info("Destroying the 3D tab")
+        if hasattr(self, 'norm_plot_frame') and self.norm_plot_frame is not None:
+            self.norm_plot_frame.destroy()
+        if hasattr(self, 'ani_ax') and self.ani_ax is not None:
+            self.ani_ax.clear()
+        if hasattr(self, 'ani_fig') and self.ani_fig is not None:
+            self.ani_fig.clear()
+        if hasattr(self, 'animation_canvas_widget') and self.animation_canvas_widget is not None:
+            self.animation_canvas_widget.destroy()
+        if hasattr(self, 'animation_slider') and self.animation_slider is not None:
+            self.animation_slider.destroy()
+        
         self.molecule_dropdown.configure(state="disabled")
+        self.process_button.configure(state="disabled")
         logger.info("Starting the first step - visualization process")
         logger.info("Calling the start_initial_visualization process")
         self.start_initial_visualization()
@@ -240,6 +239,7 @@ class MetaVision3DApp(ctk.CTkFrame):
         logger.info(f"Displaying_norm_plot")
         self.after(500,self.display_animation())
         self.molecule_dropdown.configure(state="normal")
+        self.process_button.configure(state="normal")
 
     def handle_process_selection(self):
         selected_process = self.process_selection.get()
@@ -258,7 +258,6 @@ class MetaVision3DApp(ctk.CTkFrame):
             self.start_interp()
         else:
             messagebox.showerror("Error", "Invalid process selected. Please select a valid process.")
-        self.process_button.configure(state="disabled")
 
     def start_initial_visualization(self):
         self.cmap_cbox.configure(state="normal")
@@ -382,8 +381,6 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.animation_slider.destroy()
 
         self.molecule_dropdown.configure(state="normal")
-        self.visualize_process_rad.configure(state="normal")
-        self.process_step_var.set(1)
         self.process_button.configure(state="normal") # Enable the Run button
 
         self.process_selection.set("Select Process")
