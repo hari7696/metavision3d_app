@@ -146,26 +146,28 @@ class MetaVision3DApp(ctk.CTkFrame):
             self.molecule_dropdown.grid(row=0, column=2, padx=(5,50), pady=5, sticky="w")
             # self.process_steps_label = ctk.CTkLabel(self.nav_frame,text="Process Steps:")
             # self.process_steps_label.grid(row=0,column=4,sticky="w",padx=(20,5))
+            
             self.process_steps_frame = ctk.CTkFrame(self.nav_frame)
             self.process_steps_frame.grid(row=1,column=0, columnspan=6, padx=5, pady=5) 
             self.process_frame = ctk.CTkFrame(self.process_steps_frame)
             self.process_frame.grid(row=0,column=0)
-            self.process_step_var = ctk.IntVar(value=1)
-            self.visualize_process_rad = ctk.CTkRadioButton(self.process_frame,text ="Visualize",variable= self.process_step_var,value=1)
-            self.visualize_process_rad.grid(row=0,column=0,padx=3,pady=3)
-            arrow_label1 = ctk.CTkLabel(self.process_frame,text= '\u27A1',font=("Arial", 20))
-            arrow_label1.grid(row=0,column=1,padx=(0,10))
-            self.normalize_process_rad = ctk.CTkRadioButton(self.process_frame,text="Normalize", variable=self.process_step_var,value=2,state="disabled")
-            self.normalize_process_rad.grid(row=0,column=2,padx=3,pady=3)
-            arrow_label2 = ctk.CTkLabel(self.process_frame,text= '\u27A1',font=("Arial", 20))
-            arrow_label2.grid(row=0,column=3,padx=(0,10))
-            self.allign_rad = ctk.CTkRadioButton(self.process_frame,text="Align",variable=self.process_step_var,value=3,state="disabled")
-            self.allign_rad.grid(row=0,column=4,padx=(3,0),pady=3)
-            arrow_label3 = ctk.CTkLabel(self.process_frame,text= '\u27A1',font=("Arial", 20))
-            arrow_label3.grid(row=0,column=5,padx=(0,10))
+            
+            # self.process_step_var = ctk.IntVar(value=1)
+            # self.visualize_process_rad = ctk.CTkRadioButton(self.process_frame,text ="Visualize",variable= self.process_step_var,value=1)
+            # self.visualize_process_rad.grid(row=0,column=0,padx=3,pady=3)
+            # arrow_label1 = ctk.CTkLabel(self.process_frame,text= '\u27A1',font=("Arial", 20))
+            # arrow_label1.grid(row=0,column=1,padx=(0,10))
+            # self.normalize_process_rad = ctk.CTkRadioButton(self.process_frame,text="Normalize", variable=self.process_step_var,value=2,state="disabled")
+            # self.normalize_process_rad.grid(row=0,column=2,padx=3,pady=3)
+            # arrow_label2 = ctk.CTkLabel(self.process_frame,text= '\u27A1',font=("Arial", 20))
+            # arrow_label2.grid(row=0,column=3,padx=(0,10))
+            # self.allign_rad = ctk.CTkRadioButton(self.process_frame,text="Align",variable=self.process_step_var,value=3,state="disabled")
+            # self.allign_rad.grid(row=0,column=4,padx=(3,0),pady=3)
+            # arrow_label3 = ctk.CTkLabel(self.process_frame,text= '\u27A1',font=("Arial", 20))
+            # arrow_label3.grid(row=0,column=5,padx=(0,10))
 
-            self.interp_rad = ctk.CTkRadioButton(self.process_frame,text="Next Steps", variable=self.process_step_var,value=4,state="disabled")
-            self.interp_rad.grid(row=0,column=6,padx=(3,0),pady=3)    
+            # self.interp_rad = ctk.CTkRadioButton(self.process_frame,text="Next Steps", variable=self.process_step_var,value=4,state="disabled")
+            # self.interp_rad.grid(row=0,column=6,padx=(3,0),pady=3)
              
             # Dropdown for selecting Impute, Interp, or both
             self.process_selection = ctk.CTkComboBox(self.process_frame, values=["Select Process", "Impute", "Interpolate", "Both"], command=self.update_interpolation_entry)
@@ -187,11 +189,11 @@ class MetaVision3DApp(ctk.CTkFrame):
             self.radius_entry.insert(0, "1")
             self.radius_entry.grid_remove()  # Hide by default        
 
-            self.process_button = ctk.CTkButton(self.open_file_frame, text="Run", command=self.start_selected_process)
-            self.process_button.grid(row=0, column=3, padx=(50,50), pady=5)
+            self.process_button = ctk.CTkButton(self.open_file_frame, text="Run", command=self.run_pipeline)
+            self.process_button.grid(row=0, column=3, padx=(50,50), pady=5, sticky="e")
 
-            self.reset_button = ctk.CTkButton(self.open_file_frame, text="Reset", command=self.reset_process)
-            self.reset_button.grid(row=0, column=4, padx = (50,5), pady=5)
+            # self.reset_button = ctk.CTkButton(self.open_file_frame, text="Reset", command=self.reset_process)
+            # self.reset_button.grid(row=0, column=4, padx = (50,5), pady=5)
 
     def update_interpolation_entry(self, selected_process):
         
@@ -216,30 +218,28 @@ class MetaVision3DApp(ctk.CTkFrame):
             self.radius_label.grid(row=0, column=10, padx=3, pady=3)
             self.radius_entry.grid(row=0, column=11, padx=3, pady=3)
 
-    def start_selected_process(self):
-        step = self.process_step_var.get()
-        if step ==1:    
-            logger.info("Starting the first step - visualization process")
-            self.visualize_process_rad.configure(state="disabled")
-            self.normalize_process_rad.select()
-            logger.info("Calling the start_initial_visualization process")
-            self.start_initial_visualization()
-            logger.info("start_initial_visualization is completed")
-        elif step ==2:
-            logger.info("Starting the normalization process")
-            self.normalize_process_rad.configure(state="disabled")
-            self.allign_rad.select()
-            logger.info("Calling the start_normalization process")
-            self.start_normalization()
-            logger.info("start_normalization is completed")
-        elif step == 3:
-            logger.info("Starting the alignment process")
-            self.start_allignment()
-            logger.info("start_allignment is completed")
-        elif step == 4:
-            logger.info("Starting the selected process: Interpolate/Impute/Both")
-            self.interp_rad.configure(state="disabled")
-            self.handle_process_selection()
+    def run_pipeline(self):
+        # step = self.process_step_var.get()
+        self.molecule_dropdown.configure(state="disabled")
+        logger.info("Starting the first step - visualization process")
+        logger.info("Calling the start_initial_visualization process")
+        self.start_initial_visualization()
+        logger.info("start_initial_visualization is completed")
+        logger.info("Starting the normalization process")
+        logger.info("Calling the start_normalization process")
+        self.start_normalization()
+        logger.info("start_normalization is completed")
+        logger.info("Starting the alignment process")
+        self.start_allignment()
+        logger.info("start_allignment is completed")
+        logger.info("Starting the selected process: Interpolate/Impute/Both")
+        self.handle_process_selection()
+        self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
+        logger.info(f"Displaying_individual_images")
+        self.display_norm_plot(self.compound_matrix)
+        logger.info(f"Displaying_norm_plot")
+        self.after(500,self.display_animation())
+        self.molecule_dropdown.configure(state="normal")
 
     def handle_process_selection(self):
         selected_process = self.process_selection.get()
@@ -261,7 +261,6 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.process_button.configure(state="disabled")
 
     def start_initial_visualization(self):
-        self.molecule_dropdown.configure(state="disabled")
         self.cmap_cbox.configure(state="normal")
         selected_moelcule = self.molecule_dropdown.get()
         logger.info(f"Selected Molecule: {selected_moelcule}")
@@ -271,11 +270,11 @@ class MetaVision3DApp(ctk.CTkFrame):
         logger.info(f"self.compound_matrix is created")
         time.sleep(1)
         logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
-        self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
-        logger.info(f"Displaying_individual_images")
-        self.display_norm_plot(self.compound_matrix)
-        logger.info(f"Displaying_norm_plot")
-        self.after(500,self.display_animation())
+        # self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
+        # logger.info(f"Displaying_individual_images")
+        # self.display_norm_plot(self.compound_matrix)
+        # logger.info(f"Displaying_norm_plot")
+        # self.after(500,self.display_animation())
 
     def start_normalization(self):
         self.compound = self.molecule_dropdown.get()
@@ -293,12 +292,12 @@ class MetaVision3DApp(ctk.CTkFrame):
         logger.info("MetaAlign3D is completed in start_normalization process")  
         self.compound_matrix = meta_normalize.create_compound_matrix()
         logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
-        self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
-        logger.info(f"Displaying_individual_images")
-        self.display_norm_plot(self.compound_matrix)
-        logger.info(f"Displaying_norm_plot")
-        self.display_animation()
-        logger.info(f"Displaying_animation")
+        # self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
+        # logger.info(f"Displaying_individual_images")
+        # self.display_norm_plot(self.compound_matrix)
+        # logger.info(f"Displaying_norm_plot")
+        # self.display_animation()
+        # logger.info(f"Displaying_animation")
 
     def start_allignment(self):
         selected_moelcule = self.molecule_dropdown.get()
@@ -308,18 +307,18 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.compound_matrix = meta_align.create_compound_matrix()
         self.compound_matrix = meta_align.seq_align()
         logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")    
-        self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
-        logger.info(f"Displaying_individual_images")
-        self.display_norm_plot(self.compound_matrix)
-        logger.info(f"Displaying_norm_plot")
-        self.display_animation()
-        logger.info(f"Displaying_animation")
+        # self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
+        # logger.info(f"Displaying_individual_images")
+        # self.display_norm_plot(self.compound_matrix)
+        # logger.info(f"Displaying_norm_plot")
+        # self.display_animation()
+        # logger.info(f"Displaying_animation")
         self.create_3d_tab()
         logger.info(f"3D tab created")
 
-        self.allign_rad.configure(state="disabled")  # Disable the "Align" button after alignment
-        self.interp_rad.configure(state="normal")
-        self.process_step_var.set(4)  # Set to 4 to allow imputation/interpolation selection
+        # self.allign_rad.configure(state="disabled")  # Disable the "Align" button after alignment
+        # self.interp_rad.configure(state="normal")
+        # self.process_step_var.set(4)  # Set to 4 to allow imputation/interpolation selection
 
     def start_imputation(self):
         radius_text = self.radius_entry.get().strip()
@@ -336,13 +335,13 @@ class MetaVision3DApp(ctk.CTkFrame):
         logger.info("MetaImpute3D is completed in start_imputation process")
         self.compound_matrix = meta_impute.seq_impute()
         logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
-        self.display_individual_images(self.cmap_switch_var.get(), self.compound_matrix)
-        logger.info(f"Displaying_individual_images")
-        self.display_norm_plot(self.compound_matrix)
-        logger.info(f"Displaying_norm_plot")
-        self.display_animation()
-        logger.info(f"Displaying_animation")
-        self.interp_rad.configure(state="disabled")  
+        # self.display_individual_images(self.cmap_switch_var.get(), self.compound_matrix)
+        # logger.info(f"Displaying_individual_images")
+        # self.display_norm_plot(self.compound_matrix)
+        # logger.info(f"Displaying_norm_plot")
+        # self.display_animation()
+        # logger.info(f"Displaying_animation")
+        # self.interp_rad.configure(state="disabled")  
 
     def start_interp(self):
         slices_text = self.slices_entry.get().strip()
@@ -355,13 +354,13 @@ class MetaVision3DApp(ctk.CTkFrame):
         logger.info("MetaInterp3D is completed in start_interp process")
         self.compound_matrix = meta_interp.interp()
         logger.info(f"Sum of compound_matrix: {self.compound_matrix.sum()}")
-        self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
-        logger.info(f"Displaying_individual_images")
-        self.display_norm_plot(self.compound_matrix)
-        logger.info(f"Displaying_norm_plot")
-        self.display_animation()
-        logger.info(f"Displaying_animation")
-        self.interp_rad.configure(state="disabled")
+        # self.display_individual_images(self.cmap_switch_var.get(),self.compound_matrix)
+        # logger.info(f"Displaying_individual_images")
+        # self.display_norm_plot(self.compound_matrix)
+        # logger.info(f"Displaying_norm_plot")
+        # self.display_animation()
+        # logger.info(f"Displaying_animation")
+        # self.interp_rad.configure(state="disabled")
  
     def reset_process(self):
         logger.info("Resetting the process")
