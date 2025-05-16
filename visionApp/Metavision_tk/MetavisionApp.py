@@ -62,7 +62,6 @@ class MetaVision3DApp(ctk.CTkFrame):
         # self.show_cmap_switch.grid(row=2,column=0,sticky="e",pady=5)
         self.cmap_cbox.configure(state="normal")
         self.compound_matrix=None
-        self._3d_tab_exists = False  # Add a flag to track the 3D tab
     
     def open_file(self):
         # if self.slides_display_frame.winfo_exists():
@@ -203,9 +202,6 @@ class MetaVision3DApp(ctk.CTkFrame):
         for widget in self.slide_tab.winfo_children():
             widget.destroy()
         
-        if self._3d_tab_exists:
-            self.tab_view.delete("3D view")
-            self._3d_tab_exists = False  # Reset the flag
         logging.info("Destroying the 3D tab")
         if hasattr(self, 'norm_plot_frame') and self.norm_plot_frame is not None:
             self.norm_plot_frame.destroy()
@@ -312,8 +308,6 @@ class MetaVision3DApp(ctk.CTkFrame):
         # logger.info(f"Displaying_norm_plot")
         # self.display_animation()
         # logger.info(f"Displaying_animation")
-        self.create_3d_tab()
-        logger.info(f"3D tab created")
 
         # self.allign_rad.configure(state="disabled")  # Disable the "Align" button after alignment
         # self.interp_rad.configure(state="normal")
@@ -431,6 +425,9 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.norm_plot.columnconfigure(0,weight=1)     
         self.animation_tab = self.tab_view.add("Animation")
         self.animation_tab.columnconfigure(0,weight=1)
+        self._3d_tab= self.tab_view.add("3D view")
+        self._3d_tab.columnconfigure(0,weight=1)
+        self.create_3d_tab()
         self.tab_view.set("Slide")
 
 
@@ -779,8 +776,6 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.nii_data= atlas_data.create_nii()
 
     def create_3d_tab(self):
-        self._3d_tab= self.tab_view.add("3D view")
-        self._3d_tab.columnconfigure(0,weight=1)
 
         self.res_frame = ctk.CTkFrame(self._3d_tab)
         self.res_frame.grid(row=0,column=0,sticky="w", padx=5, pady=5)
@@ -831,8 +826,6 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.nii_file_entry.grid(row=0,column=2,padx=5, pady=5,sticky="w")
         self.nii_file_save_button = ctk.CTkButton(self.save_frame,text="Save",command=self.save_nii_file)
         self.nii_file_save_button.grid(row=0,column=3,sticky="w",padx=5, pady=5)
-
-        self._3d_tab_exists = True  # Mark the 3D tab as created
 
     def open_nii_output_dir_select_dialog(self):
         self.nii_output_directory = filedialog.askdirectory(title="Select Output Folder")
