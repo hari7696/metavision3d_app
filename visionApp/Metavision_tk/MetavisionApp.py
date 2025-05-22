@@ -32,7 +32,7 @@ from PIL import Image, ImageTk, ImageFilter
 from vedo import Volume,show,Plotter
 
 from tkinter import filedialog
-
+from MetaVision3D.utils import flip_axis
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,11 @@ class MetaVision3DApp(ctk.CTkFrame):
         open_file_btn.grid(row=0,column=0,padx=10, pady=5,sticky="w")
         # open_file_btn.grid(row=0,column=0,padx=(5, 50), pady=5,sticky="w")
         self.cmap_switch_var = ctk.StringVar(value="gray")
-        logger.info("Metavision class initialized")  
+        logger.info("Metavision class initialized")
+        
+        # Flip variables
+        self.flip_x_var = ctk.BooleanVar(value=False)
+        self.flip_y_var = ctk.BooleanVar(value=False)
 
         self.create_parent_tab_switch()
         self.create_visualization_dock()
@@ -106,12 +110,14 @@ class MetaVision3DApp(ctk.CTkFrame):
 
     def load_file(self, filepath):
         self.df = pd.read_csv(filepath, index_col=False)
+        if self.flip_x_var.get() or self.flip_y_var.get():
+            self.df = flip_axis(self.df, self.flip_x_var.get(), self.flip_y_var.get())
         self.df = self.df.rename(columns={'region': 'tissue_id'})
         self.tissue_ids = self.df['tissue_id'].unique().tolist()
         logger.info(f"Tissue id's: {self.tissue_ids}")
         self.molecule_names = self.df.columns[1:].tolist()
         self.is_roi=False
-        remove_values = ["spotId", "raster", "x", "y", "z", "Date", "Class", "tissue_id","roi"]
+        remove_values = ["spotId", "raster", "x", "y", "z", "Date", "Class", "tissue_id","roi", "slide_id"]
         self.molecule_names = [option for option in self.molecule_names if option not in remove_values]
 
         # Ensure previous widgets are destroyed before creating new ones
@@ -148,9 +154,16 @@ class MetaVision3DApp(ctk.CTkFrame):
             self.molecule_dropdown = ctk.CTkComboBox(self.open_file_frame, values=["None"] + self.molecule_names if any(isinstance(x, float) and np.isnan(x) for x in self.molecule_names) else self.molecule_names)
             self.molecule_dropdown.grid(row=0, column=2, padx=10, pady=5, sticky="w")
             
-            # Process selection dropdown
+            # Add flipX and flipY checkboxes
+            self.flip_x_checkbox = ctk.CTkCheckBox(self.open_file_frame, text="Flip X", variable=self.flip_x_var)
+            self.flip_x_checkbox.grid(row=0, column=3, padx=5, pady=5, sticky="w")
+            
+            self.flip_y_checkbox = ctk.CTkCheckBox(self.open_file_frame, text="Flip Y", variable=self.flip_y_var)
+            self.flip_y_checkbox.grid(row=0, column=4, padx=5, pady=5, sticky="w")
+            
+            # Process selection dropdown - moved to column 5
             self.process_selection = ctk.CTkComboBox(self.open_file_frame, values=["Select Process", "Impute", "Interpolate", "Both"], command=self.update_interpolation_entry)
-            self.process_selection.grid(row=0, column=3, padx=10, pady=5)
+            self.process_selection.grid(row=0, column=5, padx=10, pady=5)
     
             # Interpolation (Slices) label and entry
             self.slices_label = ctk.CTkLabel(self.open_file_frame, text="Slices:")
@@ -170,29 +183,29 @@ class MetaVision3DApp(ctk.CTkFrame):
     
             # Run button positioned at the rightmost side
             self.process_button = ctk.CTkButton(self.open_file_frame, text="Run", command=self.run_pipeline)
-            self.process_button.grid(row=0, column=9, padx=10, pady=5, sticky="e")
+            self.process_button.grid(row=0, column=11, padx=10, pady=5, sticky="e")
 
     def update_interpolation_entry(self, selected_process):
         selected_process = self.process_selection.get()
-    
+
         # Reset all fields first
         self.slices_label.grid_remove()
         self.slices_entry.grid_remove()
         self.radius_label.grid_remove()
         self.radius_entry.grid_remove()
-    
-        # Show the appropriate fields based on the selection
+
+        # Show the appropriate fields based on the selection - adjusted column positions
         if selected_process == "Interpolate":
-            self.slices_label.grid(row=0, column=4, padx=5, pady=5)
-            self.slices_entry.grid(row=0, column=5, padx=5, pady=5)
+            self.slices_label.grid(row=0, column=6, padx=5, pady=5)
+            self.slices_entry.grid(row=0, column=7, padx=5, pady=5)
         elif selected_process == "Impute":
-            self.radius_label.grid(row=0, column=4, padx=5, pady=5)
-            self.radius_entry.grid(row=0, column=5, padx=5, pady=5)
-        elif selected_process == "Both":
-            self.slices_label.grid(row=0, column=4, padx=5, pady=5)
-            self.slices_entry.grid(row=0, column=5, padx=5, pady=5)
             self.radius_label.grid(row=0, column=6, padx=5, pady=5)
-            self.radius_entry.grid(row=0, column=7, padx=(5, 100), pady=5)
+            self.radius_entry.grid(row=0, column=7, padx=5, pady=5)
+        elif selected_process == "Both":
+            self.slices_label.grid(row=0, column=6, padx=5, pady=5)
+            self.slices_entry.grid(row=0, column=7, padx=5, pady=5)
+            self.radius_label.grid(row=0, column=8, padx=5, pady=5)
+            self.radius_entry.grid(row=0, column=9, padx=5, pady=5)
 
     def run_pipeline(self):
         # step = self.process_step_var.get()
