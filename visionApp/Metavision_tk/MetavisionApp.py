@@ -53,10 +53,10 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.flip_y_var = ctk.BooleanVar(value=False)
         
         # Add flipX and flipY checkboxes before the select file button
-        self.flip_x_checkbox = ctk.CTkCheckBox(self.open_file_frame, text="Flip Up/Down", variable=self.flip_y_var)
+        self.flip_x_checkbox = ctk.CTkCheckBox(self.open_file_frame, text="Flip Up/Down", variable=self.flip_x_var)
         self.flip_x_checkbox.grid(row=0, column=0, padx=5, pady=5, sticky="w")
         
-        self.flip_y_checkbox = ctk.CTkCheckBox(self.open_file_frame, text="Flip Left/Right", variable=self.flip_x_var)
+        self.flip_y_checkbox = ctk.CTkCheckBox(self.open_file_frame, text="Flip Left/Right", variable=self.flip_y_var)
         self.flip_y_checkbox.grid(row=0, column=1, padx=5, pady=5, sticky="w")
         
         # Select CSV File button after the checkboxes
@@ -118,7 +118,7 @@ class MetaVision3DApp(ctk.CTkFrame):
     def load_file(self, filepath):
         self.df = pd.read_csv(filepath, index_col=False)
         if self.flip_x_var.get() or self.flip_y_var.get():
-            logger.info(f"Flipping axes: X={self.flip_x_var.get()}, Y={self.flip_y_var.get()}")
+            logger.info(f"Flipping Up/Down: X={self.flip_x_var.get()}, Left/Right Y={self.flip_y_var.get()}")
             self.df = flip_axis(self.df, self.flip_x_var.get(), self.flip_y_var.get())
         self.df = self.df.rename(columns={'region': 'tissue_id'})
         self.tissue_ids = self.df['tissue_id'].unique().tolist()
