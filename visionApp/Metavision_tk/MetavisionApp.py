@@ -48,16 +48,22 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.open_file_frame.grid(row=0,column=1, padx=5, pady=5, sticky="ew")
         self.open_file_frame.columnconfigure(8,weight=1)
         
-        # open_file_btn = ctk.CTkButton(self.open_file_frame, text="Select CSV File", command=self.open_file)
-        open_file_btn = ctk.CTkButton(self.open_file_frame, text="Select CSV File", command=self.open_file)
-        open_file_btn.grid(row=0,column=0,padx=10, pady=5,sticky="w")
-        # open_file_btn.grid(row=0,column=0,padx=(5, 50), pady=5,sticky="w")
-        self.cmap_switch_var = ctk.StringVar(value="gray")
-        logger.info("Metavision class initialized")
-        
         # Flip variables
         self.flip_x_var = ctk.BooleanVar(value=False)
         self.flip_y_var = ctk.BooleanVar(value=False)
+        
+        # Add flipX and flipY checkboxes before the select file button
+        self.flip_x_checkbox = ctk.CTkCheckBox(self.open_file_frame, text="Flip X", variable=self.flip_x_var)
+        self.flip_x_checkbox.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        
+        self.flip_y_checkbox = ctk.CTkCheckBox(self.open_file_frame, text="Flip Y", variable=self.flip_y_var)
+        self.flip_y_checkbox.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        
+        # Select CSV File button after the checkboxes
+        open_file_btn = ctk.CTkButton(self.open_file_frame, text="Select CSV File", command=self.open_file)
+        open_file_btn.grid(row=0, column=2, padx=10, pady=5, sticky="w")
+        
+        logger.info("Metavision class initialized")
 
         self.create_parent_tab_switch()
         self.create_visualization_dock()
@@ -104,13 +110,15 @@ class MetaVision3DApp(ctk.CTkFrame):
     def display_file_loading(self):
         if hasattr(self, 'loading_label') and self.loading_label is not None:
             self.loading_label.destroy()
-
+        
+        # Position loading message after the checkboxes and select file button
         self.loading_label = ctk.CTkLabel(self.open_file_frame, text="Loading...")
-        self.loading_label.grid(row=0, column=1, padx=(5, 0), pady=(10, 10), sticky="w")
+        self.loading_label.grid(row=0, column=3, padx=(5, 0), pady=(10, 10), sticky="w")
 
     def load_file(self, filepath):
         self.df = pd.read_csv(filepath, index_col=False)
         if self.flip_x_var.get() or self.flip_y_var.get():
+            logger.info(f"Flipping axes: X={self.flip_x_var.get()}, Y={self.flip_y_var.get()}")
             self.df = flip_axis(self.df, self.flip_x_var.get(), self.flip_y_var.get())
         self.df = self.df.rename(columns={'region': 'tissue_id'})
         self.tissue_ids = self.df['tissue_id'].unique().tolist()
@@ -148,23 +156,17 @@ class MetaVision3DApp(ctk.CTkFrame):
 
     def create_molecule_dropdown(self):
         if self.molecule_names:
+            # Start at column 4 since columns 0-3 are now occupied
             self.molecule_dropdown_label = ctk.CTkLabel(self.open_file_frame,text="Tissues/Molecules:")
-            self.molecule_dropdown_label.grid(row=0, column=1, padx=10, pady=5, sticky="w")
+            self.molecule_dropdown_label.grid(row=0, column=4, padx=10, pady=5, sticky="w")
             
             self.molecule_dropdown = ctk.CTkComboBox(self.open_file_frame, values=["None"] + self.molecule_names if any(isinstance(x, float) and np.isnan(x) for x in self.molecule_names) else self.molecule_names)
-            self.molecule_dropdown.grid(row=0, column=2, padx=10, pady=5, sticky="w")
+            self.molecule_dropdown.grid(row=0, column=5, padx=10, pady=5, sticky="w")
             
-            # Add flipX and flipY checkboxes
-            self.flip_x_checkbox = ctk.CTkCheckBox(self.open_file_frame, text="Flip X", variable=self.flip_x_var)
-            self.flip_x_checkbox.grid(row=0, column=3, padx=5, pady=5, sticky="w")
-            
-            self.flip_y_checkbox = ctk.CTkCheckBox(self.open_file_frame, text="Flip Y", variable=self.flip_y_var)
-            self.flip_y_checkbox.grid(row=0, column=4, padx=5, pady=5, sticky="w")
-            
-            # Process selection dropdown - moved to column 5
+            # Process selection dropdown - moved to column 6
             self.process_selection = ctk.CTkComboBox(self.open_file_frame, values=["Select Process", "Impute", "Interpolate", "Both"], command=self.update_interpolation_entry)
-            self.process_selection.grid(row=0, column=5, padx=10, pady=5)
-    
+            self.process_selection.grid(row=0, column=6, padx=10, pady=5)
+
             # Interpolation (Slices) label and entry
             self.slices_label = ctk.CTkLabel(self.open_file_frame, text="Slices:")
             self.slices_label.grid_remove()  # Hide by default
@@ -172,7 +174,7 @@ class MetaVision3DApp(ctk.CTkFrame):
             self.slices_entry = ctk.CTkEntry(self.open_file_frame, placeholder_text="Enter number of slices", width=100)
             self.slices_entry.insert(0, "1")
             self.slices_entry.grid_remove()  # Hide by default
-    
+
             # Imputation (Radius) label and entry
             self.radius_label = ctk.CTkLabel(self.open_file_frame, text="Radius:")
             self.radius_label.grid_remove()  # Hide by default
@@ -180,32 +182,32 @@ class MetaVision3DApp(ctk.CTkFrame):
             self.radius_entry = ctk.CTkEntry(self.open_file_frame, placeholder_text="Enter radius", width=100)
             self.radius_entry.insert(0, "1")
             self.radius_entry.grid_remove()  # Hide by default        
-    
+
             # Run button positioned at the rightmost side
             self.process_button = ctk.CTkButton(self.open_file_frame, text="Run", command=self.run_pipeline)
             self.process_button.grid(row=0, column=11, padx=10, pady=5, sticky="e")
 
     def update_interpolation_entry(self, selected_process):
         selected_process = self.process_selection.get()
-
+    
         # Reset all fields first
         self.slices_label.grid_remove()
         self.slices_entry.grid_remove()
         self.radius_label.grid_remove()
         self.radius_entry.grid_remove()
-
-        # Show the appropriate fields based on the selection - adjusted column positions
+    
+        # Adjust column positions to start after the process selection dropdown
         if selected_process == "Interpolate":
-            self.slices_label.grid(row=0, column=6, padx=5, pady=5)
-            self.slices_entry.grid(row=0, column=7, padx=5, pady=5)
+            self.slices_label.grid(row=0, column=7, padx=5, pady=5)
+            self.slices_entry.grid(row=0, column=8, padx=5, pady=5)
         elif selected_process == "Impute":
-            self.radius_label.grid(row=0, column=6, padx=5, pady=5)
-            self.radius_entry.grid(row=0, column=7, padx=5, pady=5)
+            self.radius_label.grid(row=0, column=7, padx=5, pady=5)
+            self.radius_entry.grid(row=0, column=8, padx=5, pady=5)
         elif selected_process == "Both":
-            self.slices_label.grid(row=0, column=6, padx=5, pady=5)
-            self.slices_entry.grid(row=0, column=7, padx=5, pady=5)
-            self.radius_label.grid(row=0, column=8, padx=5, pady=5)
-            self.radius_entry.grid(row=0, column=9, padx=5, pady=5)
+            self.slices_label.grid(row=0, column=7, padx=5, pady=5)
+            self.slices_entry.grid(row=0, column=8, padx=5, pady=5)
+            self.radius_label.grid(row=0, column=9, padx=5, pady=5)
+            self.radius_entry.grid(row=0, column=10, padx=5, pady=5)
 
     def run_pipeline(self):
         # step = self.process_step_var.get()
