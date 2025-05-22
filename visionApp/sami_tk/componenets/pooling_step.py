@@ -146,7 +146,11 @@ class PoolingStep(ctk.CTkFrame):
         self.ctk_text = ctk.CTkTextbox(self.right_frame, width=120, height=200)
         self.ctk_text.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
         
-        self.ctk_text.insert("0.0", """Notes: \n1. You need to select appropritate omics present in corresponding file\n 2. If you select Other, you will face issues in Pathways step but till markers, you should be able to run\n 3. If the pixels doesnt align during pooling, it will throw a wraning and wont generate any pooled files\n4. you CAN still continue the rest of the steps with available data""")
+        self.ctk_text.insert("0.0", """Notes:
+1. Make sure to select the appropriate omics type corresponding to the input file.
+2. If you select "Other", the Pathways step may fail; however, all steps up to Markers should still work.
+3. If pixel alignment fails during pooling, a warning will be shown, and no pooled files will be generated.
+4. You can still proceed with the remaining steps using the available data, even if pooling fails.""")
         
         self.ctk_text.configure(state="disabled", font = ("Arial", 16))
 
