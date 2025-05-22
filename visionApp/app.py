@@ -51,7 +51,7 @@ class VisionApp(ctk.CTk):
         
         # self.nav_frame.rowconfigure(0,weight=1)
         logger.info("application started")
-        algo_default_value = ctk.StringVar(value="Select the ALgorithm")
+        algo_default_value = ctk.StringVar(value="Select the Algorithm")
         self.algo_selection_dropdown = ctk.CTkOptionMenu(master= self.nav_frame,
                                             values=["MetaVision3D","SAMI"],
                                             command=self.change_to_algo_ui,
