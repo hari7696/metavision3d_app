@@ -53,10 +53,10 @@ class MetaVision3DApp(ctk.CTkFrame):
         self.flip_y_var = ctk.BooleanVar(value=False)
         
         # Add flipX and flipY checkboxes before the select file button
-        self.flip_x_checkbox = ctk.CTkCheckBox(self.open_file_frame, text="Flip X", variable=self.flip_x_var)
+        self.flip_x_checkbox = ctk.CTkCheckBox(self.open_file_frame, text="Flip Up/Down", variable=self.flip_y_var)
         self.flip_x_checkbox.grid(row=0, column=0, padx=5, pady=5, sticky="w")
         
-        self.flip_y_checkbox = ctk.CTkCheckBox(self.open_file_frame, text="Flip Y", variable=self.flip_y_var)
+        self.flip_y_checkbox = ctk.CTkCheckBox(self.open_file_frame, text="Flip Left/Right", variable=self.flip_x_var)
         self.flip_y_checkbox.grid(row=0, column=1, padx=5, pady=5, sticky="w")
         
         # Select CSV File button after the checkboxes
