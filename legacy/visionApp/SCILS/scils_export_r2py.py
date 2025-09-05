@@ -104,5 +104,5 @@ if __name__ == "__main__":
     params = {'scils_file_path': 'C:/Users/ghari/Documents/OPS/scils_Export/05012024_glygly_fullset.slx', 
      'save_path': 'C:/Users/ghari/Documents/OPS/scils_Export/export.csv', 
      'peaklist_name': 'glycans_rr',
-     'license_key': '***SCILS_LICENSE_KEY_REMOVED***'}
+     'license_key': os.environ.get('SCILSMSSERVER_LICENSE', '')}
     run_scils_export(params)

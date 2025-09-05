@@ -24,7 +24,6 @@ library(SCiLSLabClient)
 filename <- scils_file_path
 example_data <- SCiLSLabOpenLocalSession(filename, timeout = 60)
 
-# Sys.setenv("SCILSMSSERVER_LICENSE" = "***SCILS_LICENSE_KEY_REMOVED***")
 
 
 ## -----------------------------------------------------------------------------

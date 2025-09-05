@@ -117,11 +117,7 @@ class ScilsExportStep(ctk.CTkFrame):
         self.entry_license_key = ctk.CTkEntry(self.parent_frame, width = 200)
         self.entry_license_key.grid(row=4, column=1, padx=(0, 0), pady=(10, 10), sticky="e")
         
-        if os.path.exists(os.path.join(self.base_path, "license_key.pkl")):
-            license_key = self.unpickle_object(os.path.join(self.base_path, "license_key.pkl"))[0]
-            self.entry_license_key.insert(0, license_key)
 
-        # self.entry_license_key.insert(0, "***SCILS_LICENSE_KEY_REMOVED***")
 
         # a button to export the scils file
         self.btn_export_scils = ctk.CTkButton(self.parent_frame, text="Export Scils", 
@@ -183,8 +179,6 @@ class ScilsExportStep(ctk.CTkFrame):
         self.export_process.start()
         self.check_export_status()
 
-        #caching the license key
-        self.pickle_object([self.entry_license_key.get()], os.path.join(self.base_path, "license_key.pkl"))
 
     def check_export_status(self):
 

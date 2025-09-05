@@ -11,10 +11,7 @@ import io
 import logging
 from .timer import TimerApp
 from SAMI.clustering import Clusters
-from PRISM.ColumnTable import ColumnTable
-from PRISM.NestedTable import NestedTable
 from .display_image import ImageDisaplay
-from .ClusterPrismExport import ClusterPrismExport
 from log_listener import worker_configurer
 import scanpy as sc
 import pandas as pd 
@@ -45,8 +42,6 @@ class ClusteringStep(ctk.CTkFrame):
         self.image_label = None
         self.queue = Queue()
         self.is_clustering_ran = False
-        self.prism_table_value = []
-        self.prism_table_value.append(["Table Name", "Clusters", "Compounds"])
         self.dict_df = {}
         # self.trigger_visz_functions_on_thread_run()
 
@@ -85,12 +80,7 @@ class ClusteringStep(ctk.CTkFrame):
         self.cluster_tab.rowconfigure((1), weight = 20)
         self.cluster_tab.rowconfigure((2), weight = 7)
 
-        #prism export tab  
-        self.prism_export_tab = self.vis_tabs.add("Prism Export")
-        
 
-        # self.prism_export_tab.columnconfigure(0, weight=1)
-        # self.prism_export_tab.rowconfigure((0), weight = 1)
 
 
         # cluster options tab
@@ -290,8 +280,6 @@ class ClusteringStep(ctk.CTkFrame):
                 logger.info("visualization prepared")
                 self.df_tracker.loc[len(self.df_tracker)] = self.record
                 self.df_tracker.to_csv(self.df_tracker_path, index=False)
-                self.prepare_prism_export_tab()
-                logger.info("prism export tab prepared")
                 self.timer.stop_timer()
                 self.time_constraint_label.configure(text="Clustering Done", text_color="green")
                 self.cluster_button.configure(state="normal")
@@ -357,17 +345,6 @@ class ClusteringStep(ctk.CTkFrame):
 
         specific_cluster3 = SpecificCluster(self.frame3, self.cluster, self.n_clusters, 2)
         specific_cluster3.grid(row=0, column=2, sticky="nsew")
-
-    def prepare_prism_export_tab(self):
-        
-        logger.info("preparing prism export tab")
-        for child in self.prism_export_tab.winfo_children():
-            child.destroy()
-        
-        prism_pane = ClusterPrismExport(self.prism_export_tab, self.log_queue, self.clustered_file, self.post_norm_adata_filepath)
-        prism_pane.grid(row=0, column=0, sticky="nsew")
-        prism_pane.columnconfigure(0, weight=1)
-        prism_pane.rowconfigure(0, weight=1)
 
 class DropDownMulitSelect(ctk.CTkToplevel):
     def __init__(self, master, options):
