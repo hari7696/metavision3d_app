@@ -1,0 +1,22 @@
+# Store text with LF line endings in the repo; check out with the platform default.
+* text=auto
+
+# Always LF, even on Windows: shells and R choke on CRLF
+*.sh   text eol=lf
+*.R    text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+
+# Binary files: never diff or normalise
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.ico    binary
+*.npy    binary
+*.nii.gz binary
+*.h5ad   binary
+*.parquet binary
+
+# Keep notebooks out of language stats
+*.ipynb linguist-documentation
+legacy/** linguist-vendored
