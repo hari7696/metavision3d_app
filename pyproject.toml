@@ -1,0 +1,172 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "metavision-studio"
+dynamic = ["version"]
+description = "A napari workbench for 3D spatial metabolomics and multi-omics MALDI imaging, built on MetaVision3D and SAMI."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "CC-BY-NC-SA-4.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Hari Krishna Reddy Golamari" }]
+keywords = [
+    "mass spectrometry imaging",
+    "MALDI",
+    "spatial metabolomics",
+    "spatial omics",
+    "3D reconstruction",
+    "napari",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Framework :: napari",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: R",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "pandas>=2.2",
+    "pyarrow>=16",
+    "anndata>=0.11",
+    "scanpy>=1.11",
+    "leidenalg>=0.10",
+    "igraph>=0.11",
+    "opencv-python-headless>=4.10",
+    "scikit-image>=0.24",
+    "nibabel>=5.2",
+    "matplotlib>=3.9",
+    "natsort>=8.4",
+    "pooch>=1.8",
+]
+
+[project.optional-dependencies]
+# Interactive GUI: the napari plugin. Pick the Qt binding here so `pip install
+# metavision-studio[napari]` works out of the box.
+napari = ["napari[pyqt6]>=0.6", "magicgui>=0.9", "qtpy>=2.4"]
+# Batch-effect correction for multi-sample clustering (pulls in PyTorch, which is large).
+harmony = ["harmonypy>=0.2"]
+# Read the open imzML format directly (vendor-neutral MSI input).
+imzml = ["pyimzml>=1.5"]
+all = ["metavision-studio[napari,harmony,imzml]"]
+
+[project.scripts]
+metavision-studio = "metavision_studio.cli:main"
+
+[project.entry-points."napari.manifest"]
+metavision-studio = "metavision_studio:napari.yaml"
+
+[project.urls]
+Homepage = "https://github.com/hari7696/metavision3d_app"
+Repository = "https://github.com/hari7696/metavision3d_app"
+Issues = "https://github.com/hari7696/metavision3d_app/issues"
+"MetaVision3D (upstream)" = "https://github.com/XinBiostats/MetaVision3D"
+"SAMI (upstream)" = "https://github.com/XinBiostats/SAMI"
+
+[dependency-groups]
+test = ["pytest>=8.3", "pytest-cov>=6.0", "scikit-learn>=1.5"]
+# pytest-qt refuses to load without a Qt binding, so it lives apart from the core test deps
+gui-test = [{ include-group = "test" }, "pytest-qt>=4.4"]
+dev = [
+    { include-group = "gui-test" },
+    "ruff>=0.8",
+    "pre-commit>=4.0",
+    "ipykernel>=6.29",
+]
+
+# ---------------------------------------------------------------------------
+# Hatch: build + environments
+# ---------------------------------------------------------------------------
+[tool.hatch.version]
+path = "src/metavision_studio/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/metavision_studio"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/",
+    "tests/",
+    "README.md",
+    "LICENSE",
+    "CITATION.cff",
+    "CHANGELOG.md",
+    "NOTICE.md",
+]
+
+# `hatch shell` / `hatch run <script>`: a project-local .venv on Python 3.14 so
+# editors (VS Code) pick it up automatically.
+[tool.hatch.envs.default]
+type = "virtual"
+path = ".venv"
+python = "3.14"
+installer = "pip"
+features = ["napari", "imzml"]
+dependency-groups = ["dev"]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest {args}"
+cov = "pytest --cov=metavision_studio --cov-report=term-missing {args}"
+lint = "ruff check {args:.}"
+fmt = ["ruff format {args:.}", "ruff check --fix {args:.}"]
+doctor = "metavision-studio doctor"
+r-deps = "metavision-studio install-r-deps"
+gui = "metavision-studio gui {args}"
+
+# ---------------------------------------------------------------------------
+# Tooling
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["legacy"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort
+    "UP",       # pyupgrade
+    "B",        # bugbear
+    "SIM",      # simplify
+    "NPY",      # numpy-specific
+    "PD",       # pandas-vet
+    "RUF",
+]
+# pandas-vet misreads MSIData.values / Raster.stack (not pandas objects) as pandas calls
+ignore = ["PD011", "PD013"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--import-mode=importlib"]
+markers = [
+    "r: needs a working R installation (Rscript on PATH or R_HOME set)",
+    "gui: needs napari/Qt and a display",
+    "slow: long-running tests on realistic data sizes",
+]
+filterwarnings = [
+    "error::DeprecationWarning:metavision_studio.*",
+    # third-party noise under pandas 3 / pydantic 2.14, not actionable here
+    "ignore::DeprecationWarning:pydantic.*",
+    "ignore:.*mode.chained_assignment.*",
+    "ignore:.*future.infer_string.*",
+    "ignore:The `igraph` and `networkit` implementations of leiden:UserWarning",
+]
+
+[tool.coverage.run]
+source = ["metavision_studio"]
+branch = true

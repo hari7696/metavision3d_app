@@ -1,0 +1,10 @@
+name: metavision-studio
+display_name: MetaVision Studio
+contributions:
+  commands:
+    - id: metavision-studio.studio
+      python_name: metavision_studio.widgets:StudioWidget
+      title: Open MetaVision Studio
+  widgets:
+    - command: metavision-studio.studio
+      display_name: MetaVision Studio
