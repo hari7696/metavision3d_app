@@ -1,0 +1,51 @@
+cff-version: 1.2.0
+message: >-
+  If you use MetaVision Studio, please cite it as below, and also cite the
+  MetaVision3D and SAMI methods it implements (listed under references).
+title: "MetaVision Studio"
+abstract: >-
+  A napari workbench for 3D spatial metabolomics and multi-omics MALDI
+  imaging, built on the MetaVision3D and SAMI methods.
+type: software
+version: 0.1.0.dev0
+license: CC-BY-NC-SA-4.0
+repository-code: "https://github.com/hari7696/metavision3d_app"
+keywords:
+  - mass spectrometry imaging
+  - MALDI
+  - spatial metabolomics
+  - spatial omics
+  - napari
+authors:
+  - family-names: Golamari
+    given-names: Hari Krishna Reddy
+references:
+  - type: article
+    title: "MetaVision3D: Automated Framework for the Generation of Spatial Metabolome Atlas in 3D"
+    authors:
+      - family-names: Ma
+        given-names: Xin
+        orcid: "https://orcid.org/0009-0009-3347-4257"
+      - name: "et al."
+    journal: bioRxiv
+    year: 2023
+    doi: 10.1101/2023.11.27.568931
+  - type: software
+    title: "XinBiostats/MetaVision3D"
+    authors:
+      - family-names: Ma
+        given-names: Xin
+        orcid: "https://orcid.org/0009-0009-3347-4257"
+    version: 1.0.0
+    doi: 10.5281/zenodo.14213133
+    repository-code: "https://github.com/XinBiostats/MetaVision3D"
+  - type: software
+    title: "XinBiostats/SAMI"
+    authors:
+      - family-names: Ma
+        given-names: Xin
+        orcid: "https://orcid.org/0009-0009-3347-4257"
+    version: 1.0.0
+    date-released: 2025-03-14
+    doi: 10.5281/zenodo.15022514
+    repository-code: "https://github.com/XinBiostats/SAMI"
