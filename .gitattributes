@@ -12,6 +12,7 @@
 *.jpg    binary
 *.jpeg   binary
 *.ico    binary
+*.mp4    binary
 *.npy    binary
 *.nii.gz binary
 *.h5ad   binary

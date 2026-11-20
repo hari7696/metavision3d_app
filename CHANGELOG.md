@@ -39,6 +39,8 @@ library plus a napari plugin.
 - **CLI:** `metavision-studio gui | doctor | datasets | fetch | install-r-deps | prepare-libraries`.
 - **Tooling:** tests (pytest, pytest-qt), linting (ruff), pre-commit hooks, CI on Windows,
   macOS and Linux with R and a headless GUI job, `CITATION.cff`, `NOTICE.md` and contributor docs.
+- **Demo video** (`docs/media/metavision-studio-demo.mp4`) of both pipelines on the example
+  data, linked from the README.
 
 ### Fixed (relative to the reference implementations)
 - Marker p-values now use correct Benjamini–Hochberg adjustment. The old `p·n/rank` had no

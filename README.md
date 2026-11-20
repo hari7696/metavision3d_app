@@ -12,6 +12,14 @@ clusters, marker molecules and enriched pathways without writing code:
   the same section, cluster pixels into anatomical regions, find marker molecules, and run
   pathway enrichment.
 
+### Demo
+
+[![Demo video: both pipelines run point-and-click on the example data](docs/images/demo-poster.jpg)](docs/media/metavision-studio-demo.mp4)
+
+<sub>2½ minutes, no sound: the 3D atlas example (load, normalise, align, fill, export, 3D
+view, methods text), then the multi-omics example (clusters with a linked UMAP, markers,
+pathways). Long steps are sped up. [Download the MP4](docs/media/metavision-studio-demo.mp4).</sub>
+
 ![3D atlas of mouse brain lipids built from 59 serial sections](docs/images/mv3d-atlas.png)
 
 ![Spatial clusters from triple-omics MALDI imaging, with a linked UMAP](docs/images/sami-clusters.png)
